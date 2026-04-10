@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "description": "Ingestion manifest for demo sample documents",
+  "documents": [
+    {
+      "path": "data/sample_docs/kebijakan_kredit_umkm.txt",
+      "title": "Kebijakan Kredit UMKM",
+      "category": "policy",
+      "language": "id",
+      "tags": ["kredit", "umkm", "restrukturisasi", "kebijakan"]
+    },
+    {
+      "path": "data/sample_docs/regulasi_ojk_2025.txt",
+      "title": "Regulasi OJK 2025 - Kualitas Aset",
+      "category": "regulation",
+      "language": "id",
+      "tags": ["ojk", "regulasi", "npl", "kualitas aset"]
+    }
+  ]
+}

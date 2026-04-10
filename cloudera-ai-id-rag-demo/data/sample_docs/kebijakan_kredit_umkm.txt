@@ -1,0 +1,82 @@
+KEBIJAKAN KREDIT USAHA MIKRO KECIL DAN MENENGAH (UMKM)
+Revisi: 3.1 | Berlaku: 1 Januari 2026
+
+BAB I — KETENTUAN UMUM
+
+Pasal 1 — Definisi
+Kredit UMKM adalah fasilitas pinjaman yang diberikan kepada pelaku usaha dengan aset maksimal Rp 10 miliar atau omzet tahunan maksimal Rp 50 miliar, sesuai Undang-Undang No. 20 Tahun 2008 tentang UMKM.
+
+Pasal 2 — Tujuan
+Kebijakan ini bertujuan untuk:
+a. Meningkatkan akses pembiayaan bagi pelaku UMKM di seluruh wilayah Indonesia.
+b. Mendukung pertumbuhan ekonomi riil melalui ekspansi kredit yang terukur.
+c. Menjaga kualitas portofolio kredit UMKM sesuai standar prudensial OJK.
+
+BAB II — PERSYARATAN PENGAJUAN
+
+Pasal 3 — Persyaratan Debitur
+Calon debitur wajib memenuhi persyaratan:
+1. Warga Negara Indonesia (WNI) dengan usia minimal 21 tahun.
+2. Memiliki usaha yang telah berjalan minimal 2 tahun.
+3. Tidak terdaftar dalam Daftar Hitam Bank Indonesia (DHBI).
+4. Skor kredit minimal 600 berdasarkan sistem penilaian internal.
+
+Pasal 4 — Dokumentasi
+Dokumen yang wajib dilengkapi:
+- KTP dan NPWP
+- Akta pendirian usaha (untuk badan usaha)
+- Laporan keuangan 2 tahun terakhir
+- Rekening koran 6 bulan terakhir
+- Sertifikat jaminan (jika diperlukan)
+
+BAB III — PLAFON DAN SUKU BUNGA
+
+Pasal 5 — Batas Plafon
+| Segmen | Plafon Maksimal |
+|--------|----------------|
+| Mikro | Rp 500 juta |
+| Kecil | Rp 5 miliar |
+| Menengah | Rp 50 miliar |
+
+Pasal 6 — Suku Bunga
+Suku bunga kredit UMKM ditetapkan mengacu pada:
+- JIBOR 1 bulan + spread maksimal 3% per tahun untuk kredit mikro.
+- JIBOR 3 bulan + spread maksimal 2,5% per tahun untuk kredit kecil dan menengah.
+- Suku bunga KUR mengikuti ketentuan pemerintah: 6% per tahun efektif.
+
+BAB IV — RESTRUKTURISASI KREDIT
+
+Pasal 7 — Kondisi Restrukturisasi
+Bank dapat melakukan restrukturisasi kredit apabila:
+a. Debitur mengalami kesulitan pembayaran akibat kondisi force majeure.
+b. NPL debitur meningkat melebihi 30 hari keterlambatan.
+c. Terdapat perubahan signifikan pada kondisi bisnis debitur yang terverifikasi.
+
+Pasal 8 — Mekanisme Restrukturisasi
+Bentuk restrukturisasi yang dapat diberikan:
+1. Perpanjangan jangka waktu kredit (maksimal 2 tahun tambahan).
+2. Penurunan suku bunga sementara (grace period 6 bulan).
+3. Penundaan pembayaran pokok (moratorium pokok maksimal 12 bulan).
+4. Konversi kredit menjadi ekuitas (untuk kasus khusus, persetujuan direksi).
+
+Pasal 9 — Prosedur Pengajuan Restrukturisasi
+1. Debitur mengajukan permohonan tertulis ke Kantor Cabang.
+2. Account Manager melakukan analisis kelayakan dalam 5 hari kerja.
+3. Komite Kredit memberikan keputusan dalam 10 hari kerja.
+4. Perjanjian restrukturisasi ditandatangani kedua pihak.
+
+BAB V — STRATEGI EKSPANSI UMKM 2026
+
+Pasal 10 — Target Pertumbuhan
+Bank menargetkan pertumbuhan kredit UMKM sebesar 15% YoY pada 2026, dengan fokus di wilayah:
+- DKI Jakarta dan Jawa Barat: target 35% portofolio
+- Jawa Tengah dan Jawa Timur: target 30% portofolio
+- Wilayah Timur Indonesia: target 20% portofolio (program ekspansi khusus)
+- Wilayah lainnya: sisa portofolio
+
+Pasal 11 — Segmen Prioritas
+Segmen prioritas untuk ekspansi 2026:
+1. Usaha kuliner dan food & beverage (potensi tinggi pasca pandemi)
+2. Usaha ekspor produk kerajinan dan UMKM digital
+3. Sektor pertanian dan agribisnis di wilayah timur
+4. UMKM perempuan dan pemuda (program inklusi keuangan)

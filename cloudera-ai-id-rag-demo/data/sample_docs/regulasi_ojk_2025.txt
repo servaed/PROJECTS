@@ -1,0 +1,36 @@
+RINGKASAN REGULASI OJK 2025
+Peraturan OJK No. 15/POJK.03/2025 tentang Kualitas Aset Bank Umum
+
+BAGIAN I — KLASIFIKASI KUALITAS KREDIT
+
+1. Lancar (Performing)
+Kredit diklasifikasikan Lancar apabila pembayaran pokok dan/atau bunga tidak ada keterlambatan, atau terdapat keterlambatan paling lama 30 hari.
+
+2. Dalam Perhatian Khusus (Special Mention)
+Kredit diklasifikasikan DPK apabila terdapat keterlambatan pembayaran antara 31-90 hari.
+
+3. Kurang Lancar (Substandard)
+Kredit diklasifikasikan Kurang Lancar apabila terdapat keterlambatan 91-120 hari atau terdapat tunggakan bunga lebih dari 3 bulan.
+
+4. Diragukan (Doubtful)
+Kredit diklasifikasikan Diragukan apabila terdapat keterlambatan 121-180 hari.
+
+5. Macet (Loss)
+Kredit diklasifikasikan Macet apabila terdapat keterlambatan lebih dari 180 hari atau debitur dinyatakan pailit.
+
+BAGIAN II — KETENTUAN PENYISIHAN
+
+Bank wajib membentuk Penyisihan Penghapusan Aset (PPA) berdasarkan klasifikasi:
+- Lancar: 1%
+- DPK: 5%
+- Kurang Lancar: 15%
+- Diragukan: 50%
+- Macet: 100%
+
+BAGIAN III — PELAPORAN
+
+Bank wajib melaporkan kualitas aset kepada OJK secara bulanan paling lambat tanggal 12 bulan berikutnya melalui sistem APOLO OJK.
+
+BAGIAN IV — SANKSI
+
+Keterlambatan atau ketidakakuratan pelaporan dikenakan sanksi administratif berupa denda Rp 1 juta per hari keterlambatan, maksimal Rp 50 juta per laporan.
