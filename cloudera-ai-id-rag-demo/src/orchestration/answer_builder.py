@@ -1,15 +1,18 @@
 """Answer builder — the main orchestration pipeline.
 
-Runs the full flow for a user question:
-  1. Classify question mode
-  2. Retrieve documents and/or run SQL as needed
-  3. Call LLM to synthesize a Bahasa Indonesia answer
-  4. Assemble citations and query trace
-  5. Return a structured AnswerResult for the UI
+Exposes two APIs:
+  1. answer_question()      — single-call blocking (for tests / non-streaming callers)
+  2. prepare_answer()       — Phase 1: classify + retrieve (no LLM synthesis)
+     stream_synthesis()     — Phase 2: stream LLM tokens from prepared context
+     finalize_answer()      — Phase 3: wrap answer text + citations into AnswerResult
+
+The two-phase API lets the Streamlit UI show a spinner during retrieval and then
+stream the synthesis token-by-token via st.write_stream.
 """
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from dataclasses import dataclass, field
 
 from src.orchestration.router import classify_question, AnswerMode
@@ -26,6 +29,7 @@ from src.sql.guardrails import SqlGuardrailError
 from src.llm.inference_client import get_llm_client
 from src.llm.prompts import (
     build_document_prompt,
+    build_data_prompt,
     build_combined_prompt,
     ANSWER_NOT_FOUND_ID,
     ANSWER_SQL_FAILED_ID,
@@ -48,69 +52,152 @@ class AnswerResult:
         return bool(self.doc_citations) or self.sql_citation is not None
 
 
-def answer_question(question: str, top_k: int = 5) -> AnswerResult:
-    """Full orchestration pipeline — classify, retrieve, answer, cite."""
-    mode = classify_question(question)
-    llm = get_llm_client()
+@dataclass
+class AnswerPrep:
+    """Intermediate retrieval state — ready for LLM synthesis."""
+    mode: AnswerMode
+    question: str
+    doc_chunks: list[RetrievedChunk]
+    query_result: QueryResult | None
+    history: list[dict]
 
+
+# ── Phase 1 ────────────────────────────────────────────────────────────────
+
+
+def prepare_answer(
+    question: str,
+    history: list[dict] | None = None,
+    top_k: int = 5,
+) -> AnswerPrep:
+    """Classify the question and retrieve all context. No LLM synthesis here.
+
+    This is fast enough to run inside a spinner so the user sees retrieval
+    progress before the (slower) streaming synthesis begins.
+    """
+    mode = classify_question(question)
     doc_chunks: list[RetrievedChunk] = []
     query_result: QueryResult | None = None
 
-    # ── Document retrieval ──────────────────────────────────────────────
     if mode in ("dokumen", "gabungan"):
         doc_chunks = retrieve(question, top_k=top_k)
 
-    # ── SQL retrieval ───────────────────────────────────────────────────
     if mode in ("data", "gabungan"):
         try:
             sql, _ = generate_sql(question)
             query_result = run_query(sql)
         except SqlGuardrailError as exc:
             logger.warning("SQL guardrail blocked query: %s", exc)
-            query_result = None
         except Exception as exc:
             logger.error("SQL generation/execution failed: %s", exc)
-            query_result = None
 
-    # ── Answer synthesis ────────────────────────────────────────────────
-    answer = _synthesize(mode, question, doc_chunks, query_result, llm)
-
-    return AnswerResult(
-        answer=answer,
+    return AnswerPrep(
         mode=mode,
-        doc_citations=build_document_citations(doc_chunks),
-        sql_citation=build_sql_citation(query_result),
+        question=question,
+        doc_chunks=doc_chunks,
+        query_result=query_result,
+        history=history or [],
     )
 
 
-def _synthesize(
-    mode: AnswerMode,
-    question: str,
-    doc_chunks: list[RetrievedChunk],
-    query_result: QueryResult | None,
-    llm,
-) -> str:
-    if mode == "dokumen":
-        if not doc_chunks:
-            return ANSWER_NOT_FOUND_ID
-        context = _format_doc_context(doc_chunks)
-        messages = build_document_prompt(context, question)
-        return llm.chat(messages).content
+# ── Phase 2 ────────────────────────────────────────────────────────────────
 
-    if mode == "data":
-        if query_result is None or not query_result.succeeded:
-            return ANSWER_SQL_FAILED_ID
-        sql_summary = _format_sql_summary(query_result)
-        messages = build_document_prompt(sql_summary, question)
-        return llm.chat(messages).content
 
-    # gabungan
-    if not doc_chunks and (query_result is None or not query_result.succeeded):
+def stream_synthesis(prep: AnswerPrep) -> Generator[str, None, None]:
+    """Stream LLM answer tokens from a prepared context.
+
+    Yields the fallback string directly (without calling the LLM) when no
+    context was retrieved, so the caller always gets a complete response.
+    """
+    fallback = _get_fallback(prep)
+    if fallback:
+        yield fallback
+        return
+
+    messages = _build_messages(prep)
+    llm = get_llm_client()
+    yield from llm.stream_chat(messages)
+
+
+# ── Phase 3 ────────────────────────────────────────────────────────────────
+
+
+def finalize_answer(prep: AnswerPrep, answer_text: str) -> AnswerResult:
+    """Assemble the final AnswerResult from retrieval prep and streamed text."""
+    return AnswerResult(
+        answer=answer_text,
+        mode=prep.mode,
+        doc_citations=build_document_citations(prep.doc_chunks),
+        sql_citation=build_sql_citation(prep.query_result),
+    )
+
+
+# ── Single-call blocking API (backwards-compatible) ────────────────────────
+
+
+def answer_question(
+    question: str, history: list[dict] | None = None, top_k: int = 5
+) -> AnswerResult:
+    """Full orchestration pipeline — classify, retrieve, answer, cite.
+
+    Blocking (non-streaming). Used by tests and any caller that does not
+    need token-by-token streaming.
+    """
+    prep = prepare_answer(question, history=history, top_k=top_k)
+    fallback = _get_fallback(prep)
+    if fallback:
+        return AnswerResult(
+            answer=fallback,
+            mode=prep.mode,
+            doc_citations=[],
+            sql_citation=None,
+        )
+
+    llm = get_llm_client()
+    messages = _build_messages(prep)
+    answer = llm.chat(messages).content
+    return finalize_answer(prep, answer)
+
+
+# ── Internal helpers ───────────────────────────────────────────────────────
+
+
+def _get_fallback(prep: AnswerPrep) -> str | None:
+    """Return a fallback string if no retrieval results are available, else None."""
+    if prep.mode == "dokumen" and not prep.doc_chunks:
         return ANSWER_NOT_FOUND_ID
-    doc_context = _format_doc_context(doc_chunks) if doc_chunks else "_Tidak ada dokumen relevan._"
-    sql_summary = _format_sql_summary(query_result) if query_result and query_result.succeeded else "_Data tidak tersedia._"
-    messages = build_combined_prompt(doc_context, sql_summary, question)
-    return llm.chat(messages).content
+    if prep.mode == "data" and (prep.query_result is None or not prep.query_result.succeeded):
+        return ANSWER_SQL_FAILED_ID
+    if prep.mode == "gabungan":
+        no_docs = not prep.doc_chunks
+        no_data = prep.query_result is None or not prep.query_result.succeeded
+        if no_docs and no_data:
+            return ANSWER_NOT_FOUND_ID
+    return None
+
+
+def _build_messages(prep: AnswerPrep) -> list[dict]:
+    """Build the LLM prompt messages from retrieved context."""
+    if prep.mode == "dokumen":
+        context = _format_doc_context(prep.doc_chunks)
+        return build_document_prompt(context, prep.question, history=prep.history)
+
+    if prep.mode == "data":
+        sql_summary = _format_sql_summary(prep.query_result)
+        return build_data_prompt(sql_summary, prep.question, history=prep.history)
+
+    # gabungan — merge both sources
+    doc_context = (
+        _format_doc_context(prep.doc_chunks)
+        if prep.doc_chunks
+        else "_Tidak ada dokumen relevan._"
+    )
+    sql_summary = (
+        _format_sql_summary(prep.query_result)
+        if prep.query_result and prep.query_result.succeeded
+        else "_Data tidak tersedia._"
+    )
+    return build_combined_prompt(doc_context, sql_summary, prep.question, history=prep.history)
 
 
 def _format_doc_context(chunks: list[RetrievedChunk]) -> str:
@@ -120,7 +207,7 @@ def _format_doc_context(chunks: list[RetrievedChunk]) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-def _format_sql_summary(result: QueryResult) -> str:
-    if result.is_empty:
+def _format_sql_summary(result: QueryResult | None) -> str:
+    if result is None or result.is_empty:
         return "Tidak ada data yang cocok dengan permintaan."
     return result.to_markdown_table(max_rows=20)

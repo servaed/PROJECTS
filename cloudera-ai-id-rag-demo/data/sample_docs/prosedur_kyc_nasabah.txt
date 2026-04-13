@@ -1,0 +1,156 @@
+PROSEDUR KNOW YOUR CUSTOMER (KYC) DAN ANTI-PENCUCIAN UANG (APU)
+Nomor Dokumen : KYC-OPS-2025-003
+Berlaku Mulai  : 1 Januari 2025
+Revisi         : 2
+
+==========================================================================
+BAB I — PENDAHULUAN DAN DASAR HUKUM
+==========================================================================
+
+1.1 Tujuan
+Prosedur ini mengatur tata cara identifikasi, verifikasi, dan pemantauan
+nasabah dalam rangka memenuhi ketentuan Anti-Pencucian Uang dan
+Pencegahan Pendanaan Terorisme (APU-PPT) serta memitigasi risiko
+penyalahgunaan produk dan layanan perbankan.
+
+1.2 Dasar Hukum
+- Undang-Undang No. 8 Tahun 2010 tentang Pencegahan dan Pemberantasan
+  Tindak Pidana Pencucian Uang
+- Peraturan OJK No. 12/POJK.01/2017 tentang Penerapan Program APU-PPT
+- Peraturan OJK No. 11/POJK.03/2022 tentang Penyelenggaraan TTPU oleh LJK
+- SEOJK No. 37/SEOJK.03/2016 tentang Pedoman Standar KYC bagi BPR
+- Peraturan Bank Indonesia No. 19/10/PBI/2017 tentang Gerbang Pembayaran
+  Nasional
+
+==========================================================================
+BAB II — KLASIFIKASI RISIKO NASABAH
+==========================================================================
+
+2.1 Kategori Risiko
+
+Seluruh nasabah diklasifikasikan ke dalam tiga kategori risiko:
+
+a) Risiko Rendah
+   Kriteria: nasabah perorangan WNI dengan penghasilan tetap, rekening
+   giro/tabungan standar, transaksi konsisten dengan profil.
+   CDD: Customer Due Diligence standar.
+
+b) Risiko Menengah
+   Kriteria: nasabah badan usaha skala kecil-menengah, nasabah dengan
+   eksposur luar negeri terbatas, atau nasabah yang beralih dari produk
+   standar ke produk derivatif.
+   CDD: Enhanced Due Diligence ringan — verifikasi tambahan dokumen badan
+   usaha dan konfirmasi kepemilikan manfaat (beneficial owner).
+
+c) Risiko Tinggi
+   Kriteria: Politically Exposed Persons (PEP), nasabah dari yurisdiksi
+   berisiko tinggi (FATF list), badan usaha dengan struktur kepemilikan
+   kompleks, nasabah dengan transaksi tunai di atas Rp 500 juta per bulan.
+   CDD: Enhanced Due Diligence penuh — verifikasi sumber dana, wawancara
+   langsung, persetujuan pejabat senior, pemantauan triwulanan.
+
+2.2 Pembaruan Profil Risiko
+- Risiko Rendah  : tinjauan setiap 3 tahun
+- Risiko Menengah: tinjauan setiap 2 tahun
+- Risiko Tinggi  : tinjauan setiap 1 tahun atau saat ada transaksi
+                   mencurigakan
+
+==========================================================================
+BAB III — PROSEDUR IDENTIFIKASI DAN VERIFIKASI
+==========================================================================
+
+3.1 Nasabah Perorangan — Dokumen Wajib
+a) Kartu Tanda Penduduk (KTP) elektronik — asli dan fotokopi
+b) Nomor Pokok Wajib Pajak (NPWP) — untuk produk tertentu
+c) Kartu Keluarga — untuk pembukaan rekening bersama
+d) Paspor atau KITAS — untuk nasabah WNA
+
+3.2 Nasabah Badan Usaha — Dokumen Wajib
+a) Akta pendirian dan akta perubahan terakhir (terlegalisir)
+b) Nomor Induk Berusaha (NIB) dari OSS
+c) NPWP Perusahaan
+d) Surat Keterangan Domisili Usaha
+e) KTP seluruh pengurus dan pemegang saham > 25%
+f) Beneficial Ownership Declaration Form (BODF)
+
+3.3 Verifikasi Dokumen
+- Petugas wajib membandingkan dokumen asli dengan fotokopi secara tatap
+  muka. Verifikasi jarak jauh (e-KYC) hanya diperbolehkan untuk rekening
+  digital dengan batas transaksi Rp 20 juta per bulan.
+- Periksa keaslian KTP melalui Dukcapil API atau BPJS matching.
+- Seluruh dokumen digital di-scan dan disimpan dalam sistem manajemen
+  dokumen (DMS) dengan retensi minimum 10 tahun.
+
+==========================================================================
+BAB IV — PROSEDUR e-KYC (VERIFIKASI DIGITAL)
+==========================================================================
+
+4.1 Cakupan e-KYC
+e-KYC diperbolehkan untuk pembukaan rekening tabungan digital tanpa cabang
+dengan batasan:
+- Saldo maksimum: Rp 20 juta
+- Transaksi debit per hari: Rp 5 juta
+- Nasabah perorangan WNI, usia 17–65 tahun
+
+4.2 Komponen e-KYC
+a) Selfie liveness check (anti-spoofing): wajib melewati threshold kualitas ≥ 90%
+b) OCR KTP elektronik dengan validasi chip NFC (opsional, dianjurkan)
+c) Face matching antara foto selfie dan foto KTP: threshold kemiripan ≥ 85%
+d) Deduplication check: satu NIK hanya dapat membuka satu rekening digital
+
+4.3 Penanganan Kegagalan e-KYC
+Jika face matching < 85% atau liveness check gagal:
+- Sistem otomatis menolak permohonan
+- Nasabah diarahkan ke cabang untuk verifikasi manual
+- Insiden dicatat dalam sistem dan dilaporkan ke Unit Kepatuhan
+
+==========================================================================
+BAB V — PEMANTAUAN TRANSAKSI DAN PELAPORAN
+==========================================================================
+
+5.1 Transaksi yang Wajib Dipantau
+- Transaksi tunai ≥ Rp 100 juta atau setara dalam satu hari (Cash
+  Transaction Report / CTR)
+- Transaksi transfer internasional ≥ USD 10.000 atau setara
+- Transaksi yang terdeteksi mencurigakan berdasarkan rule engine AML
+
+5.2 Kewajiban Pelaporan ke PPATK
+- Laporan Transaksi Keuangan Tunai (LTKT): paling lambat 14 hari kerja
+  sejak tanggal transaksi
+- Laporan Transaksi Keuangan Mencurigakan (LTKM): paling lambat 3 hari
+  kerja sejak transaksi diketahui mencurigakan
+- Pelaporan dilakukan melalui portal GRIPS PPATK
+
+5.3 Larangan Tipping-Off
+Petugas DILARANG memberitahukan kepada nasabah atau pihak lain bahwa
+suatu transaksi sedang atau akan dilaporkan ke PPATK. Pelanggaran
+dikenakan sanksi pidana sesuai UU No. 8/2010.
+
+==========================================================================
+BAB VI — PELATIHAN DAN TANGGUNG JAWAB
+==========================================================================
+
+6.1 Pelatihan Wajib
+- Seluruh karyawan front-line wajib mengikuti pelatihan APU-PPT setiap
+  12 bulan
+- Karyawan baru wajib lulus uji sertifikasi APU-PPT sebelum menangani
+  nasabah
+- Petugas KYC senior wajib memperoleh sertifikasi CAMS (Certified
+  Anti-Money Laundering Specialist)
+
+6.2 Tanggung Jawab
+- Unit Kepatuhan    : pengawasan program APU-PPT, pelaporan ke regulator
+- Unit Operasional  : pelaksanaan prosedur KYC harian
+- Satuan Audit Internal: pengujian efektivitas prosedur minimal tahunan
+- Direksi           : penetapan kebijakan dan budgeting program APU-PPT
+
+==========================================================================
+BAB VII — PENUTUP
+==========================================================================
+
+Prosedur ini wajib ditinjau setiap tahun atau setiap kali terdapat
+perubahan regulasi. Pertanyaan terkait prosedur ini dapat diajukan kepada
+Unit Kepatuhan melalui email: kepatuhan@bank.internal.
+
+Ditetapkan di Jakarta, 15 Desember 2024
+Direktur Kepatuhan
