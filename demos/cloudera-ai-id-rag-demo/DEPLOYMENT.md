@@ -30,12 +30,17 @@ Cloudera AI Workbench
 │
 ├── AI Application (this app)
 │   ├── FastAPI + uvicorn      port 8080  ← exposed by CML reverse proxy
-│   │     ├── React SPA        GET /          (served from app/static/)
-│   │     ├── Chat stream      POST /api/chat (Server-Sent Events)
-│   │     ├── System status    GET /api/status
-│   │     └── Sample prompts   GET /api/samples
-│   ├── RAG pipeline           FAISS vector store on pod filesystem (or NFS)
-│   └── SQL pipeline           SQLite demo DB (or external JDBC)
+│   │     ├── React SPA        GET /              chat interface
+│   │     ├── Health dashboard GET /setup         component status
+│   │     ├── Config wizard    GET /configure     set env vars via browser
+│   │     ├── Chat stream      POST /api/chat     Server-Sent Events
+│   │     ├── System status    GET /api/status    sidebar indicators
+│   │     ├── Sample prompts   GET /api/samples
+│   │     ├── Setup detail     GET /api/setup     detailed health report
+│   │     ├── Config read      GET /api/configure masked current config
+│   │     └── Config write     POST /api/configure write data/.env.local
+│   ├── RAG pipeline           FAISS vector store + SHA-256 integrity hash
+│   └── SQL pipeline           sqlparse AST guardrails + SQLAlchemy
 │
 └── AI Inference Service       (optional — set LLM_PROVIDER=cloudera)
     └── Your model endpoint    OpenAI-compatible REST API
@@ -89,61 +94,58 @@ git ls-remote https://github.com/your-org/cloudera-ai-id-rag-demo
 
 ## 4. Configure Your LLM Provider
 
-Set `LLM_PROVIDER` to one of the supported values and fill in the
-corresponding credentials (see [Section 6](#6-set-environment-variables)).
+You can set credentials in two ways (use whichever fits your workflow):
+
+**Option A — Cloudera AI platform environment variables** (Section 6):
+Set variables in the Applications UI before or after deploying.
+
+**Option B — Browser configure wizard** (after first deploy):
+Open `http://<app-url>/configure`, fill in credentials, and click **Save Configuration**.
+Values are persisted to `data/.env.local` and survive restarts.
 
 ### Cloudera AI Inference (recommended for Cloudera demos)
 
-1. Go to **AI Inference** in your workspace
-2. Deploy a model (e.g. `meta-llama-3-8b-instruct`, `mistral-7b-instruct`)
-3. Copy the **API URL** and **API Key** from the endpoint detail page
-4. Set in environment variables:
-   ```
-   LLM_PROVIDER=cloudera
-   CLOUDERA_INFERENCE_URL=https://your-workspace.cloudera.site/namespaces/serving/endpoints/your-model
-   CLOUDERA_INFERENCE_API_KEY=<key from inference endpoint>
-   CLOUDERA_INFERENCE_MODEL_ID=meta-llama-3-8b-instruct
-   ```
+```
+LLM_PROVIDER=cloudera
+LLM_BASE_URL=https://your-workspace.cloudera.site/namespaces/serving/endpoints/your-model/v1
+LLM_API_KEY=<key from inference endpoint>
+LLM_MODEL_ID=meta-llama-3-8b-instruct
+```
 
 ### OpenAI
 
 ```
 LLM_PROVIDER=openai
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL_ID=gpt-4o
+LLM_API_KEY=sk-...
+LLM_MODEL_ID=gpt-4o
 ```
 
 ### Azure OpenAI
 
 ```
-LLM_PROVIDER=azure
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
-AZURE_OPENAI_API_KEY=<key>
-AZURE_OPENAI_DEPLOYMENT=gpt-4o          # your deployment name, not the model name
-AZURE_OPENAI_API_VERSION=2024-02-01
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://your-resource.openai.azure.com/openai/deployments/gpt-4o
+LLM_API_KEY=<azure key>
+LLM_MODEL_ID=gpt-4o
 ```
 
 ### Amazon Bedrock
 
 ```
 LLM_PROVIDER=bedrock
-BEDROCK_REGION=us-east-1
-BEDROCK_MODEL_ID=anthropic.claude-3-sonnet-20240229-v1:0
+LLM_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
 
-# Option A — IAM instance role (recommended for CML on AWS): leave keys empty
-BEDROCK_ACCESS_KEY=
-BEDROCK_SECRET_KEY=
-
-# Option B — explicit credentials
-BEDROCK_ACCESS_KEY=AKIA...
-BEDROCK_SECRET_KEY=...
+# Use standard AWS credential env vars (not managed by the configure wizard):
+AWS_DEFAULT_REGION=us-east-1
+AWS_ACCESS_KEY_ID=AKIA...        # or leave empty for IAM instance role
+AWS_SECRET_ACCESS_KEY=...
 ```
 
 Popular Bedrock model IDs:
 
 | Model | ID |
 |---|---|
-| Claude 3.5 Sonnet | `anthropic.claude-3-5-sonnet-20241022-v2:0` |
+| Claude 3.5 Sonnet v2 | `anthropic.claude-3-5-sonnet-20241022-v2:0` |
 | Claude 3 Sonnet | `anthropic.claude-3-sonnet-20240229-v1:0` |
 | Llama 3 70B | `meta.llama3-70b-instruct-v1:0` |
 | Mistral Large | `mistral.mistral-large-2402-v1:0` |
@@ -152,8 +154,16 @@ Popular Bedrock model IDs:
 
 ```
 LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=sk-ant-...
-ANTHROPIC_MODEL_ID=claude-3-5-sonnet-20241022
+LLM_API_KEY=sk-ant-...
+LLM_MODEL_ID=claude-sonnet-4-6
+```
+
+### Local (Ollama / LM Studio)
+
+```
+LLM_PROVIDER=local
+LLM_BASE_URL=http://localhost:11434/v1
+LLM_MODEL_ID=llama3.2
 ```
 
 ---
@@ -185,9 +195,20 @@ Click **+ New Application** (top right corner).
 | **File** | — | Leave empty (using Git) |
 | **Git Repository URL** | `https://github.com/your-org/cloudera-ai-id-rag-demo` | Must be reachable from workspace |
 | **Branch** | `main` | |
-| **Launch Command** | `bash deployment/launch_app.sh` | Runs pip install, DB seed, vector ingest, then uvicorn (FastAPI) |
+| **Launch Command** | `bash deployment/launch_app.sh` | Handles all startup steps — see below |
 | **Runtime** | Python 3.10 (Standard or ML Runtime) | Any CML runtime with Python 3.10+ |
 | **Enable Spark** | Off | Not needed |
+
+#### What `launch_app.sh` does on startup
+
+```
+[0/5] Load data/.env.local if it exists (written by /configure wizard)
+[1/5] pip install -r requirements.txt (skipped if already done)
+[2/5] Install provider-specific SDK if needed (boto3 / anthropic)
+[3/5] Seed SQLite demo database (idempotent)
+[4/5] Ingest documents into FAISS vector store (skipped if index exists)
+[5/5] Start uvicorn on port 8080
+```
 
 ---
 
@@ -213,45 +234,34 @@ Under **Runtime / Resource Profile**:
 
 ### Step 5 — Authentication
 
-Under **Authentication**:
-
 | Option | When to use |
 |---|---|
 | **Unauthenticated** | Internal demos, no sensitive data |
 | **Authenticate via SSO** | Production; uses your workspace SSO (LDAP/AD/SAML) |
 
-For SSO, any user who can log in to the CML workspace can access the app.
-No additional auth config is needed in the app itself.
-
 ---
 
-### Step 6 — Set Environment Variables
+### Step 6 — Set Environment Variables (optional at deploy time)
 
-Click **Add Environment Variable** and add each variable from
-[Section 6](#6-set-environment-variables).
+You can set LLM credentials here **or** use the `/configure` wizard after the app is running.
 
-**At minimum, set these before deploying:**
+**Minimum to set before deploying (if using platform env vars):**
 
 ```
-LLM_PROVIDER
-CLOUDERA_INFERENCE_URL    (or your provider's equivalent)
-CLOUDERA_INFERENCE_API_KEY
+LLM_PROVIDER=cloudera
+LLM_BASE_URL=https://...
+LLM_API_KEY=...
+LLM_MODEL_ID=meta-llama-3-8b-instruct
 ```
+
+If you leave these blank, the app will start but the LLM indicator in the sidebar
+will be red. Open `/configure` to set credentials via the browser.
 
 ---
 
 ### Step 7 — Deploy
 
 Click **Deploy Application**.
-
-The status indicator will show:
-
-| Status | Meaning |
-|---|---|
-| `Starting` | Container is pulling and starting |
-| `Running` | App is live — click the URL to open it |
-| `Stopped` | App was manually stopped |
-| `Failed` | Startup error — check logs |
 
 First startup takes **3–10 minutes** because:
 - `pip install -r requirements.txt` runs on first boot
@@ -264,17 +274,30 @@ Subsequent restarts are faster (deps cached, vector store persists).
 
 ## 6. Set Environment Variables
 
-Set these in the **Environment Variables** section of the Application config.
-All values from `.env.example` can be set here.
+### Via the configure wizard (recommended for credentials)
 
-### Minimum required
+After the app is running, open `http://<app-url>/configure`:
+
+1. Select your LLM provider from the dropdown
+2. Fill in the URL, API key, and model ID for that provider
+3. Click **Save Configuration**
+4. Restart the app from the Cloudera AI Applications UI
+
+The wizard shows source badges next to each field:
+- 🟢 **From environment** — already set via platform UI, field is locked
+- 🔵 **From saved file** — set by a previous wizard save
+- ⬜ **Not set** — using code default
+
+### Via Cloudera AI platform UI
+
+Set these in the **Environment Variables** section of the Application config.
 
 | Variable | Example value | Notes |
 |---|---|---|
 | `LLM_PROVIDER` | `cloudera` | See Section 4 for all options |
-| `CLOUDERA_INFERENCE_URL` | `https://...` | Your inference endpoint URL |
-| `CLOUDERA_INFERENCE_API_KEY` | `sk-...` | Inference API key |
-| `CLOUDERA_INFERENCE_MODEL_ID` | `meta-llama-3-8b-instruct` | Model name |
+| `LLM_BASE_URL` | `https://...` | Inference endpoint URL |
+| `LLM_API_KEY` | `sk-...` | API key |
+| `LLM_MODEL_ID` | `meta-llama-3-8b-instruct` | Model name |
 
 ### Document storage
 
@@ -318,70 +341,72 @@ All values from `.env.example` can be set here.
 
 After status changes to **Running**:
 
-### 8a. Check the status panel
+### 8a. Open the health dashboard
 
-Open the app URL. In the sidebar, the **Status Sistem** panel should show:
+Navigate to `http://<app-url>/setup`. All five cards should be green:
 
-- ✅ **Vector Store: Aktif** — FAISS index built and loaded
-- ✅ **Database: 3 tabel** — SQLite connected
-- ✅ **LLM: meta-llama-3-8b-instruct** — endpoint configured
+- ✅ **Vector Store** — FAISS index built and integrity hash verified
+- ✅ **Database** — tables found with row counts
+- ✅ **LLM** — endpoint reachable and ping latency shown
+- ✅ **Embeddings** — provider and model confirmed
+- ✅ **Documents** — source files listed
 
-If any indicator is red, check the logs.
+If any card is red, a **fix hint** is shown under the status. Click **⚙ Configure**
+to open the credential wizard.
 
-### 8b. Test a document question
+### 8b. Check the sidebar status indicator
+
+Open the main app (`/`). The sidebar **System** row should show:
+> ● All systems operational
+
+If any component is red, the sidebar shows which one failed.
+
+### 8c. Test a document question
 
 Type:
 > *Jelaskan ketentuan restrukturisasi kredit berdasarkan dokumen kebijakan.*
 
-Expected: the answer cites a source document in the **Sumber Dokumen** panel.
+Expected: streaming answer with source document cards. Expand a card and click
+**▼ Show full chunk** to verify keyword highlighting works.
 
-### 8c. Test a data question
+### 8d. Test a data question
 
 Type:
 > *Berapa total outstanding pinjaman UMKM wilayah Jakarta pada Maret 2026?*
 
-Expected: the answer shows a number and the **Query Data Terstruktur** panel
-shows the executed SQL and result table.
+Expected: streaming answer + SQL trace panel showing the generated query and result table.
 
-### 8d. Test conversation memory
+### 8e. Test the auto-play demo
 
-Ask a follow-up:
-> *Bandingkan dengan wilayah Surabaya.*
+Click **▶ Run Demo** in the sidebar. All six sample prompts should run
+automatically. Click **⏹ Stop Demo** to interrupt.
 
-Expected: the assistant understands "compare with Surabaya" without
-repeating the full context.
+### 8f. Check application logs
 
-### 8e. Check application logs
-
-In the Applications list, click **...** → **View Logs** next to your app.
-Startup should show:
+In the Applications list, click **...** → **View Logs**. Startup should show:
 
 ```
-========================================================
- Cloudera AI Application — Startup
-========================================================
- Python   : Python 3.10.x
- Port     : 8080
- Provider : cloudera
- CWD      : /home/cdsw
-========================================================
+[0/5] No override file found at data/.env.local (use /configure to create one).
 [1/5] Dependencies: already installed
 [2/5] Provider SDK: not required for 'cloudera'.
 [3/5] Database: found (3 tables).
 [4/5] Vector store: found at ./data/vector_store — skipping ingestion.
 [5/5] Starting FastAPI server (React UI) on port 8080...
-========================================================
-INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
 INFO  SPA index.html cached (NNNNN bytes)
-INFO  Startup check — vector store: OK (./data/vector_store)
+INFO  Startup check — vector store: OK
 INFO  Startup check — database: OK (3 tables)
 INFO  Startup check — LLM: configured (provider=cloudera, model=meta-llama-3-8b-instruct)
 ```
 
-If a startup check shows `WARNING` instead of `INFO`, the corresponding feature
-(vector store / database / LLM) is not ready and questions will fail until it is fixed.
+If an override file was saved via `/configure`:
+```
+[0/5] Loading config overrides from data/.env.local ...
+    set LLM_BASE_URL from override file
+    set LLM_API_KEY from override file
+[0/5] Override file loaded.
+```
 
-### 8f. Run the test suite
+### 8g. Run the test suite
 
 From a CML Session terminal (or locally before deploying):
 
@@ -389,41 +414,49 @@ From a CML Session terminal (or locally before deploying):
 pytest tests/ -v
 ```
 
-All tests must pass before deploying to production. The three test suites cover:
-- `test_sql_guardrails.py` — SQL injection, subquery bypass, table allowlist
-- `test_router.py` — LLM classification, error fallback behaviour
-- `test_retrieval.py` — chunking, citation building, mocked vector store
+All tests must pass before deploying to production:
+
+| Suite | Tests | Coverage |
+|-------|-------|---------|
+| `test_sql_guardrails.py` | 25 | SQL injection, subquery bypass, CTE, allowlist |
+| `test_router.py` | 12 | LLM classification, aliases, error fallback |
+| `test_retrieval.py` | 17 | Chunking, citations, mocked vector store |
+| `test_api.py` | 12 | FastAPI endpoints, SSE shape, LLM provider indicators |
 
 ---
 
 ## 9. Update the Application
 
-When you push new code to the Git branch:
+### Code changes
 
-1. In the Applications list, click **...** → **Restart**
-2. The container pulls the latest commit and reruns `launch_app.sh`
-3. Dependencies and vector store are re-checked (not rebuilt unless missing)
+1. Push changes to the Git branch
+2. In Applications list, click **...** → **Restart**
+3. The container pulls the latest commit and reruns `launch_app.sh`
+4. Dependencies and vector store are re-checked (not rebuilt unless missing)
 
-To force a full re-ingestion (e.g. after adding new documents):
+### Credential changes
+
+1. Open `http://<app-url>/configure`
+2. Update the relevant fields and click **Save Configuration**
+3. Click **Restart** in the Cloudera AI Applications UI
+
+### Forcing document re-ingestion
 
 1. Stop the application
-2. Delete the vector store directory (this also removes the integrity hash file):
+2. Delete the vector store directory:
    ```bash
    rm -rf data/vector_store/
    ```
-   Or set a new `VECTOR_STORE_PATH` environment variable to a fresh path.
-3. Restart — `launch_app.sh` detects the missing index, re-ingests all documents,
-   and writes a new `index.sha256` integrity file automatically.
+3. Restart — `launch_app.sh` detects the missing index and re-ingests all documents,
+   writing a fresh `index.sha256` integrity file automatically.
 
 > **Note:** Never copy a vector store from another environment without also copying
 > its `index.sha256` file. A missing or mismatched hash causes the app to refuse
-> loading the index and log an error on startup.
+> loading the index.
 
 ---
 
 ## 10. Production Checklist
-
-Before going to production with real enterprise data:
 
 ### Data & storage
 
@@ -439,23 +472,23 @@ Before going to production with real enterprise data:
 
 - [ ] Enable SSO authentication on the Application (never use Unauthenticated
       with real data)
-- [ ] Rotate the LLM API key and set it as an environment variable — never
-      commit it to Git
+- [ ] Rotate the LLM API key and set it as a platform environment variable — it
+      will be locked in the configure wizard ("From environment")
 - [ ] Set `LOG_LEVEL=WARNING` or `ERROR` to avoid logging sensitive query content
-- [ ] Validate `SQL_APPROVED_TABLES` against the principle of least privilege —
-      expose only the tables required for the demo, nothing else
+- [ ] Validate `SQL_APPROVED_TABLES` against the principle of least privilege
 - [ ] Confirm the vector store `index.sha256` file is present after every ingestion
       run; the app refuses to load an index whose hash is missing or mismatched
-- [ ] Verify outbound HTTPS from the pod is restricted to known LLM endpoints only
-      (configure network policy in the workspace if available)
+- [ ] Verify outbound HTTPS from the pod is restricted to known LLM endpoints
+- [ ] Restrict access to `GET /configure` and `POST /api/configure` in production
+      (or remove the configure wizard entirely if all vars are managed by the platform)
 
 ### Reliability
 
 - [ ] Set replica count ≥ 2 for high availability
 - [ ] Use `GET /api/status` as the health check endpoint — it returns JSON with
-      `vector_store.ok`, `database.ok`, and `llm.ok` fields for load balancer probes
+      `vector_store.ok`, `database.ok`, and `llm.ok` for load balancer probes
 - [ ] Pre-build the vector store and store it on a persistent volume so
-      startup is fast and does not depend on the first container to build it
+      startup does not depend on the first container to build it
 
 ### Embeddings
 
@@ -468,83 +501,49 @@ Before going to production with real enterprise data:
 
 ## 11. Troubleshooting
 
-### App shows `Failed` or does not start
-
-Check **View Logs**. Common causes:
-
-| Log message | Fix |
+| Symptom | Fix |
 |---|---|
 | `ModuleNotFoundError` | `pip install` failed — check network access to PyPI |
-| `Connection refused` on LLM URL | Wrong `CLOUDERA_INFERENCE_URL` or endpoint not running |
-| `Port already in use` | Another process on 8080 — check for zombie processes |
-| `Address already in use: 8080` | Another process on port 8080 — check for zombie uvicorn processes |
-| `FAISS index failed to load` | Corrupted index — delete `data/vector_store/` to force rebuild |
+| `Connection refused` on LLM URL | Wrong `LLM_BASE_URL` or endpoint not running |
+| `Port already in use: 8080` | Zombie uvicorn process — restart the application |
 | `integrity check FAILED` | Vector store hash mismatch — delete `data/vector_store/` and re-ingest |
-| `index.sha256` not found | Index was built without the integrity hash (older run) — re-ingest to generate it |
-| `SPA not found` | `app/static/index.html` is missing — check repo contents and redeploy |
+| `index.sha256 not found` | Index built without hash (older run) — re-ingest to generate it |
+| `SPA not found` | `app/static/index.html` missing — check repo contents and redeploy |
+| LLM indicator red for Bedrock/Anthropic | These providers have no `LLM_BASE_URL` — status is correctly inferred from `LLM_PROVIDER` |
+| `/configure` shows "From environment" but changes don't apply | Platform env vars take precedence; update the value in the Cloudera AI Applications UI instead |
+| Config saved but not applied after restart | Check that `launch_app.sh` ran step [0/5] and sourced `data/.env.local` |
 
 ### Sidebar shows `Vector Store: Belum diingest`
 
-The FAISS index was not built. This happens when:
-- `DOCS_SOURCE_PATH` is empty or doesn't exist
-- The ingestion step failed during startup (check logs for `document_loader` errors)
-- `VECTOR_STORE_PATH` points to a non-writable location
+The FAISS index was not built. Check:
+- `DOCS_SOURCE_PATH` contains at least one `.txt`, `.pdf`, or `.docx` file
+- Ingestion step succeeded in startup logs (look for `document_loader`)
+- `VECTOR_STORE_PATH` is writable
 
-Fix: check `DOCS_SOURCE_PATH` contains at least one `.txt`, `.pdf`, or `.docx` file,
-then restart the app.
+### LLM shows `Tidak Tersedia`
 
-### Sidebar shows `Database: Tidak terhubung`
-
-- For the demo SQLite path: `data/sample_tables/demo.db` — the file doesn't exist.
-  The launch script seeds it automatically; if it failed, check logs.
-- For external databases: check `DATABASE_URL` format and network connectivity.
-
-### LLM shows `Tidak Tersedia` (LLM URL not configured)
-
-`CLOUDERA_INFERENCE_URL` (or the equivalent for your provider) is empty.
-Set the correct env var and restart.
+The LLM provider is not configured. Either:
+- Open `/configure` and fill in the LLM credentials, or
+- Set `LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL_ID` in the
+  Cloudera AI Application environment variables and restart
 
 ### Answers are empty or the app times out
 
-The LLM endpoint is configured but unreachable or slow. Check:
+The LLM endpoint is configured but unreachable. Check:
 - The inference endpoint is running and not scaled to zero
 - Network connectivity between the app pod and the inference endpoint
-- The API key is valid (test with `curl -H "Authorization: Bearer $API_KEY" $URL/models`)
-
-### First startup is very slow (>10 min)
-
-The HuggingFace embeddings model is downloading. Expected once per fresh pod.
-To eliminate this delay in production, switch to `EMBEDDINGS_PROVIDER=openai`
-or pre-cache the model on a shared volume.
+- The API key is valid: `curl -H "Authorization: Bearer $LLM_API_KEY" $LLM_BASE_URL/models`
 
 ---
 
 ## 12. Environment Variable Reference
 
-Full list of supported environment variables:
-
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `LLM_PROVIDER` | Yes | `cloudera` | `cloudera` / `openai` / `azure` / `bedrock` / `anthropic` / `local` |
-| `CLOUDERA_INFERENCE_URL` | If cloudera | — | Cloudera AI Inference endpoint URL |
-| `CLOUDERA_INFERENCE_API_KEY` | If cloudera | — | Inference service API key |
-| `CLOUDERA_INFERENCE_MODEL_ID` | No | `meta-llama-3-8b-instruct` | Model name on the endpoint |
-| `OPENAI_API_KEY` | If openai | — | OpenAI API key |
-| `OPENAI_MODEL_ID` | No | `gpt-4o` | OpenAI model name |
-| `AZURE_OPENAI_ENDPOINT` | If azure | — | `https://resource.openai.azure.com` |
-| `AZURE_OPENAI_API_KEY` | If azure | — | Azure key |
-| `AZURE_OPENAI_DEPLOYMENT` | No | `gpt-4o` | Azure deployment name |
-| `AZURE_OPENAI_API_VERSION` | No | `2024-02-01` | API version string |
-| `BEDROCK_REGION` | If bedrock | `us-east-1` | AWS region |
-| `BEDROCK_MODEL_ID` | If bedrock | `anthropic.claude-3-sonnet-20240229-v1:0` | Bedrock model ID |
-| `BEDROCK_ACCESS_KEY` | No | — | AWS access key (leave empty for instance role) |
-| `BEDROCK_SECRET_KEY` | No | — | AWS secret key |
-| `BEDROCK_SESSION_TOKEN` | No | — | STS session token |
-| `BEDROCK_PROFILE` | No | — | Named AWS profile |
-| `ANTHROPIC_API_KEY` | If anthropic | — | Anthropic API key |
-| `ANTHROPIC_MODEL_ID` | No | `claude-3-5-sonnet-20241022` | Claude model name |
-| `LOCAL_LLM_URL` | If local | `http://localhost:11434/v1` | Local server base URL |
-| `LOCAL_LLM_MODEL_ID` | No | `llama3` | Local model name |
+| `LLM_PROVIDER` | Yes | `cloudera` | `cloudera` / `openai` / `bedrock` / `anthropic` / `local` |
+| `LLM_BASE_URL` | Most providers | — | OpenAI-compatible endpoint base URL |
+| `LLM_API_KEY` | Most providers | — | API key for the LLM provider |
+| `LLM_MODEL_ID` | Yes | — | Model identifier (varies by provider) |
 | `EMBEDDINGS_PROVIDER` | No | `local` | `local` or `openai` |
 | `EMBEDDINGS_MODEL` | No | `intfloat/multilingual-e5-base` | HuggingFace model ID |
 | `VECTOR_STORE_PATH` | No | `./data/vector_store` | FAISS index directory |
@@ -553,5 +552,9 @@ Full list of supported environment variables:
 | `DATABASE_URL` | No | SQLite demo | SQLAlchemy connection URL |
 | `SQL_APPROVED_TABLES` | No | `kredit_umkm,nasabah,cabang` | Allowlist of queryable tables |
 | `SQL_MAX_ROWS` | No | `500` | Max rows per query (hard cap: 1000) |
-| `APP_PORT` | No | `8080` | Must stay 8080 for CML compatibility |
+| `APP_PORT` | No | `8080` | **Must stay 8080** for Cloudera AI compatibility |
 | `LOG_LEVEL` | No | `INFO` | `DEBUG` / `INFO` / `WARNING` / `ERROR` |
+
+> All variables can be set via the **Cloudera AI Applications environment variables UI**
+> or via the browser **`/configure` wizard** (which writes `data/.env.local`).
+> Platform environment variables always take precedence over the override file.
