@@ -29,12 +29,16 @@ on Cloudera AI Workbench (CML).
 Cloudera AI Workbench
 │
 ├── AI Application (this app)
-│   ├── Streamlit UI          port 8080  ← exposed by CML reverse proxy
-│   ├── RAG pipeline          FAISS vector store on pod filesystem (or NFS)
-│   └── SQL pipeline          SQLite demo DB (or external JDBC)
+│   ├── FastAPI + uvicorn      port 8080  ← exposed by CML reverse proxy
+│   │     ├── React SPA        GET /          (served from app/static/)
+│   │     ├── Chat stream      POST /api/chat (Server-Sent Events)
+│   │     ├── System status    GET /api/status
+│   │     └── Sample prompts   GET /api/samples
+│   ├── RAG pipeline           FAISS vector store on pod filesystem (or NFS)
+│   └── SQL pipeline           SQLite demo DB (or external JDBC)
 │
-└── AI Inference Service      (optional — set LLM_PROVIDER=cloudera)
-    └── Your model endpoint   OpenAI-compatible REST API
+└── AI Inference Service       (optional — set LLM_PROVIDER=cloudera)
+    └── Your model endpoint    OpenAI-compatible REST API
 ```
 
 The app **must listen on port 8080** — Cloudera AI Applications proxies all
@@ -181,7 +185,7 @@ Click **+ New Application** (top right corner).
 | **File** | — | Leave empty (using Git) |
 | **Git Repository URL** | `https://github.com/your-org/cloudera-ai-id-rag-demo` | Must be reachable from workspace |
 | **Branch** | `main` | |
-| **Launch Command** | `bash deployment/launch_app.sh` | Runs pip install, DB seed, vector ingest, then Streamlit |
+| **Launch Command** | `bash deployment/launch_app.sh` | Runs pip install, DB seed, vector ingest, then uvicorn (FastAPI) |
 | **Runtime** | Python 3.10 (Standard or ML Runtime) | Any CML runtime with Python 3.10+ |
 | **Enable Spark** | Off | Not needed |
 
@@ -353,13 +357,42 @@ In the Applications list, click **...** → **View Logs** next to your app.
 Startup should show:
 
 ```
-=== Cloudera AI Application Startup ===
-Port: 8080
-Dependencies: already installed
-Database: seeded (3 tables)
-Vector store: ingestion complete — 17 chunks indexed
-Starting Streamlit on port 8080...
+========================================================
+ Cloudera AI Application — Startup
+========================================================
+ Python   : Python 3.10.x
+ Port     : 8080
+ Provider : cloudera
+ CWD      : /home/cdsw
+========================================================
+[1/5] Dependencies: already installed
+[2/5] Provider SDK: not required for 'cloudera'.
+[3/5] Database: found (3 tables).
+[4/5] Vector store: found at ./data/vector_store — skipping ingestion.
+[5/5] Starting FastAPI server (React UI) on port 8080...
+========================================================
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+INFO  SPA index.html cached (NNNNN bytes)
+INFO  Startup check — vector store: OK (./data/vector_store)
+INFO  Startup check — database: OK (3 tables)
+INFO  Startup check — LLM: configured (provider=cloudera, model=meta-llama-3-8b-instruct)
 ```
+
+If a startup check shows `WARNING` instead of `INFO`, the corresponding feature
+(vector store / database / LLM) is not ready and questions will fail until it is fixed.
+
+### 8f. Run the test suite
+
+From a CML Session terminal (or locally before deploying):
+
+```bash
+pytest tests/ -v
+```
+
+All tests must pass before deploying to production. The three test suites cover:
+- `test_sql_guardrails.py` — SQL injection, subquery bypass, table allowlist
+- `test_router.py` — LLM classification, error fallback behaviour
+- `test_retrieval.py` — chunking, citation building, mocked vector store
 
 ---
 
@@ -374,8 +407,17 @@ When you push new code to the Git branch:
 To force a full re-ingestion (e.g. after adding new documents):
 
 1. Stop the application
-2. Delete `data/vector_store/` from the repo (or set a new `VECTOR_STORE_PATH`)
-3. Restart — `launch_app.sh` detects the missing index and re-ingests
+2. Delete the vector store directory (this also removes the integrity hash file):
+   ```bash
+   rm -rf data/vector_store/
+   ```
+   Or set a new `VECTOR_STORE_PATH` environment variable to a fresh path.
+3. Restart — `launch_app.sh` detects the missing index, re-ingests all documents,
+   and writes a new `index.sha256` integrity file automatically.
+
+> **Note:** Never copy a vector store from another environment without also copying
+> its `index.sha256` file. A missing or mismatched hash causes the app to refuse
+> loading the index and log an error on startup.
 
 ---
 
@@ -400,12 +442,19 @@ Before going to production with real enterprise data:
 - [ ] Rotate the LLM API key and set it as an environment variable — never
       commit it to Git
 - [ ] Set `LOG_LEVEL=WARNING` or `ERROR` to avoid logging sensitive query content
+- [ ] Validate `SQL_APPROVED_TABLES` against the principle of least privilege —
+      expose only the tables required for the demo, nothing else
+- [ ] Confirm the vector store `index.sha256` file is present after every ingestion
+      run; the app refuses to load an index whose hash is missing or mismatched
+- [ ] Verify outbound HTTPS from the pod is restricted to known LLM endpoints only
+      (configure network policy in the workspace if available)
 
 ### Reliability
 
 - [ ] Set replica count ≥ 2 for high availability
-- [ ] Configure a health check endpoint (optional — Streamlit exposes `/_stcore/health`)
-- [ ] Pre-build the vector store and bake it into a persistent volume so
+- [ ] Use `GET /api/status` as the health check endpoint — it returns JSON with
+      `vector_store.ok`, `database.ok`, and `llm.ok` fields for load balancer probes
+- [ ] Pre-build the vector store and store it on a persistent volume so
       startup is fast and does not depend on the first container to build it
 
 ### Embeddings
@@ -428,8 +477,11 @@ Check **View Logs**. Common causes:
 | `ModuleNotFoundError` | `pip install` failed — check network access to PyPI |
 | `Connection refused` on LLM URL | Wrong `CLOUDERA_INFERENCE_URL` or endpoint not running |
 | `Port already in use` | Another process on 8080 — check for zombie processes |
-| `Address already in use: 8080` | Streamlit config conflict — delete `.streamlit/` and retry |
+| `Address already in use: 8080` | Another process on port 8080 — check for zombie uvicorn processes |
 | `FAISS index failed to load` | Corrupted index — delete `data/vector_store/` to force rebuild |
+| `integrity check FAILED` | Vector store hash mismatch — delete `data/vector_store/` and re-ingest |
+| `index.sha256` not found | Index was built without the integrity hash (older run) — re-ingest to generate it |
+| `SPA not found` | `app/static/index.html` is missing — check repo contents and redeploy |
 
 ### Sidebar shows `Vector Store: Belum diingest`
 

@@ -26,8 +26,12 @@ def get_engine() -> Engine:
 def execute_read_query(sql: str) -> list[dict]:
     """Execute a read-only SQL query and return rows as a list of dicts.
 
-    Raises ValueError if the statement is not a plain SELECT.
+    Raises ValueError if the statement does not start with SELECT — this is a
+    belt-and-suspenders check; callers should always pass pre-validated SQL from
+    the guardrails layer (src/sql/guardrails.py).
     """
+    if not sql.strip().upper().startswith("SELECT"):
+        raise ValueError("Only SELECT queries are allowed in execute_read_query.")
     engine = get_engine()
     with engine.connect() as conn:
         result = conn.execute(text(sql))

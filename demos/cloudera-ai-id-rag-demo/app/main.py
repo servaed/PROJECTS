@@ -12,6 +12,13 @@ Flow per question:
   4. render_citations() — show expandable source panels
 """
 
+import sys
+import os
+
+# Ensure project root is on sys.path so `src` is importable regardless of
+# which directory Streamlit was launched from.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import streamlit as st
 
 from src.config.logging import setup_logging
@@ -53,12 +60,18 @@ for msg in st.session_state.messages:
 question = get_chat_input()
 
 if question:
-    # Extract prior turns for conversation history (role + content only)
-    history = [
-        {"role": m["role"], "content": m["content"]}
-        for m in st.session_state.messages
-        if m.get("role") in ("user", "assistant") and m.get("content")
-    ]
+    # Extract prior turns for conversation history.
+    # Assistant messages store their text in both "content" (plain text) and
+    # "result" (AnswerResult object). Use "content" when present; fall back to
+    # result.answer so that assistant turns are never silently dropped.
+    history = []
+    for m in st.session_state.messages:
+        role = m.get("role")
+        if role not in ("user", "assistant"):
+            continue
+        text = m.get("content") or (m["result"].answer if m.get("result") else None)
+        if text:
+            history.append({"role": role, "content": text})
 
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):

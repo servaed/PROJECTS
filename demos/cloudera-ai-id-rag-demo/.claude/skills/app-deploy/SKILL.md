@@ -20,10 +20,13 @@ description: Steps for preparing and validating deployment as a Cloudera AI Appl
 ```bash
 # 1. Test that the app starts on port 8080
 bash deployment/launch_app.sh
+# OR run directly (development with hot reload):
+uvicorn app.api:app --host 0.0.0.0 --port 8080 --reload
 
-# 2. Open http://localhost:8080 and verify the UI loads
-# 3. Submit a test question and verify an answer appears
-# 4. Check logs for any errors
+# 2. Open http://localhost:8080 and verify the React SPA loads
+# 3. Submit a test question and verify streaming response appears
+# 4. Check /api/status returns ok for vector_store, database, and llm
+# 5. Check logs for any errors
 ```
 
 ## Cloudera AI Applications Deployment Steps

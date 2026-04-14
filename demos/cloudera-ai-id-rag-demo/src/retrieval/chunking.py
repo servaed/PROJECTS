@@ -1,6 +1,7 @@
 """Text chunking — splits raw documents into retrievable chunks.
 
-Uses a simple recursive character splitter with overlap.
+Uses LangChain's RecursiveCharacterTextSplitter with language-aware separators
+so chunks respect sentence/paragraph boundaries for better retrieval quality.
 Preserves source metadata on every chunk for traceability.
 """
 
@@ -14,6 +15,10 @@ logger = get_logger(__name__)
 
 DEFAULT_CHUNK_SIZE = 800     # characters
 DEFAULT_CHUNK_OVERLAP = 100  # characters
+
+# Separators tried in order — paragraph, newline, sentence-ending punctuation,
+# then word boundary as last resort. Covers both Indonesian and English text.
+_SEPARATORS = ["\n\n", "\n", "。", "！", "？", ".", "!", "?", " ", ""]
 
 
 @dataclass
@@ -41,20 +46,22 @@ class DocumentChunk:
 
 
 def _split_text(text: str, chunk_size: int, overlap: int) -> list[str]:
-    """Split text into overlapping chunks by character count."""
+    """Split text using LangChain's RecursiveCharacterTextSplitter.
+
+    Respects paragraph and sentence boundaries before falling back to
+    character-level splitting, which improves retrieval relevance for
+    Indonesian and English documents.
+    """
     if not text.strip():
         return []
-    chunks = []
-    start = 0
-    while start < len(text):
-        end = min(start + chunk_size, len(text))
-        chunk = text[start:end].strip()
-        if chunk:
-            chunks.append(chunk)
-        if end == len(text):
-            break
-        start = end - overlap
-    return chunks
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=overlap,
+        separators=_SEPARATORS,
+        length_function=len,
+    )
+    return [c for c in splitter.split_text(text) if c.strip()]
 
 
 def chunk_documents(

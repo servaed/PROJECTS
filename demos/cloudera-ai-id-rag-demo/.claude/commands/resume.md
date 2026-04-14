@@ -20,6 +20,15 @@ git log --oneline -10
 # Verify the vector store exists
 ls data/vector_store/
 
+# Verify the demo database exists
+ls data/sample_tables/demo.db
+
 # Run tests to confirm nothing is broken
 pytest tests/ -v
+
+# Start the app locally (FastAPI + React SPA — production entry point)
+uvicorn app.api:app --host 0.0.0.0 --port 8080 --reload
+
+# Check system status endpoint
+curl http://localhost:8080/api/status
 ```

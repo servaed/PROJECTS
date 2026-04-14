@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cloudera AI — Setup Check</title>
+
+  <!-- Anti-FOUC: match theme from main app -->
+  <script>
+    (function(){
+      var t = localStorage.getItem('cld-theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+
+    :root {
+      --bg:       #F8F9FA; --surface: #FFFFFF; --s2: #F1F3F4; --s3: #E8EAED;
+      --border:   #DADCE0;
+      --orange:   #F96702; --o-dim: rgba(249,103,2,0.08); --o-text: #C94F00;
+      --teal:     #00796B; --t-dim: rgba(0,121,107,0.08);
+      --indigo:   #5C6BC0; --i-dim: rgba(92,107,192,0.08);
+      --t1: #202124; --t2: #5F6368; --t3: #9AA0A6;
+      --ok:  #34A853; --ok-glow:  rgba(52,168,83,0.35);
+      --err: #EA4335; --err-glow: rgba(234,67,53,0.35);
+      --warn: #FBBC04; --warn-glow: rgba(251,188,4,0.35);
+      --font: 'Google Sans', system-ui, sans-serif;
+      --display: 'Google Sans Display', 'Google Sans', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --logo-filter: brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%);
+    }
+    [data-theme="dark"] {
+      --bg: #0D1117; --surface: #161C27; --s2: #1C2538; --s3: #232E44;
+      --border: rgba(255,255,255,0.08);
+      --o-text: #F96702; --teal: #00A591; --indigo: #818CF8;
+      --t1: #E8EDF5; --t2: #8E9BB5; --t3: #4A5470;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--t1);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Top bar ─── */
+    .topbar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 28px; height: 60px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .topbar img { height: 20px; filter: var(--logo-filter); }
+    .topbar-sep { width: 1px; height: 20px; background: var(--border); }
+    .topbar-title {
+      font-family: var(--display); font-size: 0.95rem; font-weight: 700;
+      color: var(--t1); letter-spacing: -0.01em;
+    }
+    .topbar-title span { color: var(--orange); }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .back-btn {
+      padding: 6px 16px; border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--s2); color: var(--t2);
+      font-family: var(--font); font-size: 0.8rem; cursor: pointer;
+      transition: all 0.15s; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+    }
+    .back-btn:hover { background: var(--s3); color: var(--t1); }
+    .refresh-btn {
+      padding: 6px 16px; border-radius: 6px;
+      border: 1px solid var(--orange);
+      background: var(--o-dim); color: var(--o-text);
+      font-family: var(--font); font-size: 0.8rem; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .refresh-btn:hover { background: var(--orange); color: #fff; }
+    .refresh-btn:disabled { opacity: 0.5; cursor: default; }
+
+    /* ── Main layout ─── */
+    .main { max-width: 900px; margin: 0 auto; padding: 36px 28px 60px; }
+
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 {
+      font-family: var(--display); font-size: 1.7rem; font-weight: 800;
+      color: var(--t1); letter-spacing: -0.03em; margin-bottom: 6px;
+    }
+    .page-header p { font-size: 0.9rem; color: var(--t2); line-height: 1.6; }
+
+    /* ── Overall summary bar ─── */
+    .summary-bar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 20px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      margin-bottom: 28px;
+      font-size: 0.875rem;
+    }
+    .summary-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .summary-bar .countdown {
+      margin-left: auto; font-size: 0.72rem; color: var(--t3); font-family: var(--mono);
+    }
+
+    /* ── Cards grid ─── */
+    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .cards { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+    }
+    .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+
+    .card-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .card-name { font-size: 0.9rem; font-weight: 600; color: var(--t1); }
+    .card-status {
+      margin-left: auto;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+    }
+
+    .card-body { padding: 14px 18px; }
+
+    .detail-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { color: var(--t2); }
+    .detail-value { color: var(--t1); font-family: var(--mono); font-size: 0.72rem; text-align: right; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .fix-hint {
+      margin-top: 12px; padding: 10px 12px;
+      background: rgba(234,67,53,0.07); border: 1px solid rgba(234,67,53,0.2);
+      border-radius: 7px; border-left: 3px solid var(--err);
+      font-size: 0.76rem; color: var(--t1); line-height: 1.55;
+    }
+    .fix-hint code {
+      font-family: var(--mono); font-size: 0.7rem;
+      background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 3px;
+    }
+
+    .table-list { width: 100%; }
+    .table-row {
+      display: flex; justify-content: space-between;
+      padding: 4px 0; border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+    }
+    .table-row:last-child { border-bottom: none; }
+    .table-name { font-family: var(--mono); font-size: 0.72rem; color: var(--indigo); }
+    .table-rows { color: var(--t3); font-size: 0.7rem; }
+
+    .file-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+    .file-chip {
+      padding: 2px 9px; border-radius: 12px;
+      background: var(--s2); border: 1px solid var(--border);
+      font-size: 0.68rem; font-family: var(--mono); color: var(--t2);
+    }
+
+    /* ── Loading skeleton ─── */
+    .skeleton {
+      height: 14px; border-radius: 6px;
+      background: linear-gradient(90deg, var(--s2) 25%, var(--s3) 50%, var(--s2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      margin: 6px 0;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    .full-width { grid-column: 1 / -1; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="/static/cloudera-logo.png" alt="Cloudera"/>
+  <div class="topbar-sep"></div>
+  <div class="topbar-title">Enterprise <span>Assistant</span> — Setup Check</div>
+  <div class="topbar-right">
+    <button class="refresh-btn" id="refreshBtn" onclick="load()">↻ Refresh</button>
+    <a class="back-btn" href="/">← Back to App</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-header">
+    <h1>System Setup</h1>
+    <p>Verify that all components are configured and reachable before running a demo.<br/>
+       This page auto-refreshes every 30 seconds. Fix any <span style="color:var(--err);font-weight:600">red</span> items before your demo.</p>
+  </div>
+
+  <div class="summary-bar" id="summaryBar">
+    <div class="skeleton" style="width:200px;height:12px;margin:0"></div>
+    <span class="countdown" id="countdown"></span>
+  </div>
+
+  <div class="cards" id="cards">
+    <!-- skeleton -->
+    <div class="card"><div class="card-header"><div class="skeleton" style="width:60%;height:14px;margin:0"></div></div><div class="card-body"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+    <div class="card"><div class="card-header"><div class="skeleton" style="width:60%;height:14px;margin:0"></div></div><div class="card-body"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+    <div class="card"><div class="card-header"><div class="skeleton" style="width:60%;height:14px;margin:0"></div></div><div class="card-body"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+    <div class="card"><div class="card-header"><div class="skeleton" style="width:60%;height:14px;margin:0"></div></div><div class="card-body"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var REFRESH_INTERVAL = 30;
+  var countdownVal = REFRESH_INTERVAL;
+  var countdownTimer = null;
+  var refreshTimer   = null;
+
+  function e(tag, attrs, children) {
+    var el = document.createElement(tag);
+    Object.entries(attrs || {}).forEach(function(kv) {
+      if (kv[0] === 'class') el.className = kv[1];
+      else if (kv[0] === 'style') el.style.cssText = kv[1];
+      else el.setAttribute(kv[0], kv[1]);
+    });
+    (children || []).forEach(function(c) {
+      el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    });
+    return el;
+  }
+
+  function statusBadge(ok, label) {
+    var color = ok ? 'var(--ok)' : 'var(--err)';
+    var bg    = ok ? 'rgba(52,168,83,0.1)' : 'rgba(234,67,53,0.1)';
+    var dot = e('div', { class:'status-dot', style:'background:'+color+';box-shadow:0 0 5px '+(ok?'var(--ok-glow)':'var(--err-glow)') });
+    var span = e('span', {}, [label || (ok ? 'OK' : 'Error')]);
+    var badge = e('div', { class:'card-status', style:'background:'+bg+';color:'+color+';border:1px solid '+color+'33' }, [dot, span]);
+    return badge;
+  }
+
+  function row(label, value) {
+    return e('div', { class:'detail-row' }, [
+      e('span', { class:'detail-label' }, [label]),
+      e('span', { class:'detail-value' }, [value != null ? String(value) : '—']),
+    ]);
+  }
+
+  function fixHint(msg) {
+    if (!msg) return null;
+    var code = msg.replace(/`([^`]+)`/g, function(_, m) {
+      return '\x00CODE\x00' + m + '\x00/CODE\x00';
+    });
+    var div = e('div', { class:'fix-hint' });
+    code.split('\x00').forEach(function(part, i) {
+      if (part.startsWith('CODE\x00')) return;
+      if (i > 0 && code.split('\x00')[i-1].startsWith('CODE\x00')) {
+        div.appendChild(e('code', {}, [part.replace('/CODE', '')]));
+      } else {
+        div.appendChild(document.createTextNode(part));
+      }
+    });
+    // simpler: just set innerHTML with basic sanitization
+    div.innerHTML = '⚠ ' + msg.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/`([^`]+)`/g, '<code>$1</code>');
+    return div;
+  }
+
+  function buildVsCard(d) {
+    var body = [];
+    if (d.ok) {
+      body.push(row('Path', d.path));
+      body.push(row('Index size', d.index_size_kb ? d.index_size_kb + ' KB' : '—'));
+      if (d.chunk_count != null) body.push(row('Chunks indexed', d.chunk_count));
+      body.push(row('Integrity hash', d.hash_verified ? '✓ Verified' : '⚠ Missing'));
+    } else {
+      body.push(row('Path', d.path));
+    }
+    if (d.fix) body.push(fixHint(d.fix));
+    return card('◈', 'var(--t-dim)', 'var(--teal)', 'Vector Store', d.ok, body);
+  }
+
+  function buildDbCard(d) {
+    var body = [];
+    if (d.ok && d.tables.length) {
+      var tbl = e('div', { class:'table-list' });
+      d.tables.forEach(function(t) {
+        tbl.appendChild(e('div', { class:'table-row' }, [
+          e('span', { class:'table-name' }, [t.name]),
+          e('span', { class:'table-rows' }, [t.rows != null ? t.rows.toLocaleString() + ' rows' : '?']),
+        ]));
+      });
+      body.push(tbl);
+    } else {
+      body.push(row('Status', 'No tables found'));
+    }
+    if (d.fix) body.push(fixHint(d.fix));
+    return card('⬡', 'var(--i-dim)', 'var(--indigo)', 'Database', d.ok, body);
+  }
+
+  function buildLlmCard(d) {
+    var body = [];
+    body.push(row('Provider', d.provider));
+    body.push(row('Model', d.model || '—'));
+    if (d.latency_ms != null) body.push(row('Ping latency', d.latency_ms + ' ms'));
+    if (d.fix) body.push(fixHint(d.fix));
+    return card('⬡', 'var(--o-dim)', 'var(--orange)', 'LLM', d.ok, body);
+  }
+
+  function buildEmbCard(d) {
+    var body = [];
+    body.push(row('Provider', d.provider));
+    body.push(row('Model', d.model));
+    if (d.fix) body.push(fixHint(d.fix));
+    return card('◎', 'var(--t-dim)', 'var(--teal)', 'Embeddings', d.ok, body);
+  }
+
+  function buildDocsCard(d) {
+    var body = [];
+    body.push(row('Path', d.path));
+    body.push(row('Files found', d.count));
+    if (d.files && d.files.length) {
+      var chips = e('div', { class:'file-list', style:'margin-top:8px' });
+      d.files.forEach(function(f) {
+        chips.appendChild(e('span', { class:'file-chip' }, [f]));
+      });
+      body.push(chips);
+    }
+    if (d.fix) body.push(fixHint(d.fix));
+    var el = card('◻', 'var(--i-dim)', 'var(--indigo)', 'Documents', d.ok, body);
+    el.classList.add('full-width');
+    return el;
+  }
+
+  function card(icon, iconBg, iconColor, name, ok, bodyChildren) {
+    var iconEl = e('div', { class:'card-icon', style:'background:'+iconBg }, [
+      e('span', { style:'color:'+iconColor+';font-size:1.1rem;line-height:1' }, [icon])
+    ]);
+    var header = e('div', { class:'card-header' }, [
+      iconEl,
+      e('span', { class:'card-name' }, [name]),
+      statusBadge(ok),
+    ]);
+    var body = e('div', { class:'card-body' });
+    bodyChildren.forEach(function(c) { if (c) body.appendChild(c); });
+    var cardEl = e('div', { class:'card' });
+    cardEl.appendChild(header);
+    cardEl.appendChild(body);
+    return cardEl;
+  }
+
+  function render(data) {
+    var allOk = data.vector_store.ok && data.database.ok && data.llm.ok && data.embeddings.ok && data.documents.ok;
+    var okCount = [data.vector_store, data.database, data.llm, data.embeddings, data.documents]
+      .filter(function(d) { return d.ok; }).length;
+
+    // Summary bar
+    var bar = document.getElementById('summaryBar');
+    bar.innerHTML = '';
+    var dot = e('div', { class:'summary-dot', style:'background:'+(allOk?'var(--ok)':'var(--err)')+';box-shadow:0 0 8px '+(allOk?'var(--ok-glow)':'var(--err-glow)') });
+    var msg = allOk
+      ? 'All 5 components are ready — go ahead with the demo.'
+      : (okCount + ' of 5 components ready — fix the highlighted issues before your demo.');
+    bar.appendChild(dot);
+    bar.appendChild(e('span', { style:'font-weight:600;color:var(--t1)' }, [msg]));
+    bar.appendChild(e('span', { class:'countdown', id:'countdown' }));
+    updateCountdown();
+
+    // Cards
+    var container = document.getElementById('cards');
+    container.innerHTML = '';
+    container.appendChild(buildVsCard(data.vector_store));
+    container.appendChild(buildDbCard(data.database));
+    container.appendChild(buildLlmCard(data.llm));
+    container.appendChild(buildEmbCard(data.embeddings));
+    container.appendChild(buildDocsCard(data.documents));
+  }
+
+  function updateCountdown() {
+    var el = document.getElementById('countdown');
+    if (el) el.textContent = 'Next refresh in ' + countdownVal + 's';
+  }
+
+  function load() {
+    var btn = document.getElementById('refreshBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Refreshing…'; }
+    clearInterval(countdownTimer);
+    clearTimeout(refreshTimer);
+    countdownVal = REFRESH_INTERVAL;
+
+    fetch('/api/setup')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        render(data);
+        if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh'; }
+        scheduleNext();
+      })
+      .catch(function(err) {
+        var bar = document.getElementById('summaryBar');
+        bar.innerHTML = '⚠ Failed to load setup status: ' + err.message;
+        if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh'; }
+        scheduleNext();
+      });
+  }
+
+  function scheduleNext() {
+    countdownVal = REFRESH_INTERVAL;
+    countdownTimer = setInterval(function() {
+      countdownVal -= 1;
+      updateCountdown();
+    }, 1000);
+    refreshTimer = setTimeout(function() {
+      clearInterval(countdownTimer);
+      load();
+    }, REFRESH_INTERVAL * 1000);
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>

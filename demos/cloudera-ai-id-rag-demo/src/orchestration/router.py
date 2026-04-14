@@ -38,7 +38,7 @@ def classify_question(question: str) -> AnswerMode:
     try:
         llm = get_llm_client()
         messages = build_router_prompt(question)
-        response = llm.chat(messages, temperature=0.0, max_tokens=10)
+        response = llm.chat(messages, temperature=0.0, max_tokens=50)
         raw = response.content.strip().lower()
         mode = _MODE_MAP.get(raw, "dokumen")
         logger.info("Classified '%s...' → %s", question[:50], mode)

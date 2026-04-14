@@ -97,8 +97,11 @@ class InferenceClient(BaseLLMClient):
     def is_available(self) -> bool:
         if not settings.llm_base_url and settings.llm_provider not in ("openai",):
             return False
+        import concurrent.futures
         try:
-            self._client.models.list()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                future = ex.submit(self._client.models.list)
+                future.result(timeout=5.0)
             return True
         except Exception:
             return False

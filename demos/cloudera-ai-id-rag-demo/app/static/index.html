@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cloudera AI — Enterprise Assistant</title>
+
+  <!-- Anti-FOUC: apply stored theme before first paint -->
+  <script>
+    (function(){
+      var t = localStorage.getItem('cld-theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Google+Sans+Display:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+  <!-- React 18 UMD + marked + DOMPurify + htm — no build step -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.js"></script>
+
+  <style>
+    /* ── Reset ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    /* ── Design tokens — LIGHT (default) ───────────────────────────── */
+    :root {
+      /* Surfaces */
+      --bg:          #F8F9FA;
+      --surface:     #FFFFFF;
+      --s2:          #F1F3F4;
+      --s3:          #E8EAED;
+      --s4:          #DADCE0;
+
+      /* Borders */
+      --border:      #DADCE0;
+      --border-soft: rgba(0,0,0,0.06);
+
+      /* Brand */
+      --orange:      #F96702;
+      --o-dim:       rgba(249,103,2,0.08);
+      --o-glow:      rgba(249,103,2,0.18);
+      --o-text:      #C94F00;        /* darker shade for light bg legibility */
+      --teal:        #00796B;
+      --t-dim:       rgba(0,121,107,0.08);
+      --indigo:      #5C6BC0;
+      --i-dim:       rgba(92,107,192,0.08);
+
+      /* Text */
+      --t1:          #202124;
+      --t2:          #5F6368;
+      --t3:          #9AA0A6;
+
+      /* Status */
+      --ok:          #34A853;
+      --ok-glow:     rgba(52,168,83,0.4);
+      --err:         #EA4335;
+      --err-glow:    rgba(234,67,53,0.4);
+
+      /* Chat messages */
+      --msg-u-bg:    rgba(249,103,2,0.07);
+      --msg-u-bd:    rgba(249,103,2,0.2);
+      --msg-a-bg:    #FFFFFF;
+      --msg-a-bd:    #DADCE0;
+      --msg-a-shadow:0 1px 4px rgba(0,0,0,0.07);
+
+      /* Input */
+      --inp-bg:      #FFFFFF;
+      --inp-bd:      #DADCE0;
+
+      /* Code */
+      --code-bg:     #F1F3F4;
+      --code-color:  #C94F00;
+      --pre-bg:      #F8F9FA;
+
+      /* Sidebar data-color */
+      --sql-color:   #5C6BC0;
+      --sql-bd:      rgba(92,107,192,0.22);
+
+      /* Logo filter — convert logo to Cloudera orange (#F96702) in light mode */
+      --logo-filter: brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%);
+
+      /* Thinking dots */
+      --dot-color:   #9AA0A6;
+
+      /* Topbar */
+      --topbar-bg:   #FFFFFF;
+      --topbar-bd:   #DADCE0;
+
+      /* Sidebar */
+      --sidebar-bg:  #FFFFFF;
+      --sidebar-bd:  rgba(0,0,0,0.13);
+
+      /* Prompt button */
+      --prompt-hover-bg: rgba(249,103,2,0.07);
+      --prompt-hover-bd: rgba(249,103,2,0.25);
+      --prompt-hover-c:  #202124;
+
+      /* Typography */
+      --font:        'Google Sans', 'Plus Jakarta Sans', system-ui, sans-serif;
+      --display:     'Google Sans Display', 'Google Sans', system-ui, sans-serif;
+      --mono:        'JetBrains Mono', monospace;
+
+      /* Layout */
+      --topbar-h:    64px;
+      --sidebar-w:   260px;
+    }
+
+    /* ── Design tokens — DARK ───────────────────────────────────────── */
+    [data-theme="dark"] {
+      --bg:          #0D1117;
+      --surface:     #161C27;
+      --s2:          #1C2538;
+      --s3:          #232E44;
+      --s4:          #2C3A54;
+
+      --border:      rgba(255,255,255,0.08);
+      --border-soft: rgba(255,255,255,0.04);
+
+      --o-dim:       rgba(249,103,2,0.10);
+      --o-glow:      rgba(249,103,2,0.22);
+      --o-text:      #F96702;
+      --teal:        #00A591;
+      --t-dim:       rgba(0,165,145,0.09);
+      --indigo:      #818CF8;
+      --i-dim:       rgba(129,140,248,0.09);
+
+      --t1:          #E8EDF5;
+      --t2:          #8E9BB5;
+      --t3:          #4A5470;
+
+      --msg-u-bg:    rgba(249,103,2,0.10);
+      --msg-u-bd:    rgba(249,103,2,0.22);
+      --msg-a-bg:    #161C27;
+      --msg-a-bd:    rgba(255,255,255,0.09);
+      --msg-a-shadow:none;
+
+      --inp-bg:      #0D1117;
+      --inp-bd:      rgba(255,255,255,0.10);
+
+      --code-bg:     #1C2538;
+      --code-color:  #FF8533;
+      --pre-bg:      #0D1117;
+
+      --sql-color:   #818CF8;
+      --sql-bd:      rgba(129,140,248,0.2);
+
+      /* Same orange filter in dark mode — logo stays Cloudera orange */
+      --logo-filter: brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%);
+
+      --dot-color:   #4A5470;
+
+      --topbar-bg:   #161C27;
+      --topbar-bd:   rgba(255,255,255,0.08);
+
+      --sidebar-bg:  #131921;
+      --sidebar-bd:  rgba(255,255,255,0.12);
+
+      --prompt-hover-bg: rgba(249,103,2,0.09);
+      --prompt-hover-bd: rgba(249,103,2,0.28);
+      --prompt-hover-c:  #E8EDF5;
+    }
+
+    /* ── Base ───────────────────────────────────────────────────────── */
+    body {
+      font-family: var(--font);
+      background:  var(--bg);
+      color:       var(--t1);
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    #root { height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Smooth theme transitions (structural elements only) ────────── */
+    header, aside, .surface-transition {
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    /* ── Scrollbar ──────────────────────────────────────────────────── */
+    ::-webkit-scrollbar       { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--s4); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border); }
+
+    /* ── Cloudera logo image ────────────────────────────────────────── */
+    .cld-logo {
+      display: block;
+      object-fit: contain;
+      filter: var(--logo-filter);
+      transition: filter 0.2s;
+    }
+
+    /* ── Markdown prose (theme-aware) ───────────────────────────────── */
+    .prose { line-height: 1.75; font-size: 0.875rem; color: var(--t1); }
+    .prose p { margin-bottom: 0.65em; }
+    .prose p:last-child { margin-bottom: 0; }
+    .prose strong { font-weight: 600; color: var(--t1); }
+    .prose em { font-style: italic; color: var(--t2); }
+    .prose ul, .prose ol { padding-left: 1.3em; margin-bottom: 0.65em; }
+    .prose li { margin-bottom: 0.2em; color: var(--t1); }
+    .prose h1,.prose h2,.prose h3 {
+      font-family: var(--display); color: var(--t1);
+      margin: 0.9em 0 0.4em;
+    }
+    .prose code {
+      font-family: var(--mono); font-size: 0.8em;
+      background: var(--code-bg); color: var(--code-color);
+      padding: 1px 5px; border-radius: 4px;
+    }
+    .prose pre {
+      background: var(--pre-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 16px;
+      overflow-x: auto; margin: 0.75em 0;
+    }
+    .prose pre code { background: none; color: var(--t2); padding: 0; }
+    .prose table { border-collapse: collapse; width: 100%; margin: 0.75em 0; font-size: 0.82rem; }
+    .prose th {
+      background: var(--s2); color: var(--t2); font-weight: 600;
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--border);
+    }
+    .prose td { padding: 6px 12px; border-bottom: 1px solid var(--border); color: var(--t1); }
+    .prose tr:last-child td { border-bottom: none; }
+    .prose blockquote {
+      border-left: 3px solid var(--orange); padding: 4px 14px;
+      color: var(--t2); font-style: italic; margin: 0.7em 0;
+    }
+    .prose a { color: var(--o-text); text-decoration: underline; }
+
+    /* ── Animations ─────────────────────────────────────────────────── */
+    @keyframes blink    { 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes slideUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin     { to{transform:rotate(360deg)} }
+    @keyframes dotpulse { 0%,100%{opacity:0.8;transform:scale(1)} 50%{opacity:0.2;transform:scale(0.65)} }
+
+    .slide-up { animation: slideUp 0.22s ease forwards; }
+    .cursor   {
+      display: inline-block; width: 2px; height: 0.9em;
+      background: var(--orange); margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+    .spin {
+      width: 15px; height: 15px;
+      border: 2px solid var(--border); border-top-color: var(--orange);
+      border-radius: 50%; animation: spin 0.65s linear infinite;
+    }
+    .dot { animation: dotpulse 1.4s ease-in-out infinite; }
+
+    /* ── GCP-style nav item (sidebar prompt buttons) ────────────────── */
+    .nav-item {
+      display: flex; align-items: center; gap: 6px;
+      width: 100%; border: none; background: transparent;
+      padding: 7px 10px 7px 14px;
+      border-radius: 0 24px 24px 0;
+      margin-right: 12px;
+      color: var(--t2); font-size: 0.78rem; font-family: var(--font);
+      text-align: left; cursor: pointer; line-height: 1.45;
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-item:hover {
+      background: var(--prompt-hover-bg);
+      color: var(--prompt-hover-c);
+    }
+    .nav-item .nav-arrow {
+      flex-shrink: 0; opacity: 0; font-size: 0.7rem; color: var(--orange);
+      transition: opacity 0.12s, transform 0.12s;
+      transform: translateX(-4px);
+    }
+    .nav-item:hover .nav-arrow {
+      opacity: 1; transform: translateX(0);
+    }
+
+    /* ── Section label ──────────────────────────────────────────────── */
+    .sec-label {
+      font-size: 0.62rem; font-weight: 700; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      padding: 14px 16px 6px;
+    }
+
+    button { cursor: pointer; font-family: var(--font); }
+    button:disabled { cursor: default; }
+    textarea { font-family: var(--font); }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function() {
+  'use strict';
+
+  const { useState, useEffect, useRef, useCallback, useReducer } = React;
+  const { createRoot } = ReactDOM;
+  const html = htm.bind(React.createElement);
+
+  marked.setOptions({ breaks: true, gfm: true });
+  // Sanitize LLM output before rendering to prevent XSS from prompt-injected HTML
+  const md = (text) => ({ __html: DOMPurify.sanitize(marked.parse(text || '')) });
+
+  // Highlight query keywords in source chunk text (plain-text input → safe HTML output)
+  function highlightHtml(text, query) {
+    if (!text) return '';
+    // HTML-escape raw text first to prevent injection before we add <mark> tags
+    var safe = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    if (!query) return safe;
+    var words = query.trim().split(/\s+/).filter(function(w){ return w.length >= 3; });
+    if (!words.length) return safe;
+    var pats = words.map(function(w){ return w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); });
+    return safe.replace(
+      new RegExp('('+pats.join('|')+')','gi'),
+      '<mark style="background:rgba(249,103,2,0.25);color:inherit;border-radius:2px;padding:0 1px">$1</mark>'
+    );
+  }
+
+  // ── Theme management ───────────────────────────────────────────────
+  const THEME_KEY = 'cld-theme';
+  function getTheme() {
+    return localStorage.getItem(THEME_KEY) ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  }
+  function setThemeAttr(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem(THEME_KEY, t);
+  }
+
+  // ── Mode config ────────────────────────────────────────────────────
+  const MODES = {
+    dokumen:  { label: 'Document RAG',    color: 'var(--teal)',   dim: 'var(--t-dim)', icon: '◈' },
+    data:     { label: 'Structured Data', color: 'var(--indigo)', dim: 'var(--i-dim)', icon: '⬡' },
+    gabungan: { label: 'Combined',        color: 'var(--orange)', dim: 'var(--o-dim)', icon: '⬡' },
+  };
+  const getMode = (m) => MODES[m] || { label: m || '', color: 'var(--t2)', dim: 'var(--border-soft)', icon: '·' };
+
+  // ── Message reducer ────────────────────────────────────────────────
+  function reduce(msgs, a) {
+    switch (a.type) {
+      case 'USER':      return [...msgs, { id:a.id, role:'user', content:a.content }];
+      case 'ASSISTANT': return [...msgs, { id:a.id, role:'assistant', content:'', mode:null, isStreaming:true, docCitations:[], sqlCitation:null, error:null, question:a.question||'' }];
+      case 'MODE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{mode:a.mode}) : m);
+      case 'TOKEN':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{content:m.content+a.text}) : m);
+      case 'DONE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,docCitations:a.docCitations,sqlCitation:a.sqlCitation}) : m);
+      case 'ERROR':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,error:a.message}) : m);
+      case 'RESET':     return [];
+      default:          return msgs;
+    }
+  }
+
+  // ── SSE over POST ──────────────────────────────────────────────────
+  async function* ssePost(url, body) {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const reader = resp.body.getReader();
+    const dec    = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const blocks = buf.split('\n\n');
+      buf = blocks.pop();
+      for (const block of blocks) {
+        if (!block.trim()) continue;
+        let event = 'message', data = null;
+        for (const line of block.split('\n')) {
+          if (line.startsWith('event: '))  event = line.slice(7).trim();
+          else if (line.startsWith('data: ')) data  = line.slice(6);
+        }
+        if (data !== null) yield { event, data: JSON.parse(data) };
+      }
+    }
+  }
+
+  // ── Icons ──────────────────────────────────────────────────────────
+  function IcoSend() {
+    return html`<svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M3 10L17 4l-4 6 4 6L3 10z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+  }
+  function IcoDoc() {
+    return html`<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M6 6h4M6 9h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+  }
+  function IcoDB() {
+    return html`<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="4.5" rx="5" ry="2" stroke="currentColor" stroke-width="1.3"/><path d="M3 4.5v7c0 1.1 2.24 2 5 2s5-.9 5-2v-7" stroke="currentColor" stroke-width="1.3"/><path d="M3 8c0 1.1 2.24 2 5 2s5-.9 5-2" stroke="currentColor" stroke-width="1.1"/></svg>`;
+  }
+  function IcoCaret(props) {
+    return html`<svg width="11" height="11" viewBox="0 0 12 12" fill="none" style=${{ transition:'transform 0.18s', transform:props.open?'rotate(90deg)':'rotate(0deg)' }}><path d="M4 2.5l4 3.5-4 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+  function IcoSun() {
+    return html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+  }
+  function IcoMoon() {
+    return html`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+  }
+  function IcoTrash() {
+    return html`<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M5 4V3h6v1M6 7v5M10 7v5M3 4l1 9h8l1-9"/></svg>`;
+  }
+  function IcoCopy() {
+    return html`<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h2"/></svg>`;
+  }
+
+  // ── Cloudera logo image ────────────────────────────────────────────
+  function CldLogo(props) {
+    const h = props.height || 20;
+    return html`
+      <img
+        src="/static/cloudera-logo.png"
+        alt="Cloudera"
+        className="cld-logo"
+        style=${{ height:h+'px', width:'auto' }}
+      />`;
+  }
+
+  // ── Theme toggle button ────────────────────────────────────────────
+  function ThemeToggle(props) {
+    const isDark = props.theme === 'dark';
+    return html`
+      <button
+        onClick=${props.onToggle}
+        title=${isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        style=${{
+          width:'34px', height:'34px', borderRadius:'8px',
+          border:'1px solid var(--border)',
+          background:'var(--s2)',
+          color:'var(--t2)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          transition:'all 0.15s', flexShrink:0,
+        }}
+        onMouseEnter=${e => { e.currentTarget.style.background='var(--s3)'; e.currentTarget.style.color='var(--t1)'; }}
+        onMouseLeave=${e => { e.currentTarget.style.background='var(--s2)'; e.currentTarget.style.color='var(--t2)'; }}
+      >${isDark ? html`<${IcoSun}/>` : html`<${IcoMoon}/>`}</button>`;
+  }
+
+  // ── Top bar (GCP-style) ────────────────────────────────────────────
+  function TopBar(props) {
+    return html`
+      <header style=${{
+        height:'var(--topbar-h)', flexShrink:0,
+        display:'flex', alignItems:'center',
+        padding:'0 20px 0 16px',
+        background:'var(--topbar-bg)',
+        borderBottom:'1px solid var(--topbar-bd)',
+        gap:'10px', zIndex:10,
+      }}>
+        <!-- Logo + product name, aligned on same line -->
+        <div style=${{ display:'flex', alignItems:'center', gap:'10px', flexShrink:0 }}>
+          <${CldLogo} height=${20}/>
+          <div style=${{ width:'1px', height:'20px', background:'var(--border)', flexShrink:0 }}/>
+          <span style=${{
+            fontFamily:'var(--display)',
+            fontSize:'0.95rem', fontWeight:700,
+            color:'var(--t1)', letterSpacing:'-0.01em',
+            whiteSpace:'nowrap',
+          }}>Enterprise <span style=${{ color:'var(--orange)' }}>Assistant</span></span>
+        </div>
+
+        <!-- Right controls -->
+        <div style=${{ marginLeft:'auto', display:'flex', alignItems:'center', gap:'8px' }}>
+          <div style=${{
+            fontSize:'0.68rem', color:'var(--t2)',
+            background:'var(--s2)', border:'1px solid var(--border)',
+            padding:'3px 10px', borderRadius:'20px', whiteSpace:'nowrap',
+          }}>RAG + SQL</div>
+          <!-- New conversation -->
+          <button
+            onClick=${props.onReset}
+            title="New conversation"
+            style=${{
+              width:'34px', height:'34px', borderRadius:'8px',
+              border:'1px solid var(--border)', background:'var(--s2)',
+              color:'var(--t2)', display:'flex', alignItems:'center', justifyContent:'center',
+              transition:'all 0.15s', flexShrink:0,
+            }}
+            onMouseEnter=${function(e){ e.currentTarget.style.background='var(--s3)'; e.currentTarget.style.color='var(--err)'; e.currentTarget.style.borderColor='var(--err)'; }}
+            onMouseLeave=${function(e){ e.currentTarget.style.background='var(--s2)'; e.currentTarget.style.color='var(--t2)'; e.currentTarget.style.borderColor='var(--border)'; }}
+          ><${IcoTrash}/></button>
+          <${ThemeToggle} theme=${props.theme} onToggle=${props.onToggle}/>
+        </div>
+      </header>`;
+  }
+
+  // ── Status row ─────────────────────────────────────────────────────
+  function StatusRow(props) {
+    return html`
+      <div style=${{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'5px 16px' }}>
+        <div style=${{ display:'flex', alignItems:'center', gap:'8px' }}>
+          <div style=${{
+            width:'7px', height:'7px', borderRadius:'50%', flexShrink:0,
+            background: props.ok ? 'var(--ok)'  : 'var(--err)',
+            boxShadow:  props.ok ? '0 0 6px var(--ok-glow)' : '0 0 6px var(--err-glow)',
+          }}/>
+          <span style=${{ fontSize:'0.77rem', color:'var(--t1)' }}>${props.label}</span>
+        </div>
+        ${props.detail && html`
+          <span style=${{ fontSize:'0.7rem', color:'var(--t3)', fontFamily:'var(--mono)', maxWidth:'96px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            ${props.detail}
+          </span>`}
+      </div>`;
+  }
+
+  // ── Sidebar ────────────────────────────────────────────────────────
+  function Sidebar(props) {
+    const caps = [
+      { icon:'◈', color:'var(--teal)',   label:'Document RAG',    sub:'PDF · DOCX · TXT' },
+      { icon:'⬡', color:'var(--indigo)', label:'Structured Data', sub:'SQL generation' },
+      { icon:'⬡', color:'var(--orange)', label:'Combined',        sub:'Docs + data fusion' },
+    ];
+
+    return html`
+      <aside style=${{
+        width:'var(--sidebar-w)', minWidth:'var(--sidebar-w)',
+        height:'100%', overflowY:'auto',
+        background:'var(--sidebar-bg)',
+        borderRight:'2px solid var(--sidebar-bd)',
+        display:'flex', flexDirection:'column',
+      }}>
+
+        <!-- System status (collapsed when all OK) -->
+        <div className="sec-label">System</div>
+        <div style=${{ background:'var(--s2)', marginBottom:'4px', borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)' }}>
+          ${!props.status
+            ? html`<div style=${{ padding:'8px 16px', fontSize:'0.75rem', color:'var(--t3)' }}>Checking…</div>`
+            : (function() {
+                var vsOk  = !!(props.status.vector_store && props.status.vector_store.ok);
+                var dbOk  = !!(props.status.database     && props.status.database.ok);
+                var llmOk = !!(props.status.llm          && props.status.llm.ok);
+                var allOk = vsOk && dbOk && llmOk;
+                if (allOk) {
+                  return html`
+                    <div style=${{ display:'flex', alignItems:'center', gap:'8px', padding:'7px 16px' }}>
+                      <div style=${{ width:'7px', height:'7px', borderRadius:'50%', flexShrink:0, background:'var(--ok)', boxShadow:'0 0 6px var(--ok-glow)' }}/>
+                      <span style=${{ fontSize:'0.77rem', color:'var(--t2)' }}>All systems operational</span>
+                    </div>`;
+                }
+                return html`
+                  ${!vsOk  && html`<${StatusRow} label="Vector Store" ok=${false} detail="Not indexed"/>`}
+                  ${!dbOk  && html`<${StatusRow} label="Database"     ok=${false} detail="Disconnected"/>`}
+                  ${!llmOk && html`<${StatusRow} label="LLM"          ok=${false} detail=${(props.status.llm && props.status.llm.model) || 'Not configured'}/>`}
+                `;
+              })()
+          }
+        </div>
+
+        <!-- Capabilities -->
+        <div className="sec-label">Capabilities</div>
+        ${caps.map(function(c) {
+          return html`
+            <div key=${c.label} style=${{
+              display:'flex', alignItems:'center', gap:'10px',
+              padding:'7px 16px', cursor:'default',
+            }}>
+              <span style=${{ color:c.color, fontSize:'0.95rem', lineHeight:1, flexShrink:0 }}>${c.icon}</span>
+              <div>
+                <div style=${{ fontSize:'0.78rem', fontWeight:500, color:'var(--t1)' }}>${c.label}</div>
+                <div style=${{ fontSize:'0.68rem', color:'var(--t3)', marginTop:'1px' }}>${c.sub}</div>
+              </div>
+            </div>`;
+        })}
+
+        <!-- Sample prompts -->
+        <div className="sec-label" style=${{ marginTop:'8px' }}>Try asking</div>
+        <div style=${{ paddingRight:'12px' }}>
+          ${(props.samples || []).map(function(s, i) {
+            const label = s.length > 68 ? s.slice(0, 68) + '…' : s;
+            return html`
+              <button
+                key=${i}
+                className="nav-item"
+                onClick=${function() { props.onPick(s); }}
+              >
+                <span style=${{ flex:1 }}>${label}</span>
+                <span className="nav-arrow">→</span>
+              </button>`;
+          })}
+        </div>
+
+        <!-- Spacer -->
+        <div style=${{ flex:1 }}/>
+
+        <!-- Demo auto-play control -->
+        <div style=${{ padding:'10px 14px 12px', borderTop:'1px solid var(--border)' }}>
+          <div className="sec-label" style=${{ padding:'0 0 7px', fontSize:'0.6rem' }}>Demo</div>
+          ${props.isAutoPlaying
+            ? html`
+              <div>
+                <div style=${{ fontSize:'0.7rem', color:'var(--t2)', marginBottom:'7px', display:'flex', alignItems:'center', gap:'6px' }}>
+                  <span style=${{ display:'inline-block', width:'7px', height:'7px', borderRadius:'50%', background:'var(--orange)', flexShrink:0, animation:'dotpulse 1s ease-in-out infinite' }}/>
+                  Question ${props.autoPlayIdx + 1} of ${props.autoPlayTotal}
+                </div>
+                <button
+                  onClick=${props.onStopAutoPlay}
+                  style=${{
+                    width:'100%', padding:'6px 10px', borderRadius:'7px',
+                    border:'1px solid var(--err)', background:'transparent',
+                    color:'var(--err)', fontSize:'0.74rem', fontWeight:500,
+                    cursor:'pointer', transition:'all 0.15s',
+                  }}
+                  onMouseEnter=${function(e){ e.currentTarget.style.background='rgba(234,67,53,0.08)'; }}
+                  onMouseLeave=${function(e){ e.currentTarget.style.background='transparent'; }}
+                >⏹ Stop Demo</button>
+              </div>`
+            : html`
+              <button
+                onClick=${props.onStartAutoPlay}
+                disabled=${!props.autoPlayTotal}
+                style=${{
+                  width:'100%', padding:'6px 10px', borderRadius:'7px',
+                  border:'1px solid var(--border)', background:'var(--s2)',
+                  color:'var(--t2)', fontSize:'0.74rem', fontWeight:500,
+                  cursor: props.autoPlayTotal ? 'pointer' : 'default',
+                  transition:'all 0.15s', opacity: props.autoPlayTotal ? 1 : 0.5,
+                }}
+                onMouseEnter=${function(e){ if(props.autoPlayTotal){ e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.color='var(--orange)'; }}}
+                onMouseLeave=${function(e){ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--t2)'; }}
+              >▶ Run Demo</button>`
+          }
+        </div>
+
+        <!-- Footer -->
+        <div style=${{
+          padding:'12px 16px', borderTop:'1px solid var(--border)',
+          fontSize:'0.65rem', color:'var(--t3)',
+        }}>
+          Powered by <span style=${{ color:'var(--orange)', fontWeight:600 }}>Cloudera AI Inference</span>
+        </div>
+      </aside>`;
+  }
+
+  // ── Mode badge ─────────────────────────────────────────────────────
+  function ModeBadge(props) {
+    if (!props.mode) return null;
+    const m = getMode(props.mode);
+    return html`
+      <div style=${{
+        display:'inline-flex', alignItems:'center', gap:'5px',
+        padding:'2px 10px', borderRadius:'20px',
+        background:m.dim, border:'1px solid '+m.color+'30',
+        color:m.color, fontSize:'0.67rem', fontWeight:700,
+        letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:'8px',
+      }}>${m.icon} ${m.label}</div>`;
+  }
+
+  // ── Doc citation card (with full-chunk preview + keyword highlighting) ────
+  function DocCard(props) {
+    const [open, setOpen]       = useState(false);
+    const [showFull, setShowFull] = useState(false);
+    // full_text is only available if the backend returned it and differs from excerpt
+    const hasFull = props.cit.full_text && props.cit.full_text !== props.cit.excerpt;
+    const displayText = showFull && hasFull ? props.cit.full_text : props.cit.excerpt;
+    return html`
+      <div style=${{ border:'1px solid var(--border)', borderRadius:'8px', overflow:'hidden', marginBottom:'5px', background:'var(--surface)' }}>
+        <button
+          onClick=${function() { setOpen(!open); }}
+          style=${{
+            width:'100%', border:'none', padding:'8px 11px',
+            background: open ? 'var(--s2)' : 'var(--surface)',
+            display:'flex', alignItems:'center', gap:'7px',
+            color:'var(--t1)', transition:'background 0.12s',
+          }}
+        >
+          <span style=${{ fontFamily:'var(--mono)', fontSize:'0.67rem', color:'var(--orange)', fontWeight:600, flexShrink:0 }}>[${props.idx}]</span>
+          <span style=${{ fontSize:'0.77rem', fontWeight:500, flex:1, textAlign:'left' }}>${props.cit.title}</span>
+          <${IcoCaret} open=${open}/>
+        </button>
+        ${open && html`
+          <div style=${{ padding:'10px 12px', background:'var(--s2)', borderTop:'1px solid var(--border)' }}>
+            <div style=${{ fontSize:'0.68rem', color:'var(--t3)', fontFamily:'var(--mono)', marginBottom:'8px' }}>
+              ${props.cit.source_path} · chunk ${props.cit.chunk_index + 1} · ${(props.cit.ingest_timestamp || '').slice(0,10)}
+            </div>
+            <div
+              style=${{ fontSize:'0.79rem', color:'var(--t2)', fontStyle:'italic', paddingLeft:'10px', borderLeft:'2px solid var(--orange)', lineHeight:1.65, whiteSpace:'pre-wrap', wordBreak:'break-word' }}
+              dangerouslySetInnerHTML=${{ __html: highlightHtml(displayText, props.query) }}
+            />
+            ${hasFull && html`
+              <button
+                onClick=${function(e) { e.stopPropagation(); setShowFull(!showFull); }}
+                style=${{
+                  marginTop:'8px', background:'transparent',
+                  border:'1px solid var(--border)', borderRadius:'4px',
+                  padding:'2px 9px', color:'var(--t3)', fontSize:'0.65rem',
+                  cursor:'pointer', transition:'color 0.15s, border-color 0.15s',
+                }}
+                onMouseEnter=${function(e){ e.currentTarget.style.color='var(--orange)'; e.currentTarget.style.borderColor='var(--orange)'; }}
+                onMouseLeave=${function(e){ e.currentTarget.style.color='var(--t3)'; e.currentTarget.style.borderColor='var(--border)'; }}
+              >${showFull ? '▲ Show excerpt' : '▼ Show full chunk'}</button>
+            `}
+          </div>`}
+      </div>`;
+  }
+
+  // ── SQL trace panel ────────────────────────────────────────────────
+  function SqlPanel(props) {
+    const [open, setOpen]   = useState(false);
+    const [copied, setCopied] = useState(false);
+    const sc = props.sc;
+    function copy() {
+      navigator.clipboard.writeText(sc.sql).then(function() {
+        setCopied(true); setTimeout(function() { setCopied(false); }, 2000);
+      });
+    }
+    return html`
+      <div style=${{ border:'1px solid var(--sql-bd)', borderRadius:'8px', overflow:'hidden', background:'var(--surface)' }}>
+        <button
+          onClick=${function() { setOpen(!open); }}
+          style=${{
+            width:'100%', border:'none', padding:'8px 11px',
+            background: open ? 'var(--i-dim)' : 'var(--surface)',
+            display:'flex', alignItems:'center', gap:'7px',
+            color:'var(--t1)', transition:'background 0.12s',
+          }}
+        >
+          <${IcoDB}/>
+          <span style=${{ fontSize:'0.77rem', fontWeight:500, flex:1, textAlign:'left', color:'var(--indigo)' }}>
+            Structured Data · ${sc.row_count} rows · ${sc.latency_ms ? sc.latency_ms.toFixed(1) : '?'} ms
+          </span>
+          <${IcoCaret} open=${open}/>
+        </button>
+        ${open && html`
+          <div style=${{ padding:'12px', background:'var(--s2)', borderTop:'1px solid var(--sql-bd)' }}>
+            <div style=${{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'7px' }}>
+              <span style=${{ fontSize:'0.63rem', color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Generated SQL</span>
+              <button
+                onClick=${copy}
+                style=${{
+                  background:'transparent', border:'1px solid var(--border)',
+                  borderRadius:'4px', padding:'2px 8px',
+                  color: copied ? 'var(--teal)' : 'var(--t3)', fontSize:'0.65rem',
+                  transition:'color 0.15s',
+                }}
+              >${copied ? '✓ Copied' : 'Copy'}</button>
+            </div>
+            <pre style=${{ background:'var(--bg)', border:'1px solid var(--border)', borderRadius:'6px', padding:'9px 12px', overflowX:'auto', margin:'0 0 10px' }}>
+              <code style=${{ fontFamily:'var(--mono)', fontSize:'0.76rem', color:'var(--indigo)', whiteSpace:'pre' }}>${sc.sql}</code>
+            </pre>
+            ${sc.table_markdown && html`
+              <div style=${{ fontSize:'0.63rem', color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'6px' }}>Results</div>
+              <div className="prose" dangerouslySetInnerHTML=${md(sc.table_markdown)}/>
+            `}
+          </div>`}
+      </div>`;
+  }
+
+  // ── Chat messages ──────────────────────────────────────────────────
+  function UserMsg(props) {
+    return html`
+      <div className="slide-up" style=${{ display:'flex', justifyContent:'flex-end', marginBottom:'16px' }}>
+        <div style=${{
+          maxWidth:'68%',
+          background:'var(--msg-u-bg)',
+          border:'1px solid var(--msg-u-bd)',
+          borderRadius:'14px 14px 3px 14px',
+          padding:'10px 15px',
+          fontSize:'0.875rem', lineHeight:1.65, color:'var(--t1)',
+        }}>${props.msg.content}</div>
+      </div>`;
+  }
+
+  function AssistantMsg(props) {
+    const msg = props.msg;
+    const hasCits = (msg.docCitations && msg.docCitations.length > 0) || msg.sqlCitation;
+    const [copied, setCopied] = useState(false);
+    function copyAnswer() {
+      navigator.clipboard.writeText(msg.content || '').then(function() {
+        setCopied(true); setTimeout(function() { setCopied(false); }, 2000);
+      });
+    }
+    return html`
+      <div className="slide-up" style=${{ marginBottom:'20px' }}>
+        <${ModeBadge} mode=${msg.mode}/>
+        <div style=${{
+          background:'var(--msg-a-bg)',
+          border:'1px solid '+(msg.isStreaming ? 'var(--orange)' : 'var(--msg-a-bd)'),
+          boxShadow:'var(--msg-a-shadow)',
+          borderRadius:'3px 14px 14px 14px',
+          padding:'13px 17px',
+          transition:'border-color 0.3s',
+          position:'relative',
+        }}>
+          ${msg.error
+            ? html`<div style=${{ color:'var(--err)', fontSize:'0.84rem' }}>⚠ ${msg.error}</div>`
+            : html`
+              <div className="prose" dangerouslySetInnerHTML=${md(msg.content)}/>
+              ${msg.isStreaming && html`<span className="cursor"/>`}
+            `}
+          ${!msg.isStreaming && !msg.error && msg.content && html`
+            <button
+              onClick=${copyAnswer}
+              title="Copy answer"
+              style=${{
+                position:'absolute', top:'8px', right:'8px',
+                background:'transparent', border:'1px solid var(--border)',
+                borderRadius:'5px', padding:'3px 7px',
+                color: copied ? 'var(--teal)' : 'var(--t3)',
+                fontSize:'0.65rem', display:'flex', alignItems:'center', gap:'4px',
+                cursor:'pointer', transition:'all 0.15s', opacity:0.7,
+              }}
+              onMouseEnter=${function(e){ e.currentTarget.style.opacity='1'; e.currentTarget.style.borderColor='var(--orange)'; }}
+              onMouseLeave=${function(e){ e.currentTarget.style.opacity='0.7'; e.currentTarget.style.borderColor='var(--border)'; }}
+            >
+              <${IcoCopy}/>${copied ? ' Copied' : ' Copy'}
+            </button>
+          `}
+        </div>
+        ${hasCits && !msg.isStreaming && html`
+          <div style=${{ marginTop:'10px', paddingLeft:'2px' }}>
+            ${msg.docCitations && msg.docCitations.length > 0 && html`
+              <div style=${{
+                fontSize:'0.63rem', color:'var(--t3)',
+                textTransform:'uppercase', letterSpacing:'0.08em',
+                display:'flex', alignItems:'center', gap:'5px', marginBottom:'7px',
+              }}>
+                <${IcoDoc}/> Source Documents · ${msg.docCitations.length} found
+              </div>
+              ${msg.docCitations.map(function(c, i) { return html`<${DocCard} key=${i} cit=${c} idx=${i+1} query=${msg.question}/>`; })}
+            `}
+            ${msg.sqlCitation && html`
+              <div style=${{ marginTop:(msg.docCitations && msg.docCitations.length ? 8 : 0)+'px' }}>
+                <${SqlPanel} sc=${msg.sqlCitation}/>
+              </div>
+            `}
+          </div>
+        `}
+      </div>`;
+  }
+
+  // ── Thinking dots ──────────────────────────────────────────────────
+  function Thinking() {
+    return html`
+      <div style=${{ marginBottom:'20px' }}>
+        <div style=${{
+          background:'var(--msg-a-bg)', border:'1px solid var(--msg-a-bd)',
+          borderRadius:'3px 14px 14px 14px',
+          padding:'12px 16px', display:'inline-flex', alignItems:'center', gap:'5px',
+        }}>
+          ${[0,1,2].map(function(i) {
+            return html`<div key=${i} className="dot" style=${{ width:'6px', height:'6px', borderRadius:'50%', background:'var(--dot-color)', animationDelay:(i*0.18)+'s' }}/>`;
+          })}
+        </div>
+      </div>`;
+  }
+
+  // ── Welcome screen ─────────────────────────────────────────────────
+  function Welcome() {
+    return html`
+      <div style=${{
+        flex:1, display:'flex', flexDirection:'column',
+        alignItems:'center', justifyContent:'center',
+        gap:'28px', padding:'40px',
+        backgroundImage:'radial-gradient(circle, var(--border) 1px, transparent 1px)',
+        backgroundSize:'28px 28px',
+        backgroundPosition:'center center',
+      }}>
+        <img src="/static/cloudera-logo.png" alt="Cloudera" className="cld-logo" style=${{ height:'40px', width:'auto', opacity:0.55 }}/>
+        <div style=${{ textAlign:'center', maxWidth:'480px' }}>
+          <div style=${{ fontFamily:'var(--display)', fontSize:'2rem', fontWeight:700, color:'var(--t1)', marginBottom:'12px', letterSpacing:'-0.03em', lineHeight:1.2 }}>
+            How can I help you today?
+          </div>
+          <div style=${{ fontSize:'0.92rem', color:'var(--t2)', lineHeight:1.75 }}>
+            Ask about enterprise documents, structured data, or both.
+            Select a sample prompt from the sidebar to get started.
+          </div>
+        </div>
+        <div style=${{ display:'flex', gap:'10px', flexWrap:'wrap', justifyContent:'center' }}>
+          ${[
+            { icon:'◈', color:'var(--teal)',   text:'Document RAG' },
+            { icon:'⬡', color:'var(--indigo)', text:'Structured Data' },
+            { icon:'⬡', color:'var(--orange)', text:'Combined' },
+          ].map(function(p) {
+            return html`
+              <div key=${p.text} style=${{
+                display:'flex', alignItems:'center', gap:'7px',
+                padding:'7px 18px', borderRadius:'24px',
+                background:'var(--surface)', border:'1px solid var(--border)',
+                fontSize:'0.82rem', color:'var(--t2)',
+                boxShadow:'0 1px 6px rgba(0,0,0,0.07)',
+              }}>
+                <span style=${{ color:p.color, fontSize:'1rem' }}>${p.icon}</span>
+                <span style=${{ fontWeight:500 }}>${p.text}</span>
+              </div>`;
+          })}
+        </div>
+      </div>`;
+  }
+
+  // ── Chat window ────────────────────────────────────────────────────
+  function ChatWindow(props) {
+    const endRef = useRef(null);
+    useEffect(function() {
+      if (endRef.current) endRef.current.scrollIntoView({ behavior:'smooth' });
+    }, [props.msgs]);
+
+    if (!props.msgs.length) return html`<${Welcome}/>`;
+
+    return html`
+      <div style=${{ flex:1, overflowY:'auto', padding:'28px 36px', background:'var(--bg)' }}>
+        ${props.msgs.map(function(m) {
+          return m.role === 'user'
+            ? html`<${UserMsg}      key=${m.id} msg=${m}/>`
+            : html`<${AssistantMsg} key=${m.id} msg=${m}/>`;
+        })}
+        ${props.isLoading
+          && props.msgs.length
+          && props.msgs[props.msgs.length-1].role === 'user'
+          && html`<${Thinking}/>`}
+        <div ref=${endRef}/>
+      </div>`;
+  }
+
+  // ── Input bar ──────────────────────────────────────────────────────
+  function InputBar(props) {
+    const [val, setVal] = useState('');
+    const taRef         = useRef(null);
+
+    useEffect(function() {
+      if (props.prefill) {
+        setVal(props.prefill); props.onPrefillDone();
+        if (taRef.current) taRef.current.focus();
+      }
+    }, [props.prefill]);
+
+    useEffect(function() {
+      var ta = taRef.current;
+      if (!ta) return;
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(Math.max(ta.scrollHeight, 38), 160) + 'px';
+    }, [val]);
+
+    function submit() {
+      var q = val.trim();
+      if (!q || props.disabled) return;
+      setVal('');
+      if (taRef.current) taRef.current.style.height = 'auto';
+      props.onSubmit(q);
+    }
+
+    function onKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+    }
+
+    var active = val.trim() !== '' && !props.disabled;
+
+    return html`
+      <div style=${{
+        padding:'16px 36px 20px',
+        borderTop:'1px solid var(--border)',
+        background:'var(--surface)',
+        boxShadow:'0 -6px 24px rgba(0,0,0,0.06)',
+        flexShrink:0,
+      }}>
+        <div
+          style=${{
+            display:'flex', alignItems:'flex-end', gap:'10px',
+            background:'var(--inp-bg)',
+            border:'1px solid var(--inp-bd)',
+            borderRadius:'14px', padding:'12px 12px 12px 18px',
+            transition:'border-color 0.2s, box-shadow 0.2s',
+            boxShadow:'0 2px 8px rgba(0,0,0,0.05)',
+          }}
+          onFocusCapture=${function(e) {
+            e.currentTarget.style.borderColor = 'var(--orange)';
+            e.currentTarget.style.boxShadow   = '0 0 0 3px var(--o-dim)';
+          }}
+          onBlurCapture=${function(e) {
+            e.currentTarget.style.borderColor = 'var(--inp-bd)';
+            e.currentTarget.style.boxShadow   = 'var(--msg-a-shadow)';
+          }}
+        >
+          <textarea
+            ref=${taRef}
+            value=${val}
+            onInput=${function(e) { setVal(e.target.value); }}
+            onKeyDown=${onKey}
+            placeholder="Ask about your enterprise documents and data…"
+            disabled=${props.disabled}
+            rows="1"
+            style=${{
+              flex:1, background:'transparent', border:'none', outline:'none',
+              resize:'none', overflowY:'hidden', minHeight:'38px',
+              color:'var(--t1)', fontSize:'0.875rem', lineHeight:1.65,
+            }}
+          />
+          <button
+            onClick=${submit}
+            disabled=${!active}
+            style=${{
+              flexShrink:0, width:'34px', height:'34px',
+              borderRadius:'8px', border:'none',
+              background: active ? 'var(--orange)' : 'var(--s3)',
+              color: active ? '#fff' : 'var(--t3)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              transition:'all 0.15s',
+              boxShadow: active ? '0 2px 8px var(--o-glow)' : 'none',
+            }}
+          >${props.disabled ? html`<div className="spin"/>` : html`<${IcoSend}/>`}</button>
+        </div>
+        <div style=${{ fontSize:'0.62rem', color:'var(--t3)', textAlign:'center', marginTop:'6px' }}>
+          Enter to send · Shift+Enter for new line
+        </div>
+      </div>`;
+  }
+
+  // ── App root ───────────────────────────────────────────────────────
+  function App() {
+    const [msgs, dispatch]              = useReducer(reduce, [], function() {
+      try {
+        var raw = sessionStorage.getItem('cld-chat');
+        if (raw) {
+          var stored = JSON.parse(raw);
+          // Ensure no message is left mid-stream after a page reload
+          return stored.map(function(m) {
+            return m.isStreaming ? Object.assign({},m,{isStreaming:false}) : m;
+          });
+        }
+      } catch(e) {}
+      return [];
+    });
+    const [status, setStatus]           = useState(null);
+    const [samples, setSamples]         = useState([]);
+    const [loading, setLoading]         = useState(false);
+    const [prefill, setPrefill]         = useState(null);
+    const [theme, setTheme]             = useState(getTheme);
+    const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+    const [autoPlayIdx, setAutoPlayIdx]     = useState(0);
+    // Refs so auto-play setTimeout callbacks always read latest state/fn
+    const autoPlayRef     = useRef(false);
+    const samplesRef      = useRef([]);
+    const handleSubmitRef = useRef(null);
+
+    // Apply theme to <html> whenever it changes
+    useEffect(function() { setThemeAttr(theme); }, [theme]);
+
+    // Persist chat to sessionStorage so a page refresh doesn't lose the conversation
+    useEffect(function() {
+      try { sessionStorage.setItem('cld-chat', JSON.stringify(msgs)); } catch(e) {}
+    }, [msgs]);
+
+    // Keep samplesRef in sync — auto-play callbacks read this, not the stale closure
+    useEffect(function() { samplesRef.current = samples; }, [samples]);
+
+    // Fetch status + samples
+    useEffect(function() {
+      function ls() { fetch('/api/status').then(function(r){return r.json();}).then(setStatus).catch(console.error); }
+      function lp() { fetch('/api/samples').then(function(r){return r.json();}).then(setSamples).catch(console.error); }
+      ls(); lp();
+      var iv = setInterval(ls, 30000);
+      return function() { clearInterval(iv); };
+    }, []);
+
+    const handleSubmit = useCallback(function(question, _onDone) {
+      var uid = Date.now();
+      var aid = uid + 1;
+      var history = msgs
+        .filter(function(m) { return m.content; })
+        .map(function(m) { return { role:m.role, content:m.content }; });
+
+      dispatch({ type:'USER',      id:uid, content:question });
+      dispatch({ type:'ASSISTANT', id:aid, question:question });
+      setLoading(true);
+
+      var gotDone = false;
+      async function run() {
+        try {
+          for await (var ev of ssePost('/api/chat', { question:question, history:history })) {
+            if (ev.event==='mode')  { dispatch({ type:'MODE',  id:aid, mode:ev.data.mode });                                                              setLoading(false); }
+            if (ev.event==='token') { dispatch({ type:'TOKEN', id:aid, text:ev.data.text }); }
+            if (ev.event==='done')  { dispatch({ type:'DONE',  id:aid, docCitations:ev.data.doc_citations, sqlCitation:ev.data.sql_citation }); gotDone=true; }
+            if (ev.event==='error') { dispatch({ type:'ERROR', id:aid, message:ev.data.message }); gotDone=true; }
+          }
+        } catch(err) {
+          dispatch({ type:'ERROR', id:aid, message:err.message });
+        } finally {
+          if (!gotDone) dispatch({ type:'DONE', id:aid, docCitations:[], sqlCitation:null });
+          setLoading(false);
+          if (_onDone) _onDone();
+        }
+      }
+      run();
+    }, [msgs]);
+
+    // Keep handleSubmitRef in sync — useCallback rebuilds when msgs changes,
+    // so auto-play callbacks must reference this ref to avoid stale closures
+    useEffect(function() { handleSubmitRef.current = handleSubmit; }, [handleSubmit]);
+
+    // ── Auto-play: run every sample prompt sequentially ───────────────
+    function startAutoPlay() {
+      if (!samplesRef.current.length || autoPlayRef.current) return;
+      autoPlayRef.current = true;
+      setIsAutoPlaying(true);
+      setAutoPlayIdx(0);
+      function playNext(idx) {
+        if (!autoPlayRef.current) return;
+        var samps = samplesRef.current;
+        if (idx >= samps.length) {
+          autoPlayRef.current = false;
+          setIsAutoPlaying(false);
+          return;
+        }
+        setAutoPlayIdx(idx);
+        handleSubmitRef.current(samps[idx], function() {
+          if (!autoPlayRef.current) return;
+          // Brief pause between questions so the user can read each answer
+          setTimeout(function() { playNext(idx + 1); }, 1800);
+        });
+      }
+      playNext(0);
+    }
+
+    function stopAutoPlay() {
+      autoPlayRef.current = false;
+      setIsAutoPlaying(false);
+    }
+
+    return html`
+      <div style=${{ display:'flex', flexDirection:'column', width:'100vw', height:'100vh', overflow:'hidden' }}>
+        <!-- GCP-style top bar (full width) -->
+        <${TopBar}
+          theme=${theme}
+          onToggle=${function() { setTheme(function(t){ return t==='dark'?'light':'dark'; }); }}
+          onReset=${function() { stopAutoPlay(); dispatch({ type:'RESET' }); try { sessionStorage.removeItem('cld-chat'); } catch(e){} }}
+        />
+
+        <!-- Body: sidebar + main -->
+        <div style=${{ flex:1, display:'flex', overflow:'hidden' }}>
+          <${Sidebar}
+            status=${status}
+            samples=${samples}
+            onPick=${function(p) { if (!isAutoPlaying && !loading) setPrefill(p); }}
+            isAutoPlaying=${isAutoPlaying}
+            autoPlayIdx=${autoPlayIdx}
+            autoPlayTotal=${samples.length}
+            onStartAutoPlay=${startAutoPlay}
+            onStopAutoPlay=${stopAutoPlay}
+          />
+          <!-- Main: chat + input -->
+          <div style=${{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            <${ChatWindow} msgs=${msgs} isLoading=${loading}/>
+            <${InputBar}
+              onSubmit=${handleSubmit}
+              disabled=${loading || isAutoPlaying}
+              prefill=${prefill}
+              onPrefillDone=${function() { setPrefill(null); }}
+            />
+          </div>
+        </div>
+      </div>`;
+  }
+
+  createRoot(document.getElementById('root')).render(html`<${App}/>`);
+})();
+</script>
+</body>
+</html>

@@ -6,29 +6,41 @@ Demo repository for Indonesian enterprise customers showing a **Bahasa Indonesia
 ## System Architecture
 ```
 User (Bahasa Indonesia)
-  → Streamlit UI (port 8080)
-  → Orchestration Router
-       ├─ Document RAG  (loaders → chunking → embeddings → vector store → retriever)
+  → React SPA (port 8080)
+  → FastAPI Backend (app/api.py)
+       ├─ POST /api/chat  — SSE streaming (mode → token… → done)
+       ├─ GET  /api/status — live system status
+       └─ GET  /api/samples — sample prompts
+  → Orchestration Router (two-phase pipeline)
+       ├─ Document RAG  (loaders → chunking → embeddings → FAISS → retriever)
        └─ SQL Retrieval (schema discovery → guarded SQL gen → executor)
   → LLM Provider (pluggable: Cloudera AI Inference / OpenAI-compatible / local)
-  → Answer Builder (Bahasa Indonesia synthesis + citations + query trace)
+  → Answer Builder (prepare_answer → stream_synthesis → finalize_answer)
+       └─ Bahasa Indonesia synthesis + citations + query trace
 ```
 
-**UI choice: Streamlit.** Selected for demo-ready UI, single process on port 8080, and direct compatibility with Cloudera AI Application deployment.
+**Backend: FastAPI + uvicorn.** Serves the React SPA from `app/static/` and streams
+LLM tokens via Server-Sent Events on `POST /api/chat`. Launched by `deployment/launch_app.sh`.
+
+**Streamlit fallback (`app/main.py`)** is retained for local notebook/dev use only.
+Production entry point is always `app/api.py`.
 
 ## Key Directories
 | Path | Purpose |
 |------|---------|
-| `app/` | Streamlit entry point, UI components, static assets |
+| `app/api.py` | **FastAPI entry point (production)** — SSE chat, status, samples |
+| `app/main.py` | Streamlit entry point (local/notebook fallback) |
+| `app/ui.py` | Streamlit UI components with Cloudera brand theme |
+| `app/static/` | React SPA build — `index.html` + JS/CSS/assets |
 | `src/config/` | Settings (pydantic-settings), logging config |
-| `src/llm/` | LLM abstraction base, Cloudera/OpenAI client, prompt templates |
+| `src/llm/` | LLM abstraction base (`chat` + `stream_chat`), Cloudera/OpenAI client, prompts |
 | `src/retrieval/` | Document loaders, chunking, embeddings, vector store, retriever |
 | `src/sql/` | Schema metadata, SQL guardrails, query generator, executor |
-| `src/orchestration/` | Router, answer builder, citation assembler |
+| `src/orchestration/` | Router, two-phase answer builder (`prepare/stream/finalize`), citations |
 | `src/connectors/` | Storage adapters: HDFS, local files, database |
 | `src/utils/` | Language helpers, unique ID generation |
-| `data/` | Sample docs (PDF/DOCX/TXT), sample table CSVs, ingestion manifests |
-| `deployment/` | Launch script, Cloudera AI Application deployment guide |
+| `data/` | Sample docs (TXT — kebijakan kredit, OJK, KYC), table CSVs, manifests |
+| `deployment/` | `launch_app.sh` (uvicorn), env var reference, deployment guide |
 | `tests/` | Pytest unit and integration tests |
 | `.claude/skills/` | Reusable Claude Code project skills |
 | `.claude/history/` | Session logs, decisions, changelogs, prompts |
@@ -44,7 +56,10 @@ python data/sample_tables/seed_database.py
 # Ingest sample documents into vector store
 python -m src.retrieval.document_loader
 
-# Run app locally on port 8080
+# Run app locally on port 8080 (FastAPI + React SPA — production entry point)
+uvicorn app.api:app --host 0.0.0.0 --port 8080 --reload
+
+# Run Streamlit fallback (local/notebook use only)
 streamlit run app/main.py --server.port 8080 --server.address 0.0.0.0
 
 # Run all tests

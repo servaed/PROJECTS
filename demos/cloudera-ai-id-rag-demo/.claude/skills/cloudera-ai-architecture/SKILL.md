@@ -17,9 +17,11 @@ description: Architecture guidance for Cloudera AI Application design. Reminds t
 ## Application Launch
 
 Always use `deployment/launch_app.sh` as the launch command. It handles:
-1. Dependency install (idempotent)
-2. Document ingestion if vector store does not exist
-3. Streamlit startup on port `$APP_PORT` (default 8080)
+1. Dependency install (idempotent, skipped after first run via `.deps_installed` marker)
+2. Optional provider SDK install (boto3 for Bedrock, anthropic for Anthropic)
+3. Demo SQLite database seeding (idempotent)
+4. Document ingestion if FAISS vector store does not exist
+5. FastAPI + React SPA startup on port `$APP_PORT` (default 8080) via `uvicorn app.api:app`
 
 ## LLM Endpoint
 

@@ -34,12 +34,20 @@ def generate_sql(question: str) -> tuple[str, list[str]]:
     response = llm.chat(messages, temperature=0.0)
     raw_sql = response.content.strip()
 
-    # Strip markdown code fences if the LLM wrapped the query
+    # Strip markdown code fences if the LLM wrapped the query.
+    # Handles: ```sql\n...\n```, ```\n...\n```, and inline ` backtick wrapping.
     if raw_sql.startswith("```"):
-        lines = raw_sql.split("\n")
-        raw_sql = "\n".join(
-            line for line in lines if not line.startswith("```")
-        ).strip()
+        lines = raw_sql.splitlines()
+        # Drop the opening fence (```sql or ```) and closing fence (```)
+        inner = [ln for ln in lines if not ln.strip().startswith("```")]
+        extracted = "\n".join(inner).strip()
+        if extracted:
+            logger.debug("Stripped markdown fence from generated SQL")
+            raw_sql = extracted
+        else:
+            logger.warning("Markdown fence stripping produced empty SQL — using raw response")
+    elif raw_sql.startswith("`") and raw_sql.endswith("`"):
+        raw_sql = raw_sql.strip("`").strip()
 
     logger.info("Generated SQL: %s", raw_sql[:200])
 

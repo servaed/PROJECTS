@@ -10,7 +10,7 @@
 #   2. Install optional provider SDK if needed (bedrock / anthropic)
 #   3. Seed the demo SQLite database (idempotent — skips if already seeded)
 #   4. Ingest documents into FAISS vector store (skips if index exists)
-#   5. Start Streamlit on port 8080
+#   5. Start FastAPI + React UI on port 8080 via uvicorn
 #
 # Required environment variables (set in CML Application config):
 #   LLM_PROVIDER, and the credentials for your chosen provider.
@@ -93,14 +93,11 @@ else
     echo "      (Delete '$VECTOR_STORE_PATH' to force re-ingestion on next restart.)"
 fi
 
-# ── Step 5: Start Streamlit ───────────────────────────────────────────────
-echo "[5/5] Starting Streamlit on port $PORT..."
+# ── Step 5: Start FastAPI + React UI ─────────────────────────────────────
+echo "[5/5] Starting FastAPI server (React UI) on port $PORT..."
 echo "========================================================"
 
-exec streamlit run app/main.py \
-    --server.port "$PORT" \
-    --server.address "0.0.0.0" \
-    --server.headless true \
-    --server.enableCORS false \
-    --server.enableXsrfProtection true \
-    --logger.level "$LOG_LEVEL"
+exec uvicorn app.api:app \
+    --host "0.0.0.0" \
+    --port "$PORT" \
+    --log-level "$(echo "$LOG_LEVEL" | tr '[:upper:]' '[:lower:]')"
