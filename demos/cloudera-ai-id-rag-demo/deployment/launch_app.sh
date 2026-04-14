@@ -18,6 +18,27 @@
 
 set -euo pipefail
 
+# ── Step 0: Load saved config overrides (written by the /configure wizard) ──
+OVERRIDE_FILE="data/.env.local"
+if [ -f "$OVERRIDE_FILE" ]; then
+    echo "[0/5] Loading config overrides from $OVERRIDE_FILE ..."
+    # Export each non-comment KEY=VALUE line; platform env vars take precedence
+    # so we only set a variable if it is not already exported.
+    while IFS='=' read -r key value; do
+        [[ "$key" =~ ^#.*$ || -z "$key" ]] && continue
+        key="${key// /}"    # trim spaces
+        if [ -z "${!key+x}" ]; then
+            export "$key=$value"
+            echo "    set $key from override file"
+        else
+            echo "    skip $key — already set by environment"
+        fi
+    done < <(grep -v '^\s*#' "$OVERRIDE_FILE" | grep '=')
+    echo "[0/5] Override file loaded."
+else
+    echo "[0/5] No override file found at $OVERRIDE_FILE (use /configure to create one)."
+fi
+
 PORT="${APP_PORT:-8080}"
 LOG_LEVEL="${LOG_LEVEL:-INFO}"
 VECTOR_STORE_PATH="${VECTOR_STORE_PATH:-./data/vector_store}"

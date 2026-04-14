@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Configure — Cloudera AI Enterprise Assistant</title>
+
+  <script>
+    (function(){
+      var t = localStorage.getItem('cld-theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+
+    :root {
+      --bg:       #F8F9FA; --surface: #FFFFFF;
+      --s2:       #F1F3F4; --s3: #E8EAED; --s4: #DADCE0;
+      --border:   #DADCE0; --border-soft: rgba(0,0,0,0.06);
+      --orange:   #F96702; --o-dim: rgba(249,103,2,0.08); --o-text: #C94F00;
+      --teal:     #00796B; --t-dim: rgba(0,121,107,0.08);
+      --indigo:   #5C6BC0; --i-dim: rgba(92,107,192,0.08);
+      --t1:       #202124; --t2: #5F6368; --t3: #9AA0A6;
+      --ok:       #34A853; --ok-bg: rgba(52,168,83,0.08);
+      --err:      #EA4335; --err-bg: rgba(234,67,53,0.08);
+      --warn:     #F9AB00; --warn-bg: rgba(249,171,0,0.08);
+      --topbar-bg: #FFFFFF; --topbar-bd: #DADCE0;
+      --logo-filter: brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%);
+      --font: 'Google Sans', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --inp-bg: #FFFFFF; --inp-bd: #DADCE0;
+      --inp-focus-bd: var(--orange); --inp-focus-shadow: rgba(249,103,2,0.15);
+    }
+    [data-theme="dark"] {
+      --bg:       #0D1117; --surface: #161C27;
+      --s2:       #1C2538; --s3: #232E44; --s4: #2C3A54;
+      --border:   rgba(255,255,255,0.08); --border-soft: rgba(255,255,255,0.04);
+      --o-text:   #F96702;
+      --teal:     #00A591; --indigo: #818CF8;
+      --t1:       #E8EDF5; --t2: #8E9BB5; --t3: #4A5470;
+      --ok-bg:    rgba(52,168,83,0.12); --err-bg: rgba(234,67,53,0.12); --warn-bg: rgba(249,171,0,0.12);
+      --topbar-bg: #161C27; --topbar-bd: rgba(255,255,255,0.08);
+      --logo-filter: brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%);
+      --inp-bg:   #0D1117; --inp-bd: rgba(255,255,255,0.10);
+    }
+
+    body { font-family: var(--font); background: var(--bg); color: var(--t1);
+           -webkit-font-smoothing: antialiased; }
+
+    /* ── Topbar ───────────────────────────────────────────────────────────── */
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      height: 56px; display: flex; align-items: center; gap: 12px;
+      padding: 0 24px; background: var(--topbar-bg);
+      border-bottom: 1px solid var(--topbar-bd);
+    }
+    .topbar img { height: 18px; filter: var(--logo-filter); }
+    .topbar-div { width: 1px; height: 18px; background: var(--border); }
+    .topbar-title { font-size: 0.88rem; font-weight: 700; color: var(--t1); }
+    .topbar-title span { color: var(--orange); }
+    .topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .icon-btn {
+      height: 32px; padding: 0 12px; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--s2);
+      color: var(--t2); font-size: 0.75rem; font-family: var(--font);
+      cursor: pointer; text-decoration: none; display: inline-flex;
+      align-items: center; gap: 5px; transition: all 0.15s;
+    }
+    .icon-btn:hover { background: var(--s3); color: var(--t1); }
+    .theme-btn { width: 32px; height: 32px; padding: 0; justify-content: center; }
+
+    /* ── Layout ──────────────────────────────────────────────────────────── */
+    .page { max-width: 780px; margin: 0 auto; padding: 36px 24px 80px; }
+    h1 { font-size: 1.4rem; font-weight: 700; color: var(--t1); margin-bottom: 4px; }
+    .subtitle { font-size: 0.84rem; color: var(--t2); margin-bottom: 32px; line-height: 1.6; }
+
+    /* ── Banner ──────────────────────────────────────────────────────────── */
+    .banner {
+      display: none; padding: 12px 16px; border-radius: 10px;
+      font-size: 0.82rem; margin-bottom: 24px;
+      border: 1px solid transparent; line-height: 1.5;
+    }
+    .banner.ok   { display: block; background: var(--ok-bg);   border-color: rgba(52,168,83,0.3);   color: #1e6e38; }
+    .banner.err  { display: block; background: var(--err-bg);  border-color: rgba(234,67,53,0.3);   color: #b71c1c; }
+    .banner.warn { display: block; background: var(--warn-bg); border-color: rgba(249,171,0,0.3);   color: #7a5200; }
+    [data-theme="dark"] .banner.ok  { color: #81c784; }
+    [data-theme="dark"] .banner.err { color: #ef9a9a; }
+    [data-theme="dark"] .banner.warn { color: #ffe082; }
+
+    /* ── Section card ────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; margin-bottom: 20px; overflow: hidden;
+    }
+    .card-header {
+      padding: 14px 20px; background: var(--s2);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .card-icon { font-size: 1rem; }
+    .card-title { font-weight: 600; font-size: 0.9rem; color: var(--t1); }
+    .card-sub   { font-size: 0.72rem; color: var(--t2); margin-top: 1px; }
+    .card-body  { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+
+    /* ── Field row ────────────────────────────────────────────────────────── */
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field-top { display: flex; align-items: baseline; gap: 8px; }
+    .field-label {
+      font-size: 0.78rem; font-weight: 600; color: var(--t1);
+      white-space: nowrap;
+    }
+    .field-label .req { color: var(--orange); margin-left: 1px; }
+    .provider-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+    .ptag {
+      font-size: 0.6rem; font-weight: 600; letter-spacing: 0.05em;
+      text-transform: uppercase; padding: 1px 5px; border-radius: 3px;
+      border: 1px solid currentColor; opacity: 0.6;
+    }
+    .ptag-cloudera { color: var(--orange); }
+    .ptag-openai   { color: var(--teal); }
+    .ptag-bedrock  { color: #f57c00; }
+    .ptag-anthropic{ color: var(--indigo); }
+    .ptag-local    { color: var(--t3); }
+    .ptag-all      { color: var(--t2); }
+
+    /* Source badge (right side of label row) */
+    .src-badge {
+      margin-left: auto; font-size: 0.62rem; font-weight: 600;
+      padding: 1px 7px; border-radius: 10px; white-space: nowrap;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .src-env  { background: var(--t-dim); color: var(--teal); }
+    .src-file { background: var(--i-dim); color: var(--indigo); }
+    .src-none { background: var(--s3);    color: var(--t3); }
+
+    /* Input */
+    input[type=text], input[type=password], input[type=url], select, textarea {
+      width: 100%; padding: 9px 13px;
+      background: var(--inp-bg); border: 1px solid var(--inp-bd);
+      border-radius: 8px; color: var(--t1);
+      font-family: var(--mono); font-size: 0.79rem; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      -webkit-appearance: none; appearance: none;
+    }
+    select { cursor: pointer; font-family: var(--font); }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--inp-focus-bd);
+      box-shadow: 0 0 0 3px var(--inp-focus-shadow);
+    }
+    input[readonly] { opacity: 0.55; cursor: not-allowed; }
+    .field-hint { font-size: 0.7rem; color: var(--t3); line-height: 1.4; }
+    .field-hint a { color: var(--o-text); }
+
+    /* Reveal toggle for password fields */
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 38px; }
+    .pw-toggle {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--t3); font-size: 0.72rem; padding: 2px 4px;
+    }
+    .pw-toggle:hover { color: var(--t1); }
+
+    /* ── Provider selector highlight ─────────────────────────────────────── */
+    .field.hidden { display: none; }
+
+    /* ── Action bar ──────────────────────────────────────────────────────── */
+    .action-bar {
+      position: sticky; bottom: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: 14px 24px; display: flex; align-items: center; gap: 10px;
+      margin: 0 -24px; /* bleed to page edges */
+    }
+    .btn-primary {
+      padding: 9px 22px; border-radius: 8px; border: none;
+      background: var(--orange); color: #fff;
+      font-family: var(--font); font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+      box-shadow: 0 2px 6px rgba(249,103,2,0.3);
+    }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+    .btn-primary:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
+    .btn-secondary {
+      padding: 9px 18px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--s2);
+      color: var(--t2); font-family: var(--font);
+      font-size: 0.82rem; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-secondary:hover { background: var(--s3); color: var(--t1); }
+    .action-note { margin-left: auto; font-size: 0.71rem; color: var(--t3); }
+
+    /* ── Spin ────────────────────────────────────────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin {
+      display: inline-block; width: 13px; height: 13px;
+      border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+      vertical-align: middle; margin-right: 4px;
+    }
+
+    /* ── Scrollbar ───────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--s4); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Topbar ────────────────────────────────────────────────────────────── -->
+<div class="topbar">
+  <img src="/static/cloudera-logo.png" alt="Cloudera"/>
+  <div class="topbar-div"></div>
+  <div class="topbar-title">Enterprise <span>Assistant</span> — Configure</div>
+  <div class="topbar-right">
+    <a href="/" class="icon-btn">← App</a>
+    <a href="/setup" class="icon-btn">⊕ Status</a>
+    <button class="icon-btn theme-btn" id="themeBtn" title="Toggle theme"></button>
+  </div>
+</div>
+
+<!-- ── Page ──────────────────────────────────────────────────────────────── -->
+<div class="page">
+  <h1>Environment Configuration</h1>
+  <p class="subtitle">
+    Set your LLM credentials and infrastructure settings here. Values are saved to
+    <code style="font-family:var(--mono);font-size:0.78em;background:var(--s2);padding:1px 5px;border-radius:4px">data/.env.local</code>
+    and applied immediately. <strong>Restart the application</strong> for full effect
+    (new DB connections, embedding model reload).<br/>
+    Environment variables set via the Cloudera AI platform UI always take precedence
+    and are shown as <span style="font-weight:600;color:var(--teal)">From environment</span>.
+  </p>
+
+  <div id="banner" class="banner"></div>
+
+  <form id="configForm" autocomplete="off">
+
+    <!-- ── LLM Provider ──────────────────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-icon">🤖</span>
+        <div>
+          <div class="card-title">LLM Provider</div>
+          <div class="card-sub">Language model used for question routing and answer synthesis</div>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field" id="f_LLM_PROVIDER">
+          <div class="field-top">
+            <label class="field-label" for="LLM_PROVIDER">Provider<span class="req">*</span></label>
+            <span id="src_LLM_PROVIDER" class="src-badge src-none">Not set</span>
+          </div>
+          <select id="LLM_PROVIDER" name="LLM_PROVIDER" onchange="onProviderChange()">
+            <option value="">— select provider —</option>
+            <option value="cloudera">Cloudera AI Inference</option>
+            <option value="openai">OpenAI / OpenAI-compatible</option>
+            <option value="bedrock">Amazon Bedrock</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="local">Local (Ollama / LM Studio)</option>
+          </select>
+          <div class="field-hint">
+            Choose the LLM backend. Cloudera AI Inference is the recommended default
+            for Cloudera-deployed apps.
+          </div>
+        </div>
+
+        <div class="field" id="f_LLM_BASE_URL">
+          <div class="field-top">
+            <label class="field-label" for="LLM_BASE_URL">
+              Base URL
+              <span class="provider-tags">
+                <span class="ptag ptag-cloudera">Cloudera</span>
+                <span class="ptag ptag-openai">OpenAI</span>
+                <span class="ptag ptag-local">Local</span>
+              </span>
+            </label>
+            <span id="src_LLM_BASE_URL" class="src-badge src-none">Not set</span>
+          </div>
+          <input type="url" id="LLM_BASE_URL" name="LLM_BASE_URL"
+                 placeholder="https://your-inference-endpoint/v1"/>
+          <div class="field-hint">
+            OpenAI-compatible endpoint. For Cloudera AI Inference, copy the endpoint URL
+            from the model's details page.
+          </div>
+        </div>
+
+        <div class="field" id="f_LLM_API_KEY">
+          <div class="field-top">
+            <label class="field-label" for="LLM_API_KEY">
+              API Key
+              <span class="provider-tags">
+                <span class="ptag ptag-cloudera">Cloudera</span>
+                <span class="ptag ptag-openai">OpenAI</span>
+                <span class="ptag ptag-anthropic">Anthropic</span>
+              </span>
+            </label>
+            <span id="src_LLM_API_KEY" class="src-badge src-none">Not set</span>
+          </div>
+          <div class="pw-wrap">
+            <input type="password" id="LLM_API_KEY" name="LLM_API_KEY"
+                   placeholder="Leave blank to keep existing value"/>
+            <button type="button" class="pw-toggle" onclick="togglePw('LLM_API_KEY',this)">Show</button>
+          </div>
+          <div class="field-hint">
+            Stored as <code style="font-family:var(--mono);font-size:0.78em">LLM_API_KEY</code> in <code style="font-family:var(--mono);font-size:0.78em">data/.env.local</code>.
+            Leave blank to preserve the existing value.
+          </div>
+        </div>
+
+        <div class="field" id="f_LLM_MODEL_ID">
+          <div class="field-top">
+            <label class="field-label" for="LLM_MODEL_ID">
+              Model ID<span class="req">*</span>
+            </label>
+            <span id="src_LLM_MODEL_ID" class="src-badge src-none">Not set</span>
+          </div>
+          <input type="text" id="LLM_MODEL_ID" name="LLM_MODEL_ID"
+                 placeholder="e.g. meta/llama-3.1-70b-instruct"/>
+          <div class="field-hint" id="hint_LLM_MODEL_ID">
+            The model identifier as expected by the provider.
+          </div>
+        </div>
+
+        <!-- Bedrock-specific AWS fields -->
+        <div class="field hidden" id="f_bedrock_note">
+          <div style="background:var(--warn-bg);border:1px solid rgba(249,171,0,0.3);border-radius:8px;padding:10px 14px;font-size:0.78rem;color:var(--t2);line-height:1.55">
+            ⚠ Amazon Bedrock uses standard AWS credential env vars
+            (<code style="font-family:var(--mono);font-size:0.78em">AWS_ACCESS_KEY_ID</code>,
+            <code style="font-family:var(--mono);font-size:0.78em">AWS_SECRET_ACCESS_KEY</code>,
+            <code style="font-family:var(--mono);font-size:0.78em">AWS_DEFAULT_REGION</code>).
+            Set those via the Cloudera AI platform environment variables UI or your shell profile —
+            they are not managed here.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Embeddings ─────────────────────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-icon">◈</span>
+        <div>
+          <div class="card-title">Embeddings</div>
+          <div class="card-sub">Model used to vectorise documents and queries for RAG retrieval</div>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field" id="f_EMBEDDINGS_PROVIDER">
+          <div class="field-top">
+            <label class="field-label" for="EMBEDDINGS_PROVIDER">Embeddings Provider</label>
+            <span id="src_EMBEDDINGS_PROVIDER" class="src-badge src-none">Not set</span>
+          </div>
+          <select id="EMBEDDINGS_PROVIDER" name="EMBEDDINGS_PROVIDER">
+            <option value="">— use default (local sentence-transformers) —</option>
+            <option value="local">Local (sentence-transformers — no API key needed)</option>
+            <option value="openai">OpenAI Embeddings</option>
+          </select>
+          <div class="field-hint">
+            Local embeddings run inside the container — no external API required.
+            OpenAI embeddings require a valid <code style="font-family:var(--mono);font-size:0.78em">LLM_API_KEY</code>.
+          </div>
+        </div>
+
+        <div class="field" id="f_EMBEDDINGS_MODEL">
+          <div class="field-top">
+            <label class="field-label" for="EMBEDDINGS_MODEL">Embeddings Model</label>
+            <span id="src_EMBEDDINGS_MODEL" class="src-badge src-none">Not set</span>
+          </div>
+          <input type="text" id="EMBEDDINGS_MODEL" name="EMBEDDINGS_MODEL"
+                 placeholder="e.g. sentence-transformers/all-MiniLM-L6-v2"/>
+          <div class="field-hint">
+            Leave blank to use the built-in default
+            (<code style="font-family:var(--mono);font-size:0.78em">all-MiniLM-L6-v2</code>).
+            Changing this requires re-ingesting all documents.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Database ───────────────────────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-icon">⬡</span>
+        <div>
+          <div class="card-title">Database</div>
+          <div class="card-sub">SQL database for structured-data queries</div>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field" id="f_DATABASE_URL">
+          <div class="field-top">
+            <label class="field-label" for="DATABASE_URL">Database URL</label>
+            <span id="src_DATABASE_URL" class="src-badge src-none">Not set</span>
+          </div>
+          <div class="pw-wrap">
+            <input type="password" id="DATABASE_URL" name="DATABASE_URL"
+                   placeholder="sqlite:///data/sample_tables/demo.db  (default)"/>
+            <button type="button" class="pw-toggle" onclick="togglePw('DATABASE_URL',this)">Show</button>
+          </div>
+          <div class="field-hint">
+            SQLAlchemy connection string.  The demo default is a local SQLite file.
+            For production use a read-only PostgreSQL or Hive connection.
+          </div>
+        </div>
+
+        <div class="field" id="f_SQL_APPROVED_TABLES">
+          <div class="field-top">
+            <label class="field-label" for="SQL_APPROVED_TABLES">Approved Tables</label>
+            <span id="src_SQL_APPROVED_TABLES" class="src-badge src-none">Not set</span>
+          </div>
+          <input type="text" id="SQL_APPROVED_TABLES" name="SQL_APPROVED_TABLES"
+                 placeholder="e.g. kredit_umkm,nasabah,cabang  (comma-separated)"/>
+          <div class="field-hint">
+            Comma-separated list of tables the SQL agent is allowed to query.
+            Leave blank to allow all tables in the database (not recommended for production).
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Storage ────────────────────────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-icon">📁</span>
+        <div>
+          <div class="card-title">Storage</div>
+          <div class="card-sub">Paths for source documents and the FAISS vector store</div>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field" id="f_DOCS_SOURCE_PATH">
+          <div class="field-top">
+            <label class="field-label" for="DOCS_SOURCE_PATH">Docs Source Path</label>
+            <span id="src_DOCS_SOURCE_PATH" class="src-badge src-none">Not set</span>
+          </div>
+          <input type="text" id="DOCS_SOURCE_PATH" name="DOCS_SOURCE_PATH"
+                 placeholder="data/sample_docs  (default)"/>
+          <div class="field-hint">
+            Directory containing source documents (PDF, DOCX, TXT, MD).
+            Relative to the project root.
+          </div>
+        </div>
+
+        <div class="field" id="f_VECTOR_STORE_PATH">
+          <div class="field-top">
+            <label class="field-label" for="VECTOR_STORE_PATH">Vector Store Path</label>
+            <span id="src_VECTOR_STORE_PATH" class="src-badge src-none">Not set</span>
+          </div>
+          <input type="text" id="VECTOR_STORE_PATH" name="VECTOR_STORE_PATH"
+                 placeholder="data/vector_store  (default)"/>
+          <div class="field-hint">
+            Directory where FAISS index files are stored.
+            Delete this directory to force a full re-ingestion on next restart.
+          </div>
+        </div>
+
+        <div class="field" id="f_LOG_LEVEL">
+          <div class="field-top">
+            <label class="field-label" for="LOG_LEVEL">Log Level</label>
+            <span id="src_LOG_LEVEL" class="src-badge src-none">Not set</span>
+          </div>
+          <select id="LOG_LEVEL" name="LOG_LEVEL">
+            <option value="">— default (INFO) —</option>
+            <option value="DEBUG">DEBUG</option>
+            <option value="INFO">INFO</option>
+            <option value="WARNING">WARNING</option>
+            <option value="ERROR">ERROR</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Action bar ─────────────────────────────────────────────────────── -->
+    <div class="action-bar">
+      <button type="submit" class="btn-primary" id="saveBtn">Save Configuration</button>
+      <a href="/setup" class="btn-secondary">Test Connection →</a>
+      <span class="action-note" id="actionNote"></span>
+    </div>
+
+  </form>
+</div>
+
+<script>
+'use strict';
+
+// ── Theme ─────────────────────────────────────────────────────────────────
+var THEME_KEY = 'cld-theme';
+function currentTheme() { return document.documentElement.getAttribute('data-theme'); }
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem(THEME_KEY, t);
+  document.getElementById('themeBtn').textContent = t === 'dark' ? '☀' : '☾';
+}
+applyTheme(currentTheme());
+document.getElementById('themeBtn').onclick = function() {
+  applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+};
+
+// ── Password toggle ───────────────────────────────────────────────────────
+function togglePw(id, btn) {
+  var inp = document.getElementById(id);
+  if (inp.type === 'password') { inp.type = 'text';     btn.textContent = 'Hide'; }
+  else                         { inp.type = 'password'; btn.textContent = 'Show'; }
+}
+
+// ── Source badge rendering ────────────────────────────────────────────────
+function renderBadge(key, source) {
+  var el = document.getElementById('src_' + key);
+  if (!el) return;
+  el.className = 'src-badge';
+  if (source === 'env')  { el.className += ' src-env';  el.textContent = 'From environment'; }
+  else if (source === 'file') { el.className += ' src-file'; el.textContent = 'From saved file'; }
+  else                        { el.className += ' src-none'; el.textContent = 'Not set'; }
+}
+
+// ── Provider selector → show/hide fields ─────────────────────────────────
+var PROVIDER_FIELDS = {
+  cloudera:   ['f_LLM_BASE_URL', 'f_LLM_API_KEY', 'f_LLM_MODEL_ID'],
+  openai:     ['f_LLM_BASE_URL', 'f_LLM_API_KEY', 'f_LLM_MODEL_ID'],
+  bedrock:    ['f_LLM_MODEL_ID', 'f_bedrock_note'],
+  anthropic:  ['f_LLM_API_KEY',  'f_LLM_MODEL_ID'],
+  local:      ['f_LLM_BASE_URL', 'f_LLM_MODEL_ID'],
+};
+var MODEL_HINTS = {
+  cloudera:  'e.g. meta/llama-3.1-70b-instruct',
+  openai:    'e.g. gpt-4o or gpt-4o-mini',
+  bedrock:   'e.g. anthropic.claude-3-5-sonnet-20241022-v2:0',
+  anthropic: 'e.g. claude-sonnet-4-6',
+  local:     'e.g. llama3.2 (as shown in `ollama list`)',
+};
+
+function onProviderChange() {
+  var provider = document.getElementById('LLM_PROVIDER').value;
+  var all = ['f_LLM_BASE_URL', 'f_LLM_API_KEY', 'f_LLM_MODEL_ID', 'f_bedrock_note'];
+  all.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+  var show = PROVIDER_FIELDS[provider] || all.slice(0, 3);
+  show.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+  });
+  // Update model ID placeholder
+  var hint = document.getElementById('hint_LLM_MODEL_ID');
+  var modelInp = document.getElementById('LLM_MODEL_ID');
+  if (hint && MODEL_HINTS[provider]) {
+    modelInp.placeholder = MODEL_HINTS[provider];
+    hint.textContent = 'The model identifier as expected by ' + provider + '.';
+  }
+}
+
+// ── Banner ────────────────────────────────────────────────────────────────
+function showBanner(msg, type) {
+  var b = document.getElementById('banner');
+  b.textContent = msg;
+  b.className = 'banner ' + type;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function hideBanner() { document.getElementById('banner').className = 'banner'; }
+
+// ── Load current config ───────────────────────────────────────────────────
+function loadConfig() {
+  fetch('/api/configure').then(function(r) { return r.json(); }).then(function(cfg) {
+    Object.keys(cfg).forEach(function(rawKey) {
+      // API returns snake_case; map to UPPER_SNAKE_CASE field IDs
+      var key = rawKey.toUpperCase();
+      var entry = cfg[rawKey];
+      renderBadge(key, entry.source);
+
+      var el = document.getElementById(key);
+      if (!el) return;
+
+      // Pre-fill non-secret fields; leave secrets blank (placeholder says "keep existing")
+      var isSecret = key.indexOf('KEY') !== -1 || key.indexOf('SECRET') !== -1 ||
+                     key.indexOf('PASSWORD') !== -1 || key.indexOf('TOKEN') !== -1 ||
+                     key === 'DATABASE_URL';
+
+      if (entry.value && !isSecret) {
+        if (el.tagName === 'SELECT') {
+          el.value = entry.value;
+        } else {
+          el.value = entry.value;
+        }
+      }
+
+      // Lock fields that come from the platform environment
+      if (entry.source === 'env') {
+        el.readOnly = true;
+        if (el.tagName === 'SELECT') el.disabled = true;
+      }
+    });
+
+    // Trigger provider-based field visibility after loading
+    onProviderChange();
+  }).catch(function(e) {
+    showBanner('Failed to load current configuration: ' + e.message, 'err');
+  });
+}
+
+// ── Form submit ───────────────────────────────────────────────────────────
+document.getElementById('configForm').onsubmit = function(e) {
+  e.preventDefault();
+  hideBanner();
+
+  var btn = document.getElementById('saveBtn');
+  var note = document.getElementById('actionNote');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Saving…';
+  note.textContent = '';
+
+  var fields = [
+    'LLM_PROVIDER', 'LLM_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL_ID',
+    'EMBEDDINGS_PROVIDER', 'EMBEDDINGS_MODEL',
+    'DATABASE_URL', 'SQL_APPROVED_TABLES',
+    'DOCS_SOURCE_PATH', 'VECTOR_STORE_PATH', 'LOG_LEVEL',
+  ];
+  var payload = {};
+  fields.forEach(function(key) {
+    var el = document.getElementById(key);
+    if (el && !el.disabled) payload[key] = el.value;
+  });
+
+  fetch('/api/configure', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ env_vars: payload }),
+  }).then(function(r) {
+    return r.json().then(function(d) { return { ok: r.ok, data: d }; });
+  }).then(function(res) {
+    btn.disabled = false;
+    btn.textContent = 'Save Configuration';
+
+    if (!res.ok) {
+      showBanner('Error: ' + (res.data.detail || JSON.stringify(res.data)), 'err');
+      return;
+    }
+    var skipped = res.data.keys_skipped_env || [];
+    var skipMsg = skipped.length
+      ? ' (skipped ' + skipped.join(', ') + ' — already set via platform environment)'
+      : '';
+    showBanner(
+      '✓ Configuration saved to ' + res.data.file + '.' + skipMsg +
+      '  Restart the application in Cloudera AI to fully apply all changes.',
+      'ok'
+    );
+    note.textContent = 'Last saved: ' + new Date().toLocaleTimeString();
+    // Reload badges
+    loadConfig();
+  }).catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = 'Save Configuration';
+    showBanner('Network error: ' + err.message, 'err');
+  });
+};
+
+// ── Init ──────────────────────────────────────────────────────────────────
+loadConfig();
+</script>
+</body>
+</html>
