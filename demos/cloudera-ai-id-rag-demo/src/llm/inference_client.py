@@ -35,7 +35,7 @@ class InferenceClient(BaseLLMClient):
         self._client = self._build_client()
 
     def _build_client(self):
-        if settings.llm_provider == "azure":
+        if settings._live_provider == "azure":
             from openai import AzureOpenAI
             logger.info(
                 "LLM provider: Azure OpenAI — endpoint=%s, deployment=%s",
@@ -95,7 +95,7 @@ class InferenceClient(BaseLLMClient):
                 yield chunk.choices[0].delta.content
 
     def is_available(self) -> bool:
-        if not settings.llm_base_url and settings.llm_provider not in ("openai",):
+        if not settings.llm_base_url and settings._live_provider not in ("openai",):
             return False
         import concurrent.futures
         try:
@@ -113,12 +113,15 @@ class InferenceClient(BaseLLMClient):
 def get_llm_client() -> BaseLLMClient:
     """Return the configured LLM client based on LLM_PROVIDER.
 
+    Reads the live provider from os.environ (via settings._live_provider) so that
+    POST /api/configure changes take effect without a process restart.
+
     Provider dispatch:
       cloudera / openai / azure / local → InferenceClient (OpenAI-compatible)
       bedrock                           → BedrockClient (boto3 Converse API)
       anthropic                         → AnthropicClient (anthropic SDK)
     """
-    provider = settings.llm_provider
+    provider = settings._live_provider
 
     if provider == "bedrock":
         from src.llm.bedrock_client import BedrockClient

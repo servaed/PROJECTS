@@ -197,16 +197,131 @@
     @keyframes shimmer { to { background-position: -200% 0; } }
 
     .full-width { grid-column: 1 / -1; }
+
+    /* ── Test connection button ─── */
+    .test-btn {
+      padding: 3px 11px; border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--s2); color: var(--t2);
+      font-family: var(--font); font-size: 0.72rem; font-weight: 500;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .test-btn:hover:not(:disabled) { background: var(--s3); color: var(--t1); border-color: var(--t3); }
+    .test-btn:disabled { opacity: 0.55; cursor: default; }
+    .test-btn.testing { color: var(--t3); border-color: var(--border); }
+    .test-btn.pass  { background: rgba(52,168,83,0.1);  border-color: rgba(52,168,83,0.35);  color: var(--ok); }
+    .test-btn.fail  { background: rgba(234,67,53,0.08); border-color: rgba(234,67,53,0.3);   color: var(--err); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin-ico { display: inline-block; animation: spin 0.8s linear infinite; }
+
+    .test-error {
+      margin-top: 8px; padding: 8px 10px;
+      background: rgba(234,67,53,0.06); border: 1px solid rgba(234,67,53,0.2);
+      border-radius: 6px; border-left: 3px solid var(--err);
+      font-size: 0.72rem; color: var(--err); line-height: 1.5;
+      font-family: var(--mono); word-break: break-word;
+      display: none;
+    }
+    .test-error.visible { display: block; }
+
+    /* ── Log viewer panel ─── */
+    .log-panel {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 0; overflow: hidden;
+      background: var(--surface);
+      border-top: 2px solid var(--border);
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+      transition: height 0.3s cubic-bezier(0.4,0,0.2,1);
+      z-index: 100;
+      display: flex; flex-direction: column;
+    }
+    .log-panel.open { height: 44vh; min-height: 260px; }
+
+    .log-panel-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--s2);
+    }
+    .log-panel-title { font-size: 0.8rem; font-weight: 700; color: var(--t1); flex-shrink: 0; }
+    .log-level-tabs { display: flex; gap: 4px; }
+    .log-tab {
+      padding: 3px 10px; border-radius: 4px; border: 1px solid var(--border);
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; cursor: pointer;
+      background: var(--surface); color: var(--t2);
+      transition: all 0.15s;
+    }
+    .log-tab:hover { background: var(--s3); }
+    .log-tab.active { color: #fff; border-color: transparent; }
+    .log-tab[data-lv="DEBUG"].active  { background: var(--t3); }
+    .log-tab[data-lv="INFO"].active   { background: var(--teal); }
+    .log-tab[data-lv="WARNING"].active{ background: var(--warn); color: #202124; }
+    .log-tab[data-lv="ERROR"].active  { background: var(--err); }
+
+    .log-panel-actions { margin-left: auto; display: flex; gap: 6px; }
+    .log-action-btn {
+      padding: 3px 10px; border-radius: 4px; border: 1px solid var(--border);
+      font-size: 0.72rem; cursor: pointer; background: var(--surface); color: var(--t2);
+      font-family: var(--font); transition: all 0.15s;
+    }
+    .log-action-btn:hover { background: var(--s3); color: var(--t1); }
+    .log-close-btn {
+      padding: 3px 10px; border-radius: 4px; border: 1px solid var(--border);
+      font-size: 0.72rem; cursor: pointer; background: var(--surface); color: var(--t2);
+      font-family: var(--font); transition: all 0.15s;
+    }
+    .log-close-btn:hover { background: var(--s3); color: var(--t1); }
+
+    .log-body {
+      overflow-y: auto; flex: 1;
+      font-family: var(--mono); font-size: 0.7rem; line-height: 1.6;
+      padding: 8px 16px;
+    }
+    .log-line {
+      display: grid;
+      grid-template-columns: 130px 60px 110px 1fr;
+      gap: 0 8px;
+      padding: 1px 0;
+      border-bottom: 1px solid var(--border);
+      white-space: pre-wrap; word-break: break-all;
+    }
+    .log-line:last-child { border-bottom: none; }
+    .log-ts    { color: var(--t3); flex-shrink: 0; }
+    .log-lv    { font-weight: 700; flex-shrink: 0; }
+    .log-lv.DEBUG   { color: var(--t3); }
+    .log-lv.INFO    { color: var(--teal); }
+    .log-lv.WARNING { color: var(--warn); }
+    .log-lv.ERROR, .log-lv.CRITICAL { color: var(--err); }
+    .log-src   { color: var(--indigo); overflow: hidden; text-overflow: ellipsis; }
+    .log-msg   { color: var(--t1); }
+    .log-empty { color: var(--t3); font-style: italic; padding: 20px 0; text-align: center; }
+
+    .log-btn {
+      padding: 6px 16px; border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--s2); color: var(--t2);
+      font-family: var(--font); font-size: 0.8rem; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .log-btn:hover { background: var(--s3); color: var(--t1); }
+    .log-btn.has-errors {
+      border-color: rgba(234,67,53,0.4);
+      background: rgba(234,67,53,0.07);
+      color: var(--err);
+    }
   </style>
 </head>
 <body>
 
 <div class="topbar">
-  <img src="/static/cloudera-logo.png" alt="Cloudera"/>
+  <a href="/"><img src="/static/cloudera-logo.png" alt="Cloudera"/></a>
   <div class="topbar-sep"></div>
   <div class="topbar-title">Enterprise <span>Assistant</span> — Setup Check</div>
   <div class="topbar-right">
     <button class="refresh-btn" id="refreshBtn" onclick="load()">↻ Refresh</button>
+    <button class="log-btn" id="logBtn" onclick="toggleLogs()">⬛ Logs</button>
     <a class="back-btn" href="/configure" style="background:var(--o-dim);border-color:rgba(249,103,2,0.25);color:var(--o-text)">⚙ Configure</a>
     <a class="back-btn" href="/">← Back to App</a>
   </div>
@@ -230,6 +345,27 @@
     <div class="card"><div class="card-header"><div class="skeleton" style="width:60%;height:14px;margin:0"></div></div><div class="card-body"><div class="skeleton"></div><div class="skeleton"></div></div></div>
     <div class="card"><div class="card-header"><div class="skeleton" style="width:60%;height:14px;margin:0"></div></div><div class="card-body"><div class="skeleton"></div><div class="skeleton"></div></div></div>
     <div class="card"><div class="card-header"><div class="skeleton" style="width:60%;height:14px;margin:0"></div></div><div class="card-body"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+  </div>
+</div>
+
+<!-- ── Log viewer panel ───────────────────────────────────────────────── -->
+<div class="log-panel" id="logPanel">
+  <div class="log-panel-bar">
+    <span class="log-panel-title">Application Logs</span>
+    <div class="log-level-tabs">
+      <button class="log-tab" data-lv="DEBUG"   onclick="setLogLevel('DEBUG')">All</button>
+      <button class="log-tab active" data-lv="INFO"    onclick="setLogLevel('INFO')">Info</button>
+      <button class="log-tab" data-lv="WARNING" onclick="setLogLevel('WARNING')">Warnings</button>
+      <button class="log-tab" data-lv="ERROR"   onclick="setLogLevel('ERROR')">Errors</button>
+    </div>
+    <div class="log-panel-actions">
+      <button class="log-action-btn" onclick="refreshLogs()">↻ Refresh</button>
+      <button class="log-action-btn" onclick="copyLogs()">⎘ Copy</button>
+      <button class="log-close-btn" onclick="toggleLogs()">✕ Close</button>
+    </div>
+  </div>
+  <div class="log-body" id="logBody">
+    <div class="log-empty">Click Refresh to load logs.</div>
   </div>
 </div>
 
@@ -302,7 +438,7 @@
       body.push(row('Path', d.path));
     }
     if (d.fix) body.push(fixHint(d.fix));
-    return card('◈', 'var(--t-dim)', 'var(--teal)', 'Vector Store', d.ok, body);
+    return card('◈', 'var(--t-dim)', 'var(--teal)', 'Vector Store', d.ok, body, 'vector_store');
   }
 
   function buildDbCard(d) {
@@ -320,7 +456,7 @@
       body.push(row('Status', 'No tables found'));
     }
     if (d.fix) body.push(fixHint(d.fix));
-    return card('⬡', 'var(--i-dim)', 'var(--indigo)', 'Database', d.ok, body);
+    return card('⬡', 'var(--i-dim)', 'var(--indigo)', 'Database', d.ok, body, 'database');
   }
 
   function buildLlmCard(d) {
@@ -329,15 +465,16 @@
     body.push(row('Model', d.model || '—'));
     if (d.latency_ms != null) body.push(row('Ping latency', d.latency_ms + ' ms'));
     if (d.fix) body.push(fixHint(d.fix));
-    return card('⬡', 'var(--o-dim)', 'var(--orange)', 'LLM', d.ok, body);
+    return card('⬡', 'var(--o-dim)', 'var(--orange)', 'LLM', d.ok, body, 'llm');
   }
 
   function buildEmbCard(d) {
     var body = [];
     body.push(row('Provider', d.provider));
     body.push(row('Model', d.model));
+    if (d.latency_ms != null) body.push(row('Ping latency', d.latency_ms + ' ms'));
     if (d.fix) body.push(fixHint(d.fix));
-    return card('◎', 'var(--t-dim)', 'var(--teal)', 'Embeddings', d.ok, body);
+    return card('◎', 'var(--t-dim)', 'var(--teal)', 'Embeddings', d.ok, body, 'embeddings');
   }
 
   function buildDocsCard(d) {
@@ -352,22 +489,36 @@
       body.push(chips);
     }
     if (d.fix) body.push(fixHint(d.fix));
-    var el = card('◻', 'var(--i-dim)', 'var(--indigo)', 'Documents', d.ok, body);
+    var el = card('◻', 'var(--i-dim)', 'var(--indigo)', 'Documents', d.ok, body, 'documents');
     el.classList.add('full-width');
     return el;
   }
 
-  function card(icon, iconBg, iconColor, name, ok, bodyChildren) {
+  function card(icon, iconBg, iconColor, name, ok, bodyChildren, componentKey) {
     var iconEl = e('div', { class:'card-icon', style:'background:'+iconBg }, [
       e('span', { style:'color:'+iconColor+';font-size:1.1rem;line-height:1' }, [icon])
     ]);
+
+    // Test connection button
+    var testBtn = e('button', {
+      class: 'test-btn',
+      id: 'testBtn_' + componentKey,
+      onclick: "testComponent('" + componentKey + "')",
+    }, ['⚡ Test']);
+
     var header = e('div', { class:'card-header' }, [
       iconEl,
       e('span', { class:'card-name' }, [name]),
       statusBadge(ok),
+      testBtn,
     ]);
-    var body = e('div', { class:'card-body' });
+    var body = e('div', { class:'card-body' }, [], 'card-body-' + componentKey);
     bodyChildren.forEach(function(c) { if (c) body.appendChild(c); });
+
+    // Error detail box — shown when test fails
+    var errBox = e('div', { class:'test-error', id:'testErr_' + componentKey });
+    body.appendChild(errBox);
+
     var cardEl = e('div', { class:'card' });
     cardEl.appendChild(header);
     cardEl.appendChild(body);
@@ -439,6 +590,138 @@
       load();
     }, REFRESH_INTERVAL * 1000);
   }
+
+  // ── Per-component test ───────────────────────────────────────────────
+  window.testComponent = function(key) {
+    var btn = document.getElementById('testBtn_' + key);
+    var errBox = document.getElementById('testErr_' + key);
+    if (!btn) return;
+
+    // Reset state
+    btn.disabled = true;
+    btn.className = 'test-btn testing';
+    btn.innerHTML = '<span class="spin-ico">↻</span> Testing…';
+    if (errBox) { errBox.className = 'test-error'; errBox.textContent = ''; }
+
+    var t0 = Date.now();
+    fetch('/api/test/' + key)
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var ms = Date.now() - t0;
+        btn.disabled = false;
+        if (d.ok) {
+          var label = '✓ OK';
+          if (d.latency_ms != null) label += '  ' + d.latency_ms + ' ms';
+          else if (ms < 2000) label += '  ' + ms + ' ms';
+          btn.className = 'test-btn pass';
+          btn.textContent = label;
+        } else {
+          btn.className = 'test-btn fail';
+          btn.textContent = '✗ Failed';
+          if (errBox && d.fix) {
+            errBox.textContent = d.fix;
+            errBox.className = 'test-error visible';
+          }
+        }
+        // Auto-reset button label after 8 s
+        setTimeout(function() {
+          if (btn.className.indexOf('pass') !== -1 || btn.className.indexOf('fail') !== -1) {
+            btn.className = 'test-btn';
+            btn.textContent = '⚡ Test';
+            if (errBox) { errBox.className = 'test-error'; errBox.textContent = ''; }
+          }
+        }, 8000);
+      })
+      .catch(function(err) {
+        btn.disabled = false;
+        btn.className = 'test-btn fail';
+        btn.textContent = '✗ Failed';
+        if (errBox) {
+          errBox.textContent = 'Request failed: ' + err.message;
+          errBox.className = 'test-error visible';
+        }
+      });
+  };
+
+  // ── Log viewer ────────────────────────────────────────────────────────
+  var logOpen = false;
+  var logLevel = 'INFO';
+
+  window.toggleLogs = function() {
+    logOpen = !logOpen;
+    document.getElementById('logPanel').classList.toggle('open', logOpen);
+    if (logOpen) refreshLogs();
+  };
+
+  window.setLogLevel = function(lv) {
+    logLevel = lv;
+    document.querySelectorAll('.log-tab').forEach(function(t) {
+      t.classList.toggle('active', t.getAttribute('data-lv') === lv);
+    });
+    refreshLogs();
+  };
+
+  window.refreshLogs = function() {
+    var body = document.getElementById('logBody');
+    body.innerHTML = '<div class="log-empty">Loading…</div>';
+    fetch('/api/logs?level=' + logLevel + '&limit=200')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        renderLogs(d.entries || []);
+        // Update button state — red tint if there are errors
+        updateLogBtn(d.entries || []);
+      })
+      .catch(function(err) {
+        body.innerHTML = '<div class="log-empty">Failed to load logs: ' + err.message + '</div>';
+      });
+  };
+
+  function renderLogs(entries) {
+    var body = document.getElementById('logBody');
+    body.innerHTML = '';
+    if (!entries.length) {
+      body.innerHTML = '<div class="log-empty">No log entries at this level.</div>';
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    entries.forEach(function(e) {
+      var line = document.createElement('div');
+      line.className = 'log-line';
+      var ts  = document.createElement('span'); ts.className  = 'log-ts';  ts.textContent = e.ts;
+      var lv  = document.createElement('span'); lv.className  = 'log-lv ' + e.level; lv.textContent = e.level;
+      var src = document.createElement('span'); src.className = 'log-src'; src.textContent = e.logger;
+      var msg = document.createElement('span'); msg.className = 'log-msg'; msg.textContent = e.message;
+      line.appendChild(ts); line.appendChild(lv); line.appendChild(src); line.appendChild(msg);
+      frag.appendChild(line);
+    });
+    body.appendChild(frag);
+  }
+
+  function updateLogBtn(entries) {
+    var btn = document.getElementById('logBtn');
+    if (!btn) return;
+    var hasErr = entries.some(function(e) { return e.level === 'ERROR' || e.level === 'CRITICAL'; });
+    btn.classList.toggle('has-errors', hasErr);
+    btn.textContent = hasErr ? '⚠ Logs' : '⬛ Logs';
+  }
+
+  window.copyLogs = function() {
+    var lines = Array.from(document.querySelectorAll('#logBody .log-line')).map(function(l) {
+      return Array.from(l.children).map(function(c) { return c.textContent; }).join('  ');
+    });
+    navigator.clipboard && navigator.clipboard.writeText(lines.join('\n')).then(function() {
+      var btn = document.querySelector('.log-action-btn[onclick="copyLogs()"]');
+      if (btn) { btn.textContent = '✓ Copied'; setTimeout(function(){ btn.textContent = '⎘ Copy'; }, 1500); }
+    });
+  };
+
+  // Poll for errors in the background so the button lights up if something goes wrong
+  setInterval(function() {
+    fetch('/api/logs?level=ERROR&limit=1')
+      .then(function(r) { return r.json(); })
+      .then(function(d) { updateLogBtn(d.entries || []); })
+      .catch(function(){});
+  }, 15000);
 
   load();
 })();

@@ -343,10 +343,10 @@
   function reduce(msgs, a) {
     switch (a.type) {
       case 'USER':      return [...msgs, { id:a.id, role:'user', content:a.content }];
-      case 'ASSISTANT': return [...msgs, { id:a.id, role:'assistant', content:'', mode:null, isStreaming:true, docCitations:[], sqlCitation:null, error:null, question:a.question||'' }];
+      case 'ASSISTANT': return [...msgs, { id:a.id, role:'assistant', content:'', mode:null, isStreaming:true, docCitations:[], sqlCitation:null, usage:null, error:null, question:a.question||'' }];
       case 'MODE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{mode:a.mode}) : m);
       case 'TOKEN':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{content:m.content+a.text}) : m);
-      case 'DONE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,docCitations:a.docCitations,sqlCitation:a.sqlCitation}) : m);
+      case 'DONE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,docCitations:a.docCitations,sqlCitation:a.sqlCitation,usage:a.usage}) : m);
       case 'ERROR':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,error:a.message}) : m);
       case 'RESET':     return [];
       default:          return msgs;
@@ -384,7 +384,7 @@
 
   // ── Icons ──────────────────────────────────────────────────────────
   function IcoSend() {
-    return html`<svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M3 10L17 4l-4 6 4 6L3 10z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+    return html`<svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M18 10L4 4l3 6-3 6Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
   }
   function IcoDoc() {
     return html`<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M6 6h4M6 9h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`;
@@ -442,6 +442,12 @@
 
   // ── Top bar (GCP-style) ────────────────────────────────────────────
   function TopBar(props) {
+    const selStyle = {
+      height:'34px', padding:'0 8px 0 10px', borderRadius:'8px',
+      border:'1px solid var(--border)', background:'var(--s2)',
+      color:'var(--t1)', fontSize:'0.75rem', fontWeight:500,
+      cursor:'pointer', outline:'none', flexShrink:0,
+    };
     return html`
       <header style=${{
         height:'var(--topbar-h)', flexShrink:0,
@@ -451,9 +457,9 @@
         borderBottom:'1px solid var(--topbar-bd)',
         gap:'10px', zIndex:10,
       }}>
-        <!-- Logo + product name, aligned on same line -->
+        <!-- Logo + product name -->
         <div style=${{ display:'flex', alignItems:'center', gap:'10px', flexShrink:0 }}>
-          <${CldLogo} height=${20}/>
+          <a href="/" style=${{ display:'flex', alignItems:'center' }}><${CldLogo} height=${20}/></a>
           <div style=${{ width:'1px', height:'20px', background:'var(--border)', flexShrink:0 }}/>
           <span style=${{
             fontFamily:'var(--display)',
@@ -465,11 +471,6 @@
 
         <!-- Right controls -->
         <div style=${{ marginLeft:'auto', display:'flex', alignItems:'center', gap:'8px' }}>
-          <div style=${{
-            fontSize:'0.68rem', color:'var(--t2)',
-            background:'var(--s2)', border:'1px solid var(--border)',
-            padding:'3px 10px', borderRadius:'20px', whiteSpace:'nowrap',
-          }}>RAG + SQL</div>
           <!-- Configure link -->
           <a
             href="/configure"
@@ -528,6 +529,11 @@
       { icon:'⬡', color:'var(--indigo)', label:'Structured Data', sub:'SQL generation' },
       { icon:'⬡', color:'var(--orange)', label:'Combined',        sub:'Docs + data fusion' },
     ];
+    var domainMeta = {
+      banking:    { icon:'🏦', label:'Banking' },
+      telco:      { icon:'📡', label:'Telco' },
+      government: { icon:'🏛', label:'Gov' },
+    };
 
     return html`
       <aside style=${{
@@ -537,6 +543,52 @@
         borderRight:'2px solid var(--sidebar-bd)',
         display:'flex', flexDirection:'column',
       }}>
+
+        <!-- Domain + Language selector -->
+        <div style=${{ padding:'10px 12px 8px', borderBottom:'1px solid var(--border)' }}>
+          <div style=${{ fontSize:'0.62rem', fontWeight:600, letterSpacing:'0.07em', textTransform:'uppercase', color:'var(--t3)', marginBottom:'6px' }}>Domain</div>
+          <div style=${{ display:'flex', gap:'5px' }}>
+            ${(props.domains||[{id:'banking',label:'Banking'},{id:'telco',label:'Telco'},{id:'government',label:'Government'}]).map(function(d){
+              var active = props.domain === d.id;
+              var meta = domainMeta[d.id] || {};
+              return html`
+                <button key=${d.id}
+                  onClick=${function(){ if(props.onDomainChange) props.onDomainChange(d.id); }}
+                  title=${d.label}
+                  style=${{
+                    flex:1, padding:'5px 0', borderRadius:'7px',
+                    border: active ? '1.5px solid var(--orange)' : '1px solid var(--border)',
+                    background: active ? 'var(--o-dim)' : 'var(--s2)',
+                    color: active ? 'var(--o-text)' : 'var(--t2)',
+                    fontSize:'0.68rem', fontWeight: active ? 600 : 400,
+                    cursor:'pointer', transition:'all 0.15s',
+                    display:'flex', flexDirection:'column', alignItems:'center', gap:'1px',
+                  }}
+                >
+                  <span style=${{ fontSize:'0.9rem', lineHeight:1 }}>${meta.icon || ''}</span>
+                  <span>${meta.label || d.label}</span>
+                </button>`;
+            })}
+          </div>
+          <!-- Language toggle -->
+          <div style=${{ display:'flex', gap:'5px', marginTop:'7px' }}>
+            ${['id','en'].map(function(l){
+              var active = props.language === l;
+              return html`
+                <button key=${l}
+                  onClick=${function(){ if(props.onLanguageChange) props.onLanguageChange(l); }}
+                  style=${{
+                    flex:1, padding:'4px 0', borderRadius:'7px',
+                    border: active ? '1.5px solid var(--orange)' : '1px solid var(--border)',
+                    background: active ? 'var(--o-dim)' : 'var(--s2)',
+                    color: active ? 'var(--o-text)' : 'var(--t2)',
+                    fontSize:'0.72rem', fontWeight: active ? 600 : 400,
+                    cursor:'pointer', transition:'all 0.15s',
+                  }}
+                >${l === 'id' ? 'Bahasa Indonesia' : 'English'}</button>`;
+            })}
+          </div>
+        </div>
 
         <!-- System status (collapsed when all OK) -->
         <div className="sec-label">System</div>
@@ -580,21 +632,47 @@
             </div>`;
         })}
 
-        <!-- Sample prompts -->
+        <!-- Sample prompts (grouped by mode) -->
         <div className="sec-label" style=${{ marginTop:'8px' }}>Try asking</div>
         <div style=${{ paddingRight:'12px' }}>
-          ${(props.samples || []).map(function(s, i) {
-            const label = s.length > 68 ? s.slice(0, 68) + '…' : s;
-            return html`
-              <button
-                key=${i}
-                className="nav-item"
-                onClick=${function() { props.onPick(s); }}
-              >
-                <span style=${{ flex:1 }}>${label}</span>
-                <span className="nav-arrow">→</span>
-              </button>`;
-          })}
+          ${(function() {
+            // Group samples by mode, preserving order of first appearance
+            var groups = [];
+            var seen = {};
+            (props.samples || []).forEach(function(s) {
+              var text = typeof s === 'string' ? s : s.text;
+              var mode = (typeof s === 'object' && s.mode) ? s.mode : null;
+              if (mode && !seen[mode]) { seen[mode] = true; groups.push({ mode, items: [] }); }
+              if (!mode && !seen['__none__']) { seen['__none__'] = true; groups.push({ mode: null, items: [] }); }
+              var key = mode || '__none__';
+              groups.find(function(g){ return (g.mode||'__none__') === key; }).items.push(text);
+            });
+
+            return groups.map(function(g) {
+              var m = g.mode ? MODES[g.mode] : null;
+              return html`
+                <div key=${g.mode || 'none'}>
+                  ${m && html`
+                    <div style=${{ display:'flex', alignItems:'center', gap:'6px', padding:'6px 4px 2px 4px', margin:'4px 0 0 0' }}>
+                      <span style=${{ color:m.color, fontSize:'0.8rem' }}>${m.icon}</span>
+                      <span style=${{ fontSize:'0.68rem', fontWeight:600, letterSpacing:'0.04em', textTransform:'uppercase', color:m.color }}>${m.label}</span>
+                    </div>`
+                  }
+                  ${g.items.map(function(text, i) {
+                    const label = text.length > 68 ? text.slice(0, 68) + '…' : text;
+                    return html`
+                      <button
+                        key=${i}
+                        className="nav-item"
+                        onClick=${function() { props.onPick(text); }}
+                      >
+                        <span style=${{ flex:1 }}>${label}</span>
+                        <span className="nav-arrow">→</span>
+                      </button>`;
+                  })}
+                </div>`;
+            });
+          })()}
         </div>
 
         <!-- Spacer -->
@@ -843,6 +921,17 @@
             `}
           </div>
         `}
+        ${!msg.isStreaming && !msg.error && msg.usage && html`
+          <div style=${{
+            marginTop:'6px', paddingLeft:'2px',
+            fontSize:'0.62rem', color:'var(--t3)',
+            display:'flex', alignItems:'center', gap:'10px', opacity:0.7,
+          }}>
+            <span title="Estimated token usage (1 token ≈ 4 chars)">
+              ≈ ${msg.usage.input_tokens.toLocaleString()} in · ${msg.usage.output_tokens.toLocaleString()} out · ${msg.usage.total_tokens.toLocaleString()} total tokens
+            </span>
+          </div>
+        `}
       </div>`;
   }
 
@@ -1042,12 +1131,19 @@
     const [loading, setLoading]         = useState(false);
     const [prefill, setPrefill]         = useState(null);
     const [theme, setTheme]             = useState(getTheme);
+    const [domain, setDomain]           = useState('banking');
+    const [language, setLanguage]       = useState('id');
+    const [domains, setDomains]         = useState([
+      {id:'banking',label:'Banking'},{id:'telco',label:'Telco'},{id:'government',label:'Government'}
+    ]);
     const [isAutoPlaying, setIsAutoPlaying] = useState(false);
     const [autoPlayIdx, setAutoPlayIdx]     = useState(0);
     // Refs so auto-play setTimeout callbacks always read latest state/fn
     const autoPlayRef     = useRef(false);
     const samplesRef      = useRef([]);
     const handleSubmitRef = useRef(null);
+    const domainRef       = useRef(domain);
+    const languageRef     = useRef(language);
 
     // Apply theme to <html> whenever it changes
     useEffect(function() { setThemeAttr(theme); }, [theme]);
@@ -1057,17 +1153,29 @@
       try { sessionStorage.setItem('cld-chat', JSON.stringify(msgs)); } catch(e) {}
     }, [msgs]);
 
-    // Keep samplesRef in sync — auto-play callbacks read this, not the stale closure
+    // Keep refs in sync
     useEffect(function() { samplesRef.current = samples; }, [samples]);
+    useEffect(function() { domainRef.current = domain; }, [domain]);
+    useEffect(function() { languageRef.current = language; }, [language]);
 
-    // Fetch status + samples
+    // Fetch status once, and available domains
     useEffect(function() {
       function ls() { fetch('/api/status').then(function(r){return r.json();}).then(setStatus).catch(console.error); }
-      function lp() { fetch('/api/samples').then(function(r){return r.json();}).then(setSamples).catch(console.error); }
-      ls(); lp();
+      fetch('/api/domains').then(function(r){return r.json();}).then(setDomains).catch(console.error);
+      ls();
       var iv = setInterval(ls, 30000);
       return function() { clearInterval(iv); };
     }, []);
+
+    // Re-fetch samples whenever domain or language changes; also reset auto-play
+    useEffect(function() {
+      stopAutoPlay();
+      setSamples([]);
+      fetch('/api/samples?domain='+domain+'&lang='+language)
+        .then(function(r){return r.json();})
+        .then(setSamples)
+        .catch(console.error);
+    }, [domain, language]);
 
     const handleSubmit = useCallback(function(question, _onDone) {
       var uid = Date.now();
@@ -1083,10 +1191,10 @@
       var gotDone = false;
       async function run() {
         try {
-          for await (var ev of ssePost('/api/chat', { question:question, history:history })) {
+          for await (var ev of ssePost('/api/chat', { question:question, history:history, domain:domainRef.current, language:languageRef.current })) {
             if (ev.event==='mode')  { dispatch({ type:'MODE',  id:aid, mode:ev.data.mode });                                                              setLoading(false); }
             if (ev.event==='token') { dispatch({ type:'TOKEN', id:aid, text:ev.data.text }); }
-            if (ev.event==='done')  { dispatch({ type:'DONE',  id:aid, docCitations:ev.data.doc_citations, sqlCitation:ev.data.sql_citation }); gotDone=true; }
+            if (ev.event==='done')  { dispatch({ type:'DONE',  id:aid, docCitations:ev.data.doc_citations, sqlCitation:ev.data.sql_citation, usage:ev.data.usage||null }); gotDone=true; }
             if (ev.event==='error') { dispatch({ type:'ERROR', id:aid, message:ev.data.message }); gotDone=true; }
           }
         } catch(err) {
@@ -1119,7 +1227,8 @@
           return;
         }
         setAutoPlayIdx(idx);
-        handleSubmitRef.current(samps[idx], function() {
+        var q = typeof samps[idx] === 'string' ? samps[idx] : samps[idx].text;
+        handleSubmitRef.current(q, function() {
           if (!autoPlayRef.current) return;
           // Brief pause between questions so the user can read each answer
           setTimeout(function() { playNext(idx + 1); }, 1800);
@@ -1140,6 +1249,11 @@
           theme=${theme}
           onToggle=${function() { setTheme(function(t){ return t==='dark'?'light':'dark'; }); }}
           onReset=${function() { stopAutoPlay(); dispatch({ type:'RESET' }); try { sessionStorage.removeItem('cld-chat'); } catch(e){} }}
+          domain=${domain}
+          domains=${domains}
+          onDomainChange=${function(d) { setDomain(d); }}
+          language=${language}
+          onLanguageChange=${function(l) { setLanguage(l); }}
         />
 
         <!-- Body: sidebar + main -->
@@ -1153,6 +1267,11 @@
             autoPlayTotal=${samples.length}
             onStartAutoPlay=${startAutoPlay}
             onStopAutoPlay=${stopAutoPlay}
+            domain=${domain}
+            domains=${domains}
+            language=${language}
+            onDomainChange=${function(d) { setDomain(d); }}
+            onLanguageChange=${function(l) { setLanguage(l); }}
           />
           <!-- Main: chat + input -->
           <div style=${{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>

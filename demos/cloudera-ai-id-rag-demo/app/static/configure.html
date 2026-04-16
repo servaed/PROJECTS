@@ -216,7 +216,7 @@
 
 <!-- ── Topbar ────────────────────────────────────────────────────────────── -->
 <div class="topbar">
-  <img src="/static/cloudera-logo.png" alt="Cloudera"/>
+  <a href="/"><img src="/static/cloudera-logo.png" alt="Cloudera"/></a>
   <div class="topbar-div"></div>
   <div class="topbar-title">Enterprise <span>Assistant</span> — Configure</div>
   <div class="topbar-right">
@@ -262,6 +262,7 @@
             <option value="">— select provider —</option>
             <option value="cloudera">Cloudera AI Inference</option>
             <option value="openai">OpenAI / OpenAI-compatible</option>
+            <option value="azure">Azure OpenAI</option>
             <option value="bedrock">Amazon Bedrock</option>
             <option value="anthropic">Anthropic</option>
             <option value="local">Local (Ollama / LM Studio)</option>
@@ -326,6 +327,70 @@
                  placeholder="e.g. meta/llama-3.1-70b-instruct"/>
           <div class="field-hint" id="hint_LLM_MODEL_ID">
             The model identifier as expected by the provider.
+          </div>
+        </div>
+
+        <!-- Azure OpenAI-specific fields -->
+        <div class="field hidden" id="f_AZURE_OPENAI_ENDPOINT">
+          <div class="field-top">
+            <label class="field-label" for="AZURE_OPENAI_ENDPOINT">
+              Azure Endpoint<span class="req">*</span>
+              <span class="provider-tags"><span class="ptag ptag-openai">Azure</span></span>
+            </label>
+            <span id="src_AZURE_OPENAI_ENDPOINT" class="src-badge src-none">Not set</span>
+          </div>
+          <input type="url" id="AZURE_OPENAI_ENDPOINT" name="AZURE_OPENAI_ENDPOINT"
+                 placeholder="https://your-resource.openai.azure.com"/>
+          <div class="field-hint">
+            Your Azure OpenAI resource endpoint URL from the Azure portal.
+          </div>
+        </div>
+
+        <div class="field hidden" id="f_AZURE_OPENAI_API_KEY">
+          <div class="field-top">
+            <label class="field-label" for="AZURE_OPENAI_API_KEY">
+              Azure API Key<span class="req">*</span>
+              <span class="provider-tags"><span class="ptag ptag-openai">Azure</span></span>
+            </label>
+            <span id="src_AZURE_OPENAI_API_KEY" class="src-badge src-none">Not set</span>
+          </div>
+          <div class="pw-wrap">
+            <input type="password" id="AZURE_OPENAI_API_KEY" name="AZURE_OPENAI_API_KEY"
+                   placeholder="Leave blank to keep existing value"/>
+            <button type="button" class="pw-toggle" onclick="togglePw('AZURE_OPENAI_API_KEY',this)">Show</button>
+          </div>
+          <div class="field-hint">API key from your Azure OpenAI resource → Keys and Endpoint.</div>
+        </div>
+
+        <div class="field hidden" id="f_AZURE_OPENAI_DEPLOYMENT">
+          <div class="field-top">
+            <label class="field-label" for="AZURE_OPENAI_DEPLOYMENT">
+              Deployment Name<span class="req">*</span>
+              <span class="provider-tags"><span class="ptag ptag-openai">Azure</span></span>
+            </label>
+            <span id="src_AZURE_OPENAI_DEPLOYMENT" class="src-badge src-none">Not set</span>
+          </div>
+          <input type="text" id="AZURE_OPENAI_DEPLOYMENT" name="AZURE_OPENAI_DEPLOYMENT"
+                 placeholder="e.g. gpt-4o or my-gpt4-deployment"/>
+          <div class="field-hint">
+            The deployment name you gave the model in Azure OpenAI Studio
+            (not the underlying model name).
+          </div>
+        </div>
+
+        <div class="field hidden" id="f_AZURE_OPENAI_API_VERSION">
+          <div class="field-top">
+            <label class="field-label" for="AZURE_OPENAI_API_VERSION">
+              API Version
+              <span class="provider-tags"><span class="ptag ptag-openai">Azure</span></span>
+            </label>
+            <span id="src_AZURE_OPENAI_API_VERSION" class="src-badge src-none">Not set</span>
+          </div>
+          <input type="text" id="AZURE_OPENAI_API_VERSION" name="AZURE_OPENAI_API_VERSION"
+                 placeholder="2024-02-01"/>
+          <div class="field-hint">
+            Azure OpenAI REST API version. Leave blank to use the default
+            (<code style="font-family:var(--mono);font-size:0.78em">2024-02-01</code>).
           </div>
         </div>
 
@@ -532,6 +597,8 @@ function renderBadge(key, source) {
 var PROVIDER_FIELDS = {
   cloudera:   ['f_LLM_BASE_URL', 'f_LLM_API_KEY', 'f_LLM_MODEL_ID'],
   openai:     ['f_LLM_BASE_URL', 'f_LLM_API_KEY', 'f_LLM_MODEL_ID'],
+  azure:      ['f_AZURE_OPENAI_ENDPOINT', 'f_AZURE_OPENAI_API_KEY',
+               'f_AZURE_OPENAI_DEPLOYMENT', 'f_AZURE_OPENAI_API_VERSION'],
   bedrock:    ['f_LLM_MODEL_ID', 'f_bedrock_note'],
   anthropic:  ['f_LLM_API_KEY',  'f_LLM_MODEL_ID'],
   local:      ['f_LLM_BASE_URL', 'f_LLM_MODEL_ID'],
@@ -544,19 +611,24 @@ var MODEL_HINTS = {
   local:     'e.g. llama3.2 (as shown in `ollama list`)',
 };
 
+var _ALL_PROVIDER_FIELDS = [
+  'f_LLM_BASE_URL', 'f_LLM_API_KEY', 'f_LLM_MODEL_ID', 'f_bedrock_note',
+  'f_AZURE_OPENAI_ENDPOINT', 'f_AZURE_OPENAI_API_KEY',
+  'f_AZURE_OPENAI_DEPLOYMENT', 'f_AZURE_OPENAI_API_VERSION',
+];
+
 function onProviderChange() {
   var provider = document.getElementById('LLM_PROVIDER').value;
-  var all = ['f_LLM_BASE_URL', 'f_LLM_API_KEY', 'f_LLM_MODEL_ID', 'f_bedrock_note'];
-  all.forEach(function(id) {
+  _ALL_PROVIDER_FIELDS.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.classList.add('hidden');
   });
-  var show = PROVIDER_FIELDS[provider] || all.slice(0, 3);
+  var show = PROVIDER_FIELDS[provider] || ['f_LLM_BASE_URL', 'f_LLM_API_KEY', 'f_LLM_MODEL_ID'];
   show.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.classList.remove('hidden');
   });
-  // Update model ID placeholder
+  // Update model ID placeholder for non-Azure providers
   var hint = document.getElementById('hint_LLM_MODEL_ID');
   var modelInp = document.getElementById('LLM_MODEL_ID');
   if (hint && MODEL_HINTS[provider]) {
@@ -599,11 +671,9 @@ function loadConfig() {
         }
       }
 
-      // Lock fields that come from the platform environment
-      if (entry.source === 'env') {
-        el.readOnly = true;
-        if (el.tagName === 'SELECT') el.disabled = true;
-      }
+      // Fields from the platform environment can still be edited here —
+      // saving writes to data/.env.local so the value takes effect on restart
+      // (as long as the platform env var is also cleared).
     });
 
     // Trigger provider-based field visibility after loading
@@ -626,6 +696,8 @@ document.getElementById('configForm').onsubmit = function(e) {
 
   var fields = [
     'LLM_PROVIDER', 'LLM_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL_ID',
+    'AZURE_OPENAI_ENDPOINT', 'AZURE_OPENAI_API_KEY',
+    'AZURE_OPENAI_DEPLOYMENT', 'AZURE_OPENAI_API_VERSION',
     'EMBEDDINGS_PROVIDER', 'EMBEDDINGS_MODEL',
     'DATABASE_URL', 'SQL_APPROVED_TABLES',
     'DOCS_SOURCE_PATH', 'VECTOR_STORE_PATH', 'LOG_LEVEL',
@@ -650,18 +722,51 @@ document.getElementById('configForm').onsubmit = function(e) {
       showBanner('Error: ' + (res.data.detail || JSON.stringify(res.data)), 'err');
       return;
     }
-    var skipped = res.data.keys_skipped_env || [];
-    var skipMsg = skipped.length
-      ? ' (skipped ' + skipped.join(', ') + ' — already set via platform environment)'
+    var shadowed = res.data.keys_shadowed_by_env || [];
+    var skipMsg = shadowed.length
+      ? ' Note: ' + shadowed.join(', ') + ' is also set as a platform environment variable and will override this value until cleared.'
       : '';
-    showBanner(
-      '✓ Configuration saved to ' + res.data.file + '.' + skipMsg +
-      '  Restart the application in Cloudera AI to fully apply all changes.',
-      'ok'
-    );
     note.textContent = 'Last saved: ' + new Date().toLocaleTimeString();
-    // Reload badges
     loadConfig();
+
+    // ── Auto-restart sequence ────────────────────────────────────────
+    var countdown = 5;
+    function tick() {
+      showBanner(
+        '✓ Configuration saved.' + skipMsg +
+        '  Restarting application in ' + countdown + 's…',
+        'ok'
+      );
+      if (countdown <= 0) {
+        fetch('/api/restart', { method: 'POST' })
+          .then(function() {
+            showBanner('↻ Restarting… page will reload automatically.', 'warn');
+            // Wait 7 s before polling — PowerShell sleeps 3 s, then uvicorn needs ~2–4 s to start
+            var pollStart = Date.now();
+            function poll() {
+              if (Date.now() - pollStart > 60000) {
+                showBanner('Restart is taking longer than expected. Please reload manually.', 'warn');
+                return;
+              }
+              setTimeout(function() {
+                fetch('/api/status', { cache: 'no-store' })
+                  .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+                  .then(function() { window.location.href = '/'; })
+                  .catch(function() { poll(); });
+              }, 1500);
+            }
+            setTimeout(poll, 7000);
+          })
+          .catch(function() {
+            showBanner('✓ Configuration saved.' + skipMsg + '  Please restart the application manually.', 'warn');
+          });
+        return;
+      }
+      countdown--;
+      setTimeout(tick, 1000);
+    }
+    tick();
+
   }).catch(function(err) {
     btn.disabled = false;
     btn.textContent = 'Save Configuration';

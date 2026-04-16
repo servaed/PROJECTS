@@ -36,7 +36,15 @@ class QueryResult:
     def to_markdown_table(self, max_rows: int = 20) -> str:
         if self.dataframe is None or self.dataframe.empty:
             return "_Tidak ada data._"
-        return self.dataframe.head(max_rows).to_markdown(index=False)
+        df = self.dataframe.head(max_rows).copy()
+        # Format numeric columns: integers as plain integers, floats with 2 decimal places.
+        # This prevents pandas from rendering large numbers in scientific notation (e.g. 2.368e+10).
+        for col in df.select_dtypes(include="number").columns:
+            if (df[col].dropna() % 1 == 0).all():
+                df[col] = df[col].apply(lambda v: f"{int(v):,}" if pd.notna(v) else "")
+            else:
+                df[col] = df[col].apply(lambda v: f"{v:,.2f}" if pd.notna(v) else "")
+        return df.to_markdown(index=False)
 
 
 def run_query(sql: str) -> QueryResult:

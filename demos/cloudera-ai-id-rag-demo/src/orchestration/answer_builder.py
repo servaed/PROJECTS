@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from dataclasses import dataclass, field
 
-from src.orchestration.router import classify_question, AnswerMode
+from src.orchestration.router import classify_question, AnswerMode, _strip_thinking
 from src.orchestration.citations import (
     build_document_citations,
     build_sql_citation,
@@ -31,8 +31,9 @@ from src.llm.prompts import (
     build_document_prompt,
     build_data_prompt,
     build_combined_prompt,
-    ANSWER_NOT_FOUND_ID,
-    ANSWER_SQL_FAILED_ID,
+    build_data_extraction_prompt,
+    get_answer_not_found,
+    get_answer_sql_failed,
 )
 from src.config.logging import get_logger
 
@@ -60,6 +61,40 @@ class AnswerPrep:
     doc_chunks: list[RetrievedChunk]
     query_result: QueryResult | None
     history: list[dict]
+    domain: str = "banking"
+    language: str = "id"
+    # Populated by stream_synthesis so _chat_sse can include token estimates in the
+    # done event without re-building the messages or calling the LLM a second time.
+    synthesis_input_chars: int = 0
+
+
+# ── Gabungan helpers ───────────────────────────────────────────────────────
+
+
+def _extract_data_question(question: str) -> str:
+    """Rephrase a combined (gabungan) question into a pure data/SQL query.
+
+    Combined questions often contain policy-comparison phrasing such as
+    "apakah X sudah sesuai target kebijakan Y?" that confuses the SQL generator
+    into returning TIDAK_DAPAT_DIJAWAB.  This step strips the policy framing so
+    the SQL generator receives a clean aggregation request like "Berapa total X?"
+
+    Falls back to the original question on any error.
+    """
+    try:
+        llm = get_llm_client()
+        messages = build_data_extraction_prompt(question)
+        response = llm.chat(messages, temperature=0.0, max_tokens=150)
+        extracted = _strip_thinking(response.content).strip()
+        if extracted and len(extracted) > 5:
+            logger.debug(
+                "Data extraction: '%s...' → '%s...'",
+                question[:50], extracted[:50],
+            )
+            return extracted
+    except Exception as exc:
+        logger.warning("Data question extraction failed: %s — using original", exc)
+    return question
 
 
 # ── Phase 1 ────────────────────────────────────────────────────────────────
@@ -69,8 +104,14 @@ def prepare_answer(
     question: str,
     history: list[dict] | None = None,
     top_k: int = 5,
+    domain: str = "banking",
+    domain_tables: list[str] | None = None,
+    language: str = "id",
 ) -> AnswerPrep:
     """Classify the question and retrieve all context. No LLM synthesis here.
+
+    domain         — restricts document retrieval to that domain's chunks.
+    domain_tables  — overrides the approved SQL tables for this domain.
 
     This is fast enough to run inside a spinner so the user sees retrieval
     progress before the (slower) streaming synthesis begins.
@@ -78,13 +119,36 @@ def prepare_answer(
     mode = classify_question(question)
     doc_chunks: list[RetrievedChunk] = []
     query_result: QueryResult | None = None
+    sql_question = question
+
+    if mode == "gabungan":
+        # Extract the pure data component once — reused for both SQL gen and
+        # the second retrieval pass below.
+        sql_question = _extract_data_question(question)
 
     if mode in ("dokumen", "gabungan"):
-        doc_chunks = retrieve(question, top_k=top_k)
+        # Gabungan retrieval uses two passes then deduplicates:
+        #   Pass 1 — original question  → retrieves policy/standard chunks
+        #   Pass 2 — data-only question → retrieves quantitative metric chunks
+        # This ensures both the "target" side (policy) and the "actual" side
+        # (data-flavoured text) are represented in the context.
+        doc_top_k = top_k + 2 if mode == "gabungan" else top_k
+        doc_chunks = retrieve(question, top_k=doc_top_k, domain=domain)
+
+        if mode == "gabungan" and sql_question != question:
+            extra = retrieve(sql_question, top_k=top_k, domain=domain)
+            # Deduplicate by (source_path, chunk_index) — keep first occurrence
+            seen: set[tuple] = {(c.source_path, c.chunk_index) for c in doc_chunks}
+            for chunk in extra:
+                key = (chunk.source_path, chunk.chunk_index)
+                if key not in seen:
+                    doc_chunks.append(chunk)
+                    seen.add(key)
+            doc_chunks = doc_chunks[: doc_top_k + top_k]   # cap total
 
     if mode in ("data", "gabungan"):
         try:
-            sql, _ = generate_sql(question)
+            sql, _ = generate_sql(sql_question, approved_tables=domain_tables)
             query_result = run_query(sql)
         except SqlGuardrailError as exc:
             logger.warning("SQL guardrail blocked query: %s", exc)
@@ -97,6 +161,8 @@ def prepare_answer(
         doc_chunks=doc_chunks,
         query_result=query_result,
         history=history or [],
+        domain=domain,
+        language=language,
     )
 
 
@@ -108,6 +174,9 @@ def stream_synthesis(prep: AnswerPrep) -> Generator[str, None, None]:
 
     Yields the fallback string directly (without calling the LLM) when no
     context was retrieved, so the caller always gets a complete response.
+
+    Side-effect: sets prep.synthesis_input_chars so the caller can estimate
+    input token usage for the done event.
     """
     fallback = _get_fallback(prep)
     if fallback:
@@ -115,6 +184,11 @@ def stream_synthesis(prep: AnswerPrep) -> Generator[str, None, None]:
         return
 
     messages = _build_messages(prep)
+    # Record total character length of messages for input-token estimation.
+    # This is set before streaming so the done-event builder can read it even
+    # if the stream is cancelled mid-way.
+    prep.synthesis_input_chars = sum(len(m.get("content", "")) for m in messages)
+
     llm = get_llm_client()
     yield from llm.stream_chat(messages)
 
@@ -163,28 +237,31 @@ def answer_question(
 
 
 def _get_fallback(prep: AnswerPrep) -> str | None:
-    """Return a fallback string if no retrieval results are available, else None."""
+    """Return a language-appropriate fallback string if no retrieval results are available."""
+    lang = prep.language
     if prep.mode == "dokumen" and not prep.doc_chunks:
-        return ANSWER_NOT_FOUND_ID
+        return get_answer_not_found(lang)
     if prep.mode == "data" and (prep.query_result is None or not prep.query_result.succeeded):
-        return ANSWER_SQL_FAILED_ID
+        return get_answer_sql_failed(lang)
     if prep.mode == "gabungan":
         no_docs = not prep.doc_chunks
         no_data = prep.query_result is None or not prep.query_result.succeeded
         if no_docs and no_data:
-            return ANSWER_NOT_FOUND_ID
+            return get_answer_not_found(lang)
     return None
 
 
 def _build_messages(prep: AnswerPrep) -> list[dict]:
     """Build the LLM prompt messages from retrieved context."""
+    lang = prep.language
+
     if prep.mode == "dokumen":
         context = _format_doc_context(prep.doc_chunks)
-        return build_document_prompt(context, prep.question, history=prep.history)
+        return build_document_prompt(context, prep.question, history=prep.history, language=lang)
 
     if prep.mode == "data":
         sql_summary = _format_sql_summary(prep.query_result)
-        return build_data_prompt(sql_summary, prep.question, history=prep.history)
+        return build_data_prompt(sql_summary, prep.question, history=prep.history, language=lang)
 
     # gabungan — merge both sources
     doc_context = (
@@ -197,7 +274,9 @@ def _build_messages(prep: AnswerPrep) -> list[dict]:
         if prep.query_result and prep.query_result.succeeded
         else "_Data tidak tersedia._"
     )
-    return build_combined_prompt(doc_context, sql_summary, prep.question, history=prep.history)
+    return build_combined_prompt(
+        doc_context, sql_summary, prep.question, history=prep.history, language=lang
+    )
 
 
 def _format_doc_context(chunks: list[RetrievedChunk]) -> str:

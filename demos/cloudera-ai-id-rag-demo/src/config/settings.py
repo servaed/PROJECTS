@@ -1,12 +1,46 @@
 """Application configuration — all values loaded from environment variables."""
 
+import os
+import pathlib
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Literal
 
 
+def _load_override_env(path: str = "data/.env.local") -> None:
+    """Load key=value pairs from the configure-wizard override file into os.environ.
+
+    Mirrors what deployment/launch_app.sh does via `source data/.env.local`.
+    Must run before Settings() is instantiated so that the live-reading properties
+    (llm_base_url, llm_api_key, llm_model_id) see the correct values on startup.
+
+    Platform env vars (already in os.environ) are never overwritten — the file
+    only fills in keys that are absent, preserving Cloudera AI platform precedence.
+    """
+    p = pathlib.Path(path)
+    if not p.exists():
+        return
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" in line:
+            key, _, value = line.partition("=")
+            key = key.strip()
+            value = value.strip()
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+_load_override_env()
+
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(".env", "data/.env.local"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     # ── LLM Provider ──────────────────────────────────────────────────────
     # "cloudera"  : Cloudera AI Inference (OpenAI-compatible endpoint)
@@ -52,7 +86,7 @@ class Settings(BaseSettings):
 
     # ── Embeddings ────────────────────────────────────────────────────────
     embeddings_provider: Literal["local", "openai"] = "local"
-    embeddings_model: str = "intfloat/multilingual-e5-base"
+    embeddings_model: str = "intfloat/multilingual-e5-large"
 
     # ── Vector store ──────────────────────────────────────────────────────
     vector_store_type: Literal["faiss"] = "faiss"
@@ -88,44 +122,67 @@ class Settings(BaseSettings):
         return [t.strip() for t in self.sql_approved_tables.split(",") if t.strip()]
 
     @property
+    def _live_provider(self) -> str:
+        """Current LLM provider — reads live os.environ so configure changes take effect
+        immediately without a restart."""
+        return os.environ.get("LLM_PROVIDER", self.llm_provider)
+
+    @property
     def llm_base_url(self) -> str:
-        """Base URL for OpenAI-compatible providers (not used for Bedrock/Anthropic)."""
-        if self.llm_provider == "cloudera":
-            return self.cloudera_inference_url
-        if self.llm_provider == "openai":
+        """Base URL for OpenAI-compatible providers (not used for Bedrock/Anthropic).
+
+        Checks generic LLM_BASE_URL env var first (written by the /configure wizard),
+        then falls back to provider-specific env vars.  Reads os.environ live so that
+        POST /api/configure changes are reflected immediately.
+        """
+        # Generic override written by /configure wizard
+        if os.environ.get("LLM_BASE_URL"):
+            return os.environ["LLM_BASE_URL"]
+        provider = self._live_provider
+        if provider == "cloudera":
+            return os.environ.get("CLOUDERA_INFERENCE_URL", self.cloudera_inference_url)
+        if provider == "openai":
             return "https://api.openai.com/v1"
-        if self.llm_provider == "azure":
-            return self.azure_openai_endpoint
-        if self.llm_provider == "local":
-            return self.local_llm_url
+        if provider == "azure":
+            return os.environ.get("AZURE_OPENAI_ENDPOINT", self.azure_openai_endpoint)
+        if provider == "local":
+            return os.environ.get("LOCAL_LLM_URL", self.local_llm_url)
         return ""  # bedrock / anthropic use their own SDKs
 
     @property
     def llm_api_key(self) -> str:
-        if self.llm_provider == "cloudera":
-            return self.cloudera_inference_api_key
-        if self.llm_provider == "openai":
-            return self.openai_api_key
-        if self.llm_provider == "azure":
-            return self.azure_openai_api_key
-        if self.llm_provider == "local":
-            return self.local_llm_api_key
+        # Generic override written by /configure wizard
+        if os.environ.get("LLM_API_KEY"):
+            return os.environ["LLM_API_KEY"]
+        provider = self._live_provider
+        if provider == "cloudera":
+            return os.environ.get("CLOUDERA_INFERENCE_API_KEY", self.cloudera_inference_api_key)
+        if provider == "openai":
+            return os.environ.get("OPENAI_API_KEY", self.openai_api_key)
+        if provider == "azure":
+            return os.environ.get("AZURE_OPENAI_API_KEY", self.azure_openai_api_key)
+        if provider == "local":
+            return os.environ.get("LOCAL_LLM_API_KEY", self.local_llm_api_key)
         return ""
 
     @property
     def llm_model_id(self) -> str:
-        if self.llm_provider == "cloudera":
-            return self.cloudera_inference_model_id
-        if self.llm_provider == "openai":
-            return self.openai_model_id
-        if self.llm_provider == "azure":
-            return self.azure_openai_deployment
-        if self.llm_provider == "bedrock":
-            return self.bedrock_model_id
-        if self.llm_provider == "anthropic":
-            return self.anthropic_model_id
-        if self.llm_provider == "local":
-            return self.local_llm_model_id
+        # Generic override written by /configure wizard
+        if os.environ.get("LLM_MODEL_ID"):
+            return os.environ["LLM_MODEL_ID"]
+        provider = self._live_provider
+        if provider == "cloudera":
+            return os.environ.get("CLOUDERA_INFERENCE_MODEL_ID", self.cloudera_inference_model_id)
+        if provider == "openai":
+            return os.environ.get("OPENAI_MODEL_ID", self.openai_model_id)
+        if provider == "azure":
+            return os.environ.get("AZURE_OPENAI_DEPLOYMENT", self.azure_openai_deployment)
+        if provider == "bedrock":
+            return os.environ.get("BEDROCK_MODEL_ID", self.bedrock_model_id)
+        if provider == "anthropic":
+            return os.environ.get("ANTHROPIC_MODEL_ID", self.anthropic_model_id)
+        if provider == "local":
+            return os.environ.get("LOCAL_LLM_MODEL_ID", self.local_llm_model_id)
         return ""
 
 

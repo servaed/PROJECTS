@@ -1,6 +1,7 @@
 # cloudera-ai-id-rag-demo
 
-A **Bahasa Indonesia enterprise conversational assistant** deployed as a Cloudera AI Application.
+A **bilingual enterprise conversational assistant** (Bahasa Indonesia + English) deployed
+as a Cloudera AI Application.
 
 The assistant answers questions from enterprise documents (RAG) and structured tables (SQL),
 with full source traceability and streaming responses. Designed for presales demos in
@@ -12,7 +13,8 @@ Indonesian banking, telco, and government sectors.
 
 | Feature | Description |
 |---------|-------------|
-| Bahasa Indonesia chat | Questions and answers in Bahasa Indonesia |
+| Bilingual chat | Questions and answers in Bahasa Indonesia **or** English — auto-detected |
+| Domain selector | Sidebar tabs: 🏦 Banking · 📡 Telco · 🏛 Government |
 | Document RAG | Answers from PDF, DOCX, TXT, HTML, Markdown with source preview |
 | Structured data query | Natural language to SQL — read-only with full guardrails |
 | Combined answers | Merges document context + table query results in one response |
@@ -56,7 +58,8 @@ LLM Provider (pluggable)
 **Stack:**
 - Backend: **FastAPI + uvicorn** — async, SSE streaming, port 8080
 - Frontend: **React 18 SPA** — served from `app/static/`, no build step (htm tagged templates)
-- Embeddings: local `sentence-transformers` (default, no API key) or OpenAI
+- Embeddings: `intfloat/multilingual-e5-large` (local, no API key required) or OpenAI
+- Retrieval: **hybrid BM25 + FAISS** (Reciprocal Rank Fusion) for better precision
 - Vector store: FAISS (local) — swap to enterprise vector DB for production
 - SQL safety: sqlparse AST walking + allowlist + keyword blocklist + FAISS SHA-256 hash
 - Streamlit fallback: `app/main.py` retained for local notebook use only
@@ -96,8 +99,11 @@ cloudera-ai-id-rag-demo/
 │  ├─ connectors/                # HDFS, file, database adapters
 │  └─ utils/                     # Language helpers, ID generation
 ├─ data/
-│  ├─ sample_docs/               # Demo documents (kebijakan kredit, OJK, KYC)
-│  ├─ sample_tables/             # Demo table data (CSV + SQLite seeder)
+│  ├─ sample_docs/
+│  │  ├─ banking/                # kebijakan_kredit_umkm, prosedur_kyc, regulasi_ojk_2025
+│  │  ├─ telco/                  # kebijakan_layanan_pelanggan, regulasi_spektrum_frekuensi
+│  │  └─ government/             # kebijakan_pelayanan_publik, regulasi_anggaran_daerah
+│  ├─ sample_tables/             # Demo table data (SQLite seeder — 9 tables, 148+ rows)
 │  ├─ manifests/
 │  └─ .env.local                 # ← written by /configure wizard (gitignored)
 ├─ deployment/
@@ -179,11 +185,16 @@ deployment before the LLM credentials have been configured.
 
 ## Demo Features
 
+### Domain & language selector (sidebar)
+- Click **🏦 Banking**, **📡 Telco**, or **🏛 Gov** tabs in the sidebar to switch the
+  active domain — sample prompts and retrieval scope update immediately
+- Toggle **Bahasa Indonesia / English** to switch the response language — the LLM
+  replies in whichever language is selected
+
 ### ▶ Run Demo (auto-play)
-Click **▶ Run Demo** in the sidebar to walk through all six sample prompts
-automatically, with a 1.8 s pause between answers. Click **⏹ Stop Demo** at
-any time. The input bar is disabled during auto-play to prevent concurrent
-SSE streams.
+Click **▶ Run Demo** in the sidebar to walk through all sample prompts automatically,
+with a 1.8 s pause between answers. Click **⏹ Stop Demo** at any time. The input bar
+is disabled during auto-play to prevent concurrent SSE streams.
 
 ### Source document preview
 Expand any source citation card with **▼ Show full chunk** to read the complete
@@ -237,17 +248,38 @@ docker run --rm -p 8080:8080 \
 
 ---
 
+## Sample Data
+
+The demo ships with realistic data across 9 tables (148+ rows):
+
+| Domain | Tables | Highlights |
+|--------|--------|-----------|
+| Banking | `kredit_umkm` (45 rows), `nasabah` (15), `cabang` (14) | Multi-month outstanding, NPL kualitas, regional targets |
+| Telco | `pelanggan` (20), `penggunaan_data` (30), `jaringan` (15) | Churn risk scores, ARPU, network utilisasi (Bali 90.1% kritis) |
+| Government | `penduduk` (15), `anggaran_daerah` (26), `layanan_publik` (23) | TW1–TW3 realisasi, IKM per service, processing times |
+
+Documents per domain:
+
+| Domain | Files |
+|--------|-------|
+| Banking | `kebijakan_kredit_umkm.txt` · `prosedur_kyc_nasabah.txt` · `regulasi_ojk_2025.txt` |
+| Telco | `kebijakan_layanan_pelanggan.txt` · `regulasi_spektrum_frekuensi.txt` |
+| Government | `kebijakan_pelayanan_publik.txt` · `regulasi_anggaran_daerah.txt` |
+
+---
+
 ## Presales Demo Script
 
-1. **Open the app** — React chat interface loads with sample prompts in the sidebar
-2. Click **▶ Run Demo** for a fully automatic walkthrough — no typing required
-3. Or ask manually:
-   - *Document*: *"Jelaskan ketentuan restrukturisasi kredit"* → streaming answer + source panel
-   - *Data*: *"Berapa outstanding UMKM Jakarta Maret 2026?"* → answer + SQL trace + result table
-   - *Combined*: *"Apakah tren sesuai kebijakan ekspansi?"* → merges both sources
-4. Expand a citation card → **▼ Show full chunk** to show source transparency
-5. Open **/setup** to show the live health dashboard and system status
-6. Open **/configure** to show how credentials are set without shell access
+1. **Open the app** — React chat interface loads; sidebar shows domain tabs and language toggle
+2. Select a domain (🏦 Banking, 📡 Telco, or 🏛 Gov) and language (ID / EN)
+3. Click **▶ Run Demo** for a fully automatic walkthrough — no typing required
+4. Or ask manually (examples in English mode):
+   - *Document*: *"What is the credit restructuring procedure?"* → streaming answer + source panel
+   - *Data*: *"Show the top 5 customers by credit exposure"* → answer + SQL trace + table
+   - *Combined*: *"Has network utilization in Bali exceeded the SLA threshold?"* → merges both
+5. Expand a citation card → **▼ Show full chunk** to show source transparency
+6. Open **/setup** to show the live health dashboard and system status
+7. Open **/configure** to show how credentials are set without shell access
 
 ---
 

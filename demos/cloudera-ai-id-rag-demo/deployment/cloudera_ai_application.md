@@ -112,7 +112,7 @@ For production environments:
 | Scenario | CPU | RAM |
 |----------|-----|-----|
 | Demo (OpenAI embeddings) | 1 vCPU | 2 GB |
-| Demo (local embeddings) | 4 vCPU | 8 GB |
+| Demo (local embeddings, e5-large) | 4 vCPU | 8 GB |
 | Production (light) | 2 vCPU | 4 GB |
 
 ---

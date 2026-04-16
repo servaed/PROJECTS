@@ -31,6 +31,7 @@ class DocumentChunk:
     ingest_timestamp: str
     chunk_index: int
     text: str
+    domain: str = "general"
 
     @property
     def metadata(self) -> dict:
@@ -42,6 +43,7 @@ class DocumentChunk:
             "file_type": self.file_type,
             "ingest_timestamp": self.ingest_timestamp,
             "chunk_index": self.chunk_index,
+            "domain": self.domain,
         }
 
 
@@ -86,6 +88,7 @@ def chunk_documents(
                     ingest_timestamp=doc.ingest_timestamp,
                     chunk_index=i,
                     text=text,
+                    domain=doc.domain,
                 )
             )
         logger.debug("Chunked '%s' into %d chunks", doc.title, len(texts))

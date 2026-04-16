@@ -226,8 +226,8 @@ Under **Runtime / Resource Profile**:
 | **Replicas** | 1 (for demo); 2+ for HA production |
 
 > **Why 4 vCPU / 8 GB for embeddings?**
-> The local `multilingual-e5-base` model is ~500 MB and requires ~2 GB RAM
-> to load. The first startup downloads it from HuggingFace (~2 min).
+> The local `multilingual-e5-large` model is ~1.1 GB and requires ~3 GB RAM
+> to load. The first startup downloads it from HuggingFace (~3–5 min).
 > Set `EMBEDDINGS_PROVIDER=openai` to avoid this cost.
 
 ---
@@ -312,7 +312,7 @@ Set these in the **Environment Variables** section of the Application config.
 | Variable | Default | Notes |
 |---|---|---|
 | `DATABASE_URL` | `sqlite:///./data/sample_tables/demo.db` | SQLAlchemy URL |
-| `SQL_APPROVED_TABLES` | `kredit_umkm,nasabah,cabang` | Allowlist of tables the LLM can query |
+| `SQL_APPROVED_TABLES` | `kredit_umkm,nasabah,cabang,pelanggan,penggunaan_data,jaringan,penduduk,anggaran_daerah,layanan_publik` | Allowlist of tables the LLM can query |
 | `SQL_MAX_ROWS` | `500` | Hard row cap on any query result |
 
 ### Optional tuning
@@ -330,10 +330,10 @@ Set these in the **Environment Variables** section of the Application config.
 
 | Scenario | vCPU | RAM | Notes |
 |---|---|---|---|
-| Demo (local embeddings) | 4 | 8 GB | First-start model download ~500 MB |
+| Demo (local embeddings, e5-large) | 4 | 8 GB | First-start model download ~1.1 GB (~3–5 min) |
 | Demo (OpenAI embeddings) | 1 | 2 GB | No local model needed |
-| Production (light load) | 2 | 4 GB | |
-| Production (HA, 2 replicas) | 2×2 | 2×4 GB | Use NFS for shared vector store |
+| Production (light load) | 2 | 4 GB | Use OpenAI embeddings to reduce RAM |
+| Production (HA, 2 replicas) | 2×2 | 2×8 GB | Use NFS for shared vector store |
 
 ---
 
@@ -545,12 +545,12 @@ The LLM endpoint is configured but unreachable. Check:
 | `LLM_API_KEY` | Most providers | — | API key for the LLM provider |
 | `LLM_MODEL_ID` | Yes | — | Model identifier (varies by provider) |
 | `EMBEDDINGS_PROVIDER` | No | `local` | `local` or `openai` |
-| `EMBEDDINGS_MODEL` | No | `intfloat/multilingual-e5-base` | HuggingFace model ID |
+| `EMBEDDINGS_MODEL` | No | `intfloat/multilingual-e5-large` | HuggingFace model ID |
 | `VECTOR_STORE_PATH` | No | `./data/vector_store` | FAISS index directory |
 | `DOCS_SOURCE_PATH` | No | `./data/sample_docs` | Document source directory |
 | `DOCS_STORAGE_TYPE` | No | `local` | `local`, `hdfs`, or `s3` |
 | `DATABASE_URL` | No | SQLite demo | SQLAlchemy connection URL |
-| `SQL_APPROVED_TABLES` | No | `kredit_umkm,nasabah,cabang` | Allowlist of queryable tables |
+| `SQL_APPROVED_TABLES` | No | `kredit_umkm,nasabah,cabang,pelanggan,penggunaan_data,jaringan,penduduk,anggaran_daerah,layanan_publik` | Allowlist of queryable tables |
 | `SQL_MAX_ROWS` | No | `500` | Max rows per query (hard cap: 1000) |
 | `APP_PORT` | No | `8080` | **Must stay 8080** for Cloudera AI compatibility |
 | `LOG_LEVEL` | No | `INFO` | `DEBUG` / `INFO` / `WARNING` / `ERROR` |

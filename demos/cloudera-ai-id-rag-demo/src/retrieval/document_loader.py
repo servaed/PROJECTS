@@ -26,6 +26,7 @@ class RawDocument:
     source_path: str
     text: str
     file_type: str
+    domain: str                # e.g. "banking" | "telco" | "government" | "general"
     ingest_timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
@@ -72,9 +73,31 @@ _LOADERS = {
 }
 
 
+_KNOWN_DOMAINS = {"banking", "telco", "government"}
+
+
+def _infer_domain(path: Path, base_path: Path) -> str:
+    """Infer domain from the immediate subdirectory under base_path.
+
+    data/sample_docs/banking/file.txt  → "banking"
+    data/sample_docs/telco/file.txt    → "telco"
+    data/sample_docs/government/file.txt → "government"
+    data/sample_docs/file.txt          → "general"
+    """
+    try:
+        relative = path.relative_to(base_path)
+        parts = relative.parts
+        if len(parts) >= 2 and parts[0] in _KNOWN_DOMAINS:
+            return parts[0]
+    except ValueError:
+        pass
+    return "banking"   # root-level files default to banking (legacy location)
+
+
 def load_documents() -> list[RawDocument]:
-    """Load all documents from configured source path."""
+    """Load all documents from configured source path, tagging each with its domain."""
     adapter = FilesAdapter(settings.docs_source_path)
+    base_path = Path(settings.docs_source_path)
     paths = adapter.list_documents()
     documents: list[RawDocument] = []
 
@@ -87,6 +110,7 @@ def load_documents() -> list[RawDocument]:
         try:
             data = adapter.read_bytes(path)
             text = loader(data, path)
+            domain = _infer_domain(path, base_path)
             documents.append(
                 RawDocument(
                     doc_id=new_id(),
@@ -94,9 +118,10 @@ def load_documents() -> list[RawDocument]:
                     source_path=str(path),
                     text=text,
                     file_type=ext.lstrip("."),
+                    domain=domain,
                 )
             )
-            logger.info("Loaded: %s (%d chars)", path.name, len(text))
+            logger.info("Loaded: %s (domain=%s, %d chars)", path.name, domain, len(text))
         except Exception as exc:
             logger.error("Failed to load %s: %s", path.name, exc)
 

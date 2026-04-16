@@ -71,7 +71,7 @@ See `DEPLOYMENT.md` for the full deployment guide.
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `EMBEDDINGS_PROVIDER` | No | `local` | `local` (sentence-transformers) or `openai` |
-| `EMBEDDINGS_MODEL` | No | `intfloat/multilingual-e5-base` | Model name or HuggingFace ID |
+| `EMBEDDINGS_MODEL` | No | `intfloat/multilingual-e5-large` | Model name or HuggingFace ID |
 
 ---
 
@@ -104,7 +104,7 @@ See `DEPLOYMENT.md` for the full deployment guide.
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `DATABASE_URL` | No | SQLite demo | SQLAlchemy connection URL |
-| `SQL_APPROVED_TABLES` | No | `kredit_umkm,nasabah,cabang` | Comma-separated table allowlist |
+| `SQL_APPROVED_TABLES` | No | all 9 demo tables | Comma-separated table allowlist |
 | `SQL_MAX_ROWS` | No | `500` | Max rows per SQL result (hard cap: 1000) |
 
 ---
