@@ -1,60 +1,88 @@
-"""Database adapter — SQLAlchemy-based read-only connection.
+"""Database adapter — factory that dispatches to the configured query engine.
 
-Wraps SQLAlchemy engine creation so callers never touch connection strings
-directly. All access goes through this adapter for logging and safety.
+Supported engines (settings.query_engine):
+  "sqlite" — SQLAlchemy + SQLite (local dev default, backwards-compatible)
+  "trino"  — Trino Python client against Iceberg tables on MinIO / Ozone
+
+All callers (src/sql/executor.py, src/sql/metadata.py, app/api.py) import
+from this module and are engine-agnostic.
 """
 
-from sqlalchemy import create_engine, text, inspect
-from sqlalchemy.engine import Engine
+from __future__ import annotations
+
 from src.config.settings import settings
 from src.config.logging import get_logger
 
 logger = get_logger(__name__)
 
+
+# ── Public API — identical signatures regardless of engine ─────────────────
+
+
+def execute_read_query(sql: str) -> list[dict]:
+    if settings.query_engine == "trino":
+        from src.connectors.trino_adapter import execute_read_query as _exec
+        return _exec(sql)
+    return _sqlite_execute(sql)
+
+
+def get_table_names() -> list[str]:
+    if settings.query_engine == "trino":
+        from src.connectors.trino_adapter import get_table_names as _fn
+        return _fn()
+    return _sqlite_table_names()
+
+
+def get_table_schema(table_name: str) -> list[dict]:
+    if settings.query_engine == "trino":
+        from src.connectors.trino_adapter import get_table_schema as _fn
+        return _fn(table_name)
+    return _sqlite_table_schema(table_name)
+
+
+# ── SQLite / SQLAlchemy implementation (unchanged from original) ───────────
+
+from sqlalchemy import create_engine, text, inspect  # noqa: E402
+from sqlalchemy.engine import Engine  # noqa: E402
+
 _engine: Engine | None = None
 
 
-def get_engine() -> Engine:
-    """Return a shared SQLAlchemy engine (lazy init)."""
+def _get_engine() -> Engine:
     global _engine
     if _engine is None:
-        logger.info("Creating database engine: %s", _masked_url())
+        logger.info("Creating SQLite engine: %s", _masked_url())
         _engine = create_engine(settings.database_url, pool_pre_ping=True)
     return _engine
 
 
-def execute_read_query(sql: str) -> list[dict]:
-    """Execute a read-only SQL query and return rows as a list of dicts.
+# Public alias kept for callers (e.g. app/api.py setup health check) that
+# need direct engine access for SQLite-specific introspection.
+def get_engine() -> Engine:
+    return _get_engine()
 
-    Raises ValueError if the statement does not start with SELECT — this is a
-    belt-and-suspenders check; callers should always pass pre-validated SQL from
-    the guardrails layer (src/sql/guardrails.py).
-    """
+
+def _sqlite_execute(sql: str) -> list[dict]:
     if not sql.strip().upper().startswith("SELECT"):
         raise ValueError("Only SELECT queries are allowed in execute_read_query.")
-    engine = get_engine()
+    engine = _get_engine()
     with engine.connect() as conn:
         result = conn.execute(text(sql))
-        rows = [dict(row._mapping) for row in result]
-    return rows
+        return [dict(row._mapping) for row in result]
 
 
-def get_table_names() -> list[str]:
-    """Return all table names visible in the database."""
-    engine = get_engine()
-    inspector = inspect(engine)
-    return inspector.get_table_names()
+def _sqlite_table_names() -> list[str]:
+    engine = _get_engine()
+    return inspect(engine).get_table_names()
 
 
-def get_table_schema(table_name: str) -> list[dict]:
-    """Return column metadata for a given table."""
-    engine = get_engine()
-    inspector = inspect(engine)
-    return inspector.get_columns(table_name)
+def _sqlite_table_schema(table_name: str) -> list[dict]:
+    engine = _get_engine()
+    cols = inspect(engine).get_columns(table_name)
+    return [{"name": c["name"], "type": str(c["type"])} for c in cols]
 
 
 def _masked_url() -> str:
-    """Return database URL with password masked for safe logging."""
     url = settings.database_url
     if "@" in url:
         parts = url.split("@")

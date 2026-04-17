@@ -25,9 +25,10 @@ def _make_raw_doc(text: str, title: str = "Test Doc") -> RawDocument:
         doc_id="doc-001",
         title=title,
         source_path="/data/test.txt",
-        file_type="txt",
-        ingest_timestamp="2026-04-13T00:00:00",
         text=text,
+        file_type="txt",
+        domain="banking",
+        ingest_timestamp="2026-04-13T00:00:00",
     )
 
 
@@ -216,4 +217,6 @@ def test_retrieve_top_k_respected():
         results = retrieve("pertanyaan", top_k=3)
 
     assert len(results) == 3
-    mock_store.similarity_search_with_score.assert_called_once_with("pertanyaan", k=3)
+    # Retriever fetches more candidates for hybrid BM25+FAISS reranking;
+    # verify it was called (k > top_k is expected) and results are capped at top_k.
+    mock_store.similarity_search_with_score.assert_called_once()

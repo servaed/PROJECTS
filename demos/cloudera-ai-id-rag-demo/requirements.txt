@@ -44,6 +44,15 @@ tabulate>=0.9.0,<1.0.0
 # SQL guardrails — AST-based table extraction (replaces regex approach)
 sqlparse>=0.5.0,<1.0.0
 
+# Trino query engine (used when QUERY_ENGINE=trino)
+trino>=0.328.0,<1.0.0
+
+# Object storage — MinIO / Ozone S3 gateway (used when DOCS_STORAGE_TYPE=s3)
+boto3>=1.34.0,<2.0.0
+
+# Parquet support for Iceberg table data files
+pyarrow>=15.0.0,<20.0.0
+
 # Config and environment
 pydantic>=2.6.0,<3.0.0
 pydantic-settings>=2.2.0,<3.0.0

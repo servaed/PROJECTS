@@ -95,9 +95,20 @@ def _infer_domain(path: Path, base_path: Path) -> str:
 
 
 def load_documents() -> list[RawDocument]:
-    """Load all documents from configured source path, tagging each with its domain."""
-    adapter = FilesAdapter(settings.docs_source_path)
-    base_path = Path(settings.docs_source_path)
+    """Load all documents from configured source, tagging each with its domain.
+
+    Routes to OzoneAdapter (MinIO / Ozone S3GW) when docs_storage_type == "s3",
+    otherwise falls back to local FilesAdapter.
+    """
+    if settings.docs_storage_type == "s3":
+        from src.connectors.ozone_adapter import OzoneAdapter
+        adapter: FilesAdapter | OzoneAdapter = OzoneAdapter()
+        # OzoneAdapter returns relative paths like Path("banking/file.txt")
+        # so base_path=Path(".") keeps _infer_domain working correctly.
+        base_path = Path(".")
+    else:
+        adapter = FilesAdapter(settings.docs_source_path)
+        base_path = Path(settings.docs_source_path)
     paths = adapter.list_documents()
     documents: list[RawDocument] = []
 

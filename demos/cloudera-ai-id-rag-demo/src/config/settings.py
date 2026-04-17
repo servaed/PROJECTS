@@ -102,6 +102,27 @@ class Settings(BaseSettings):
     s3_access_key: str = ""
     s3_secret_key: str = ""
 
+    # ── Query engine ──────────────────────────────────────────────────────
+    # "sqlite" : embedded SQLite (local dev, backwards-compatible default)
+    # "trino"  : Trino coordinator (Docker image / CDP CDW)
+    query_engine: Literal["sqlite", "trino"] = "sqlite"
+
+    # ── Trino ─────────────────────────────────────────────────────────────
+    trino_host: str = "localhost"
+    trino_port: int = 8085
+    trino_catalog: str = "iceberg"
+    trino_schema: str = "demo"
+    trino_user: str = "admin"
+
+    # ── MinIO / Ozone object storage ──────────────────────────────────────
+    # minio_endpoint: http://localhost:9000 for local Docker; replace with
+    # Ozone S3 Gateway URL (e.g. http://ozone-s3gw:9878) on a real CDP cluster.
+    minio_endpoint: str = "http://localhost:9000"
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"
+    minio_docs_bucket: str = "rag-docs"
+    minio_warehouse_bucket: str = "rag-warehouse"
+
     # ── SQL ───────────────────────────────────────────────────────────────
     database_url: str = "sqlite:///./data/sample_tables/demo.db"
     sql_approved_tables: str = "kredit_umkm,nasabah,cabang"

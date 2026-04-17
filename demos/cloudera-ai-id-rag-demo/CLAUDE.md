@@ -25,17 +25,27 @@ User (Bahasa Indonesia or English)
        ├─ Keyword heuristics (4-tier: show-verb → gabungan → data → dokumen)
        └─ LLM fallback for ambiguous questions
   → Document RAG  (loaders → chunking → BM25 + FAISS hybrid → RRF → retriever)
+       └─ docs from MinIO/Ozone S3 bucket (DOCS_STORAGE_TYPE=s3) or local filesystem
   → SQL Retrieval (schema discovery → guarded SQL gen → executor → number formatting)
+       └─ Trino + Iceberg tables on MinIO/Ozone (QUERY_ENGINE=trino) or SQLite (local dev)
   → LLM Provider (pluggable: Cloudera AI Inference / OpenAI-compatible / Bedrock / Anthropic / local)
   → Answer Builder (prepare_answer → stream_synthesis → finalize_answer)
        └─ Bilingual synthesis + citations + query trace
+
+Container services (started by deployment/entrypoint.sh):
+  MinIO  :9000  — S3-compatible object store (docs bucket + Iceberg warehouse bucket)
+  Nessie :19120 — Iceberg REST catalog (table registry)
+  Trino  :8085  — Query engine (Iceberg connector → Nessie → MinIO)
+  uvicorn:8080  — FastAPI + React SPA (the CML Application endpoint)
 ```
 
 **Backend: FastAPI + uvicorn.** Serves the React SPA from `app/static/` and streams
-LLM tokens via Server-Sent Events on `POST /api/chat`. Launched by `deployment/launch_app.sh`.
+LLM tokens via Server-Sent Events on `POST /api/chat`.
 
-**Streamlit fallback (`app/main.py`)** is retained for local notebook/dev use only.
-Production entry point is always `app/api.py`.
+**Entry points:**
+- Docker / CML: `deployment/entrypoint.sh` — starts MinIO, Nessie, Trino, seeds data, then uvicorn
+- Local dev (no Docker): `deployment/launch_app.sh` — SQLite + local filesystem + uvicorn
+- Streamlit fallback (`app/main.py`) retained for notebook/dev use only
 
 ## Key Directories
 | Path | Purpose |
