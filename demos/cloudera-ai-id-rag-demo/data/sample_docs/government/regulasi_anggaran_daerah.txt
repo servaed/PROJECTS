@@ -1,0 +1,149 @@
+REGULASI PENGELOLAAN ANGGARAN PENDAPATAN DAN BELANJA DAERAH (APBD)
+Nomor: PEMDA/KEU/REG/001/2026 | Berlaku: 1 Januari 2026
+Ditetapkan oleh: Kepala Badan Pengelola Keuangan Daerah (BPKD) Kota Nusantara
+
+BAB I - DASAR HUKUM DAN KETENTUAN UMUM
+
+Pasal 1 - Dasar Hukum
+
+a. Undang-Undang No. 17 Tahun 2003 tentang Keuangan Negara
+b. Undang-Undang No. 1 Tahun 2004 tentang Perbendaharaan Negara
+c. Undang-Undang No. 23 Tahun 2014 tentang Pemerintahan Daerah
+d. PP No. 12 Tahun 2019 tentang Pengelolaan Keuangan Daerah
+e. Permendagri No. 77 Tahun 2020 tentang Pedoman Teknis Pengelolaan Keuangan Daerah
+f. Peraturan Daerah Kota Nusantara No. 1 Tahun 2026 tentang APBD TA 2026
+
+Pasal 2 - Definisi
+
+2.1 APBD adalah rencana keuangan tahunan pemerintah daerah yang ditetapkan dengan
+    peraturan daerah.
+2.2 Pagu Anggaran adalah batas maksimum anggaran yang diizinkan untuk suatu program
+    atau kegiatan dalam satu tahun anggaran.
+2.3 Realisasi Anggaran adalah jumlah belanja yang benar-benar telah dikeluarkan dan
+    dipertanggungjawabkan dalam suatu periode.
+2.4 Serapan Anggaran adalah persentase realisasi terhadap pagu anggaran yang ditetapkan.
+2.5 Satuan Kerja Perangkat Daerah (SKPD) adalah unit organisasi pemerintah daerah yang
+    bertanggung jawab atas pelaksanaan program dan kegiatan tertentu.
+
+BAB II - STRUKTUR APBD KOTA NUSANTARA TAHUN 2026
+
+Pasal 3 - Total APBD dan Distribusi
+
+Total APBD Kota Nusantara Tahun Anggaran 2026:
+- Total Pendapatan Daerah : Rp 4,82 triliun
+- Total Belanja Daerah    : Rp 5,15 triliun
+- Pembiayaan Netto        : Rp 330 miliar (dari SILPA 2025)
+
+Komposisi Pendapatan:
+- PAD (Pajak Daerah, Retribusi, dll.) : Rp 1,95 triliun (40,5%)
+- Transfer Pusat (DAU, DAK, DBH)      : Rp 2,58 triliun (53,5%)
+- Lain-lain Pendapatan Sah            : Rp 290 miliar (6,0%)
+
+Pasal 4 - Alokasi Belanja per Urusan
+
+| Urusan/SKPD                    | Pagu 2026          | Pagu 2025          | Perubahan  |
+|-------------------------------|--------------------|--------------------|------------|
+| Pendidikan                     | Rp 1.250 miliar    | Rp 1.150 miliar    | +8,7%      |
+| Kesehatan                      | Rp 820 miliar      | Rp 760 miliar      | +7,9%      |
+| Pekerjaan Umum dan PR          | Rp 680 miliar      | Rp 720 miliar      | -5,6%      |
+| Perhubungan                    | Rp 540 miliar      | Rp 500 miliar      | +8,0%      |
+| Sosial                         | Rp 310 miliar      | Rp 290 miliar      | +6,9%      |
+| Lingkungan Hidup (DLHK)        | Rp 275 miliar      | Rp 250 miliar      | +10,0%     |
+| BPBD (Penanggulangan Bencana)  | Rp 185 miliar      | Rp 160 miliar      | +15,6%     |
+| Perizinan (DPTSP)              | Rp 95 miliar       | Rp 85 miliar       | +11,8%     |
+| Administrasi Pemerintahan      | Rp 620 miliar      | Rp 590 miliar      | +5,1%      |
+| Lainnya                        | Rp 375 miliar      | Rp 340 miliar      | +10,3%     |
+
+BAB III - SIKLUS PENGANGGARAN DAN PELAKSANAAN
+
+Pasal 5 - Jadwal Siklus Anggaran
+
+Jadwal baku pelaksanaan anggaran tahun 2026:
+
+Perencanaan dan Penetapan:
+- Musrenbang Kelurahan     : Januari-Februari (selesai)
+- Musrenbang Kecamatan     : Februari (selesai)
+- Musrenbang Kota          : Maret (selesai)
+- Penetapan RKPD           : Mei 2025 (selesai)
+- Penetapan APBD 2026      : Desember 2025 (selesai)
+
+Pelaksanaan:
+- Penyusunan DPA-SKPD      : Januari 2026 (selesai)
+- Pelaksanaan Anggaran TW1 : Januari-Maret 2026
+- Evaluasi TW1             : April 2026
+- Pelaksanaan Anggaran TW2 : April-Juni 2026
+- Evaluasi TW2 + APBD Perubahan: Juli-Agustus 2026
+- Pelaksanaan TW3          : Juli-September 2026
+- Pelaksanaan TW4          : Oktober-Desember 2026
+
+Pertanggungjawaban:
+- Penyusunan Laporan Keuangan: Januari-Februari 2027
+- Audit BPK                : Maret-Mei 2027
+- Penetapan Perda LKPD     : Juli 2027
+
+Pasal 6 - Target Serapan Anggaran Triwulanan
+
+Target serapan anggaran kumulatif yang ditetapkan Walikota:
+| Triwulan | Target Serapan Kumulatif | Batas Minimum   |
+|---------|--------------------------|-----------------|
+| TW1     | 20% dari pagu            | 15%             |
+| TW2     | 45% dari pagu            | 38%             |
+| TW3     | 70% dari pagu            | 60%             |
+| TW4     | 95% dari pagu            | 85%             |
+
+Catatan: Target minimum adalah batas yang tidak boleh dilampaui ke bawah.
+SKPD yang tidak mencapai target minimum wajib menyampaikan laporan dan
+rencana percepatan kepada TAPD dalam 5 hari kerja.
+
+BAB IV - KETENTUAN PENGENDALIAN DAN SANKSI
+
+Pasal 7 - Mekanisme Monitoring
+
+Monitoring realisasi anggaran dilaksanakan oleh:
+a. Internal SKPD: setiap 2 minggu oleh Kepala SKPD
+b. BPKD: bulanan, laporan ke Sekretaris Daerah
+c. Inspektorat Daerah: kuartalan, audit kinerja anggaran
+d. TAPD (Tim Anggaran Pemerintah Daerah): evaluasi komprehensif per triwulan
+
+Pasal 8 - Sanksi Serapan Rendah
+
+SKPD yang realisasi anggarannya rendah dikenakan sanksi progresif:
+
+Serapan di bawah target minimum TW3 (kurang dari 60% pagu):
+- Pemanggilan Kepala SKPD oleh Sekretaris Daerah
+- Kewajiban menyerahkan rencana akselerasi anggaran dalam 5 hari kerja
+- Pembatasan pengajuan anggaran tambahan pada tahun berikutnya
+
+Serapan akhir tahun di bawah 75% pagu (melampaui ambang penalti):
+- Pengembalian sisa anggaran ke kas daerah (wajib, sesuai peraturan perundangan)
+- Pemotongan pagu anggaran tahun berikutnya sebesar 2x kelebihan dari batas minimum
+  Contoh: serapan 65% (kurang 10% dari batas 75%) maka pagu tahun depan dipotong 20%
+- Evaluasi kinerja Kepala SKPD oleh Walikota
+- Rekomendasi Inspektorat untuk pemeriksaan lebih lanjut jika ada indikasi penyimpangan
+
+Serapan akhir tahun di bawah 60% pagu (serapan sangat rendah):
+- Seluruh sanksi di atas berlaku
+- Audit khusus oleh Inspektorat dalam 30 hari setelah tutup buku
+- Laporan kepada BPK dan DPRD
+- Evaluasi kelembagaan SKPD (potensi merger atau restrukturisasi)
+
+Pasal 9 - Efisiensi dan Penghematan
+
+SKPD yang berhasil melaksanakan program dengan serapan 90-100% dan mencapai
+target kinerja (output dan outcome) mendapatkan:
+- Reward berupa prioritas dalam perencanaan anggaran tahun berikutnya
+- Tambahan insentif kinerja ASN sesuai regulasi yang berlaku
+- Penghargaan Walikota untuk unit dengan kinerja anggaran terbaik
+
+Pasal 10 - Pelaporan Keuangan
+
+Laporan keuangan wajib yang dihasilkan SKPD:
+- Laporan Realisasi Anggaran (LRA): bulanan, paling lambat tanggal 10 bulan berikutnya
+- Laporan Operasional (LO): triwulanan
+- Laporan Arus Kas (LAK): bulanan untuk SKPD yang mengelola bendahara penerimaan/pengeluaran
+- Neraca: semesteran
+- Catatan atas Laporan Keuangan (CaLK): tahunan
+
+Ditetapkan di Kota Nusantara, 1 Januari 2026
+Kepala BPKD   : Dra. Sri Wahyuni, M.M., Ak., CA
+Sekretaris Daerah: Dr. Andi Prasetyo, M.Si.

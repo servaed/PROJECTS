@@ -1,0 +1,180 @@
+KEBIJAKAN KREDIT USAHA MIKRO KECIL DAN MENENGAH (UMKM)
+Nomor: KRD/POL/001/2026 | Revisi: 4.0 | Berlaku: 1 Januari 2026
+Ditetapkan oleh: Direksi PT Bank Nusantara Tbk
+
+BAB I - KETENTUAN UMUM
+
+Pasal 1 - Definisi
+
+1.1 Kredit UMKM adalah fasilitas pembiayaan yang diberikan kepada pelaku usaha mikro, kecil,
+    dan menengah sesuai Undang-Undang No. 20 Tahun 2008 tentang UMKM:
+    - Usaha Mikro: aset maksimal Rp 50 juta, omzet tahunan maksimal Rp 300 juta
+    - Usaha Kecil: aset Rp 50 juta s.d. Rp 500 juta, omzet Rp 300 juta s.d. Rp 2,5 miliar
+    - Usaha Menengah: aset Rp 500 juta s.d. Rp 10 miliar, omzet Rp 2,5 miliar s.d. Rp 50 miliar
+
+1.2 Kualitas Kredit mengacu pada klasifikasi OJK POJK No. 40/POJK.03/2019:
+    - Lancar (L): pembayaran tepat waktu, tidak ada tunggakan
+    - Dalam Perhatian Khusus (DPK): tunggakan 1-90 hari
+    - Kurang Lancar (KL): tunggakan 91-120 hari
+    - Diragukan (D): tunggakan 121-180 hari
+    - Macet (M): tunggakan lebih dari 180 hari
+
+1.3 Non-Performing Loan (NPL) adalah kredit dengan kualitas Kurang Lancar, Diragukan, atau Macet.
+1.4 Debt Service Coverage Ratio (DSCR): rasio arus kas operasional terhadap total kewajiban utang.
+
+Pasal 2 - Tujuan
+
+a. Meningkatkan inklusi keuangan bagi pelaku UMKM di seluruh wilayah Indonesia
+b. Mendukung pertumbuhan ekonomi melalui ekspansi kredit yang terukur dan prudential
+c. Menjaga kualitas portofolio sesuai standar OJK
+d. Mencapai target pertumbuhan kredit UMKM sebesar 15% YoY pada tahun 2026
+e. Menjaga rasio NPL gross kredit UMKM di bawah 3,0% secara konsolidasi
+
+BAB II - PERSYARATAN DAN DOKUMENTASI
+
+Pasal 3 - Persyaratan Debitur
+
+Calon debitur wajib memenuhi seluruh persyaratan berikut:
+1. Warga Negara Indonesia (WNI) berusia minimal 21 tahun atau sudah menikah
+2. Usaha aktif berjalan minimal 2 tahun berturut-turut
+3. Tidak terdaftar dalam Daftar Hitam Bank Indonesia (DHBI)
+4. Tidak memiliki kredit macet di lembaga keuangan manapun dalam 24 bulan terakhir
+5. Skor kredit internal minimal 600 dari skala 300-900
+6. DSCR minimal 1,2x
+
+Pasal 4 - Sektor yang Dibatasi
+
+Bank tidak membiayai: perjudian, minuman keras beralkohol tinggi tanpa izin, perdagangan
+senjata ilegal, usaha yang merusak lingkungan, dan usaha yang melanggar peraturan perundangan.
+
+Pasal 5 - Dokumentasi Wajib
+
+Dokumen Identitas: KTP, NPWP (wajib untuk plafon >Rp 50 juta), Kartu Keluarga, Akta nikah.
+
+Dokumen Usaha:
+- Nomor Induk Berusaha (NIB) atau SIUP yang masih berlaku
+- Akta pendirian beserta perubahannya (untuk badan usaha PT/CV/Firma)
+- Surat Keterangan Domisili Usaha dari kelurahan setempat
+- Foto tempat usaha minimal 3 sudut pandang
+
+Dokumen Keuangan:
+- Laporan keuangan 2 tahun terakhir (laba rugi dan neraca)
+- Rekening koran 6 bulan terakhir dari seluruh rekening aktif
+- SPT Tahunan PPh dua tahun terakhir (wajib plafon >Rp 200 juta)
+
+Dokumen Jaminan (wajib segmen kecil dan menengah):
+- SHM atau HGB beserta IMB
+- BPKB kendaraan bermotor dan STNK
+- Laporan appraisal independen terakreditasi OJK (plafon >Rp 1 miliar)
+
+BAB III - PLAFON, TENOR, DAN SUKU BUNGA
+
+Pasal 6 - Batas Plafon Kredit
+
+| Segmen    | Plafon Minimum  | Plafon Maksimum  | Jaminan Agunan         |
+|-----------|-----------------|------------------|------------------------|
+| Mikro     | Rp 5 juta       | Rp 500 juta      | Tidak wajib (s.d. 50j) |
+| Kecil     | Rp 500 juta     | Rp 5 miliar      | Wajib                  |
+| Menengah  | Rp 5 miliar     | Rp 50 miliar     | Wajib + Appraisal      |
+
+Pasal 7 - Tenor Kredit
+
+| Segmen    | Modal Kerja     | Investasi        |
+|-----------|-----------------|------------------|
+| Mikro     | Maks. 12 bulan  | Maks. 36 bulan   |
+| Kecil     | Maks. 24 bulan  | Maks. 60 bulan   |
+| Menengah  | Maks. 36 bulan  | Maks. 84 bulan   |
+
+Pasal 8 - Suku Bunga
+
+- Segmen Mikro KUR (subsidi pemerintah): 6% per tahun efektif
+- Segmen Mikro Non-KUR: 12-15% per tahun efektif
+- Segmen Kecil: 9-13% per tahun efektif
+- Segmen Menengah: 8-11% per tahun efektif
+
+BAB IV - PROSES PERSETUJUAN DAN TARGET EKSPANSI
+
+Pasal 9 - Kewenangan Persetujuan
+
+- s.d. Rp 500 juta: Kepala Cabang
+- Rp 500 juta - Rp 5 miliar: Komite Kredit Regional
+- di atas Rp 5 miliar: Komite Kredit Pusat
+
+Waktu proses standar:
+- Segmen mikro (scoring otomatis): 1 hari kerja
+- Segmen kecil: 7 hari kerja sejak dokumen lengkap
+- Segmen menengah: 14 hari kerja sejak dokumen lengkap
+
+Pasal 10 - Target Ekspansi Portofolio Tahun 2026
+
+Bank menetapkan target pertumbuhan kredit UMKM secara nasional sebesar 15% YoY
+dibandingkan posisi outstanding akhir Desember 2025 (total nasional: Rp 485 triliun).
+
+Target pertumbuhan per wilayah:
+- DKI Jakarta       : +18% YoY (outstanding akhir 2025: Rp 92,4 triliun)
+- Jawa Barat        : +16% YoY (outstanding akhir 2025: Rp 68,1 triliun)
+- Jawa Timur        : +15% YoY (outstanding akhir 2025: Rp 71,3 triliun)
+- Jawa Tengah       : +12% YoY (outstanding akhir 2025: Rp 54,8 triliun)
+- Sumatera Utara    : +20% YoY (outstanding akhir 2025: Rp 28,5 triliun)
+- Sulawesi Selatan  : +25% YoY (outstanding akhir 2025: Rp 15,2 triliun)
+- Bali dan Nusa Tenggara: +22% YoY (outstanding akhir 2025: Rp 12,1 triliun)
+
+Target outstanding per segmen akhir 2026:
+- Mikro   : Rp 167 triliun (dari Rp 145 triliun)
+- Kecil   : Rp 251 triliun (dari Rp 218 triliun)
+- Menengah: Rp 140 triliun (dari Rp 122 triliun)
+
+BAB V - PEMANTAUAN KUALITAS DAN RESTRUKTURISASI
+
+Pasal 11 - Standar Kualitas Portofolio
+
+Batas toleransi yang ditetapkan Direksi untuk tahun 2026:
+- NPL Gross       : maksimal 3,0% dari total outstanding UMKM
+- NPL Net         : maksimal 1,5% (setelah CKPN)
+- Rasio DPK       : maksimal 8,0% dari total outstanding UMKM
+- Coverage Ratio  : minimal 100% CKPN untuk seluruh kredit NPL
+
+Pasal 12 - Klasifikasi Wilayah Berdasarkan Kualitas Kredit
+
+Wilayah diklasifikasikan setiap kuartal berdasarkan NPL gross:
+- Hijau  (NPL < 1,5%)   : ekspansi penuh tanpa pembatasan
+- Kuning (NPL 1,5%-3,0%): ekspansi terkendali dengan pengawasan intensif
+- Merah  (NPL > 3,0%)   : moratorium kredit baru, fokus pada recovery
+
+Posisi per Desember 2025:
+- DKI Jakarta   : NPL 1,8% — status Kuning (ekspansi terkendali)
+- Surabaya      : NPL 1,2% — status Hijau (ekspansi penuh diizinkan)
+- Bandung       : NPL 2,4% — status Kuning (ekspansi terkendali)
+- Medan         : NPL 1,0% — status Hijau (ekspansi penuh diizinkan)
+- Makassar      : NPL 0,9% — status Hijau (ekspansi penuh diizinkan)
+
+Pasal 13 - Kondisi yang Memenuhi Syarat Restrukturisasi
+
+Kredit dapat direstrukturisasi apabila memenuhi minimal satu kondisi:
+a. Kualitas kredit DPK atau lebih rendah (tunggakan minimal 30 hari)
+b. Debitur terdampak force majeure: bencana alam, pandemi, kebijakan pemerintah yang
+   berdampak langsung pada usaha
+c. Penurunan omzet lebih dari 30% akibat kondisi ekonomi eksternal yang terdokumentasi
+d. Kehilangan pelanggan utama yang menyumbang lebih dari 40% pendapatan
+e. Gangguan rantai pasok yang berdampak pada kelangsungan usaha minimal 3 bulan
+
+Skema restrukturisasi berdasarkan kualitas kredit:
+- DPK            : perpanjangan jangka waktu atau penurunan suku bunga sementara
+- Kurang Lancar  : penjadwalan ulang angsuran atau grace period 3-6 bulan
+- Diragukan      : kombinasi penjadwalan ulang dan penurunan bunga
+- Macet          : langsung ke Unit Recovery Management, tidak dapat direstrukturisasi
+
+Pasal 14 - Pelaporan
+
+Laporan kualitas portofolio UMKM disampaikan kepada:
+- Komite Manajemen Risiko: bulanan
+- Dewan Komisaris: triwulanan
+- OJK: sesuai ketentuan SLIK dan LKPBU
+
+Kebijakan ini direview minimal setahun sekali atau sewaktu-waktu jika ada perubahan
+regulasi OJK yang signifikan.
+
+Ditetapkan di Jakarta, 1 Januari 2026
+Direktur Kredit          : Ahmad Zulkifli
+Direktur Manajemen Risiko: Sari Dewi Kusuma
+Direktur Utama           : Budi Hartono

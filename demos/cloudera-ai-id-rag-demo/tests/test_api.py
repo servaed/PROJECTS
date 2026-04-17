@@ -81,7 +81,7 @@ def test_samples_returns_list():
     data = resp.json()
     assert isinstance(data, list)
     assert len(data) > 0
-    assert all(isinstance(s, str) for s in data)
+    assert all(isinstance(s, dict) and "text" in s and "mode" in s for s in data)
 
 
 # ── GET /api/status ────────────────────────────────────────────────────────
@@ -160,6 +160,7 @@ def test_status_llm_ok_for_bedrock_provider():
     fake = MagicMock()
     fake.llm_base_url = ""
     fake.llm_provider = "bedrock"
+    fake._live_provider = "bedrock"
     fake.llm_model_id = "anthropic.claude-3-sonnet"
     fake.vector_store_path = "/vs"
 
@@ -181,6 +182,7 @@ def test_status_llm_ok_for_anthropic_provider():
     fake = MagicMock()
     fake.llm_base_url = ""
     fake.llm_provider = "anthropic"
+    fake._live_provider = "anthropic"
     fake.llm_model_id = "claude-sonnet-4-6"
     fake.vector_store_path = "/vs"
 
@@ -222,6 +224,7 @@ def _make_prep(mode: str = "dokumen"):
     prep = MagicMock()
     prep.mode = mode
     prep.doc_chunks = []
+    prep.synthesis_input_chars = 0   # must be int for JSON serialization of usage
     return prep
 
 
@@ -292,3 +295,70 @@ def test_chat_sse_emits_error_on_pipeline_failure():
     assert any(e["event"] == "error" for e in events)
     err = next(e for e in events if e["event"] == "error")
     assert "backend down" in err["data"]["message"]
+
+
+# ── GET /api/samples ── domain validation ─────────────────────────────────────
+
+def test_samples_unknown_domain_falls_back_to_default():
+    """Unknown domain must fall back to the default domain, not return empty."""
+    client = _make_app_client()
+    resp = client.get("/api/samples?domain=nonexistent")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, list)
+    assert len(data) > 0
+
+
+def test_samples_path_traversal_domain_falls_back():
+    """Path-traversal-style domain values must not crash the endpoint."""
+    client = _make_app_client()
+    resp = client.get("/api/samples?domain=../../etc/passwd")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, list)
+
+
+def test_samples_sorted_by_difficulty():
+    """Samples must be ordered dokumen → data → gabungan."""
+    client = _make_app_client()
+    resp = client.get("/api/samples?domain=banking")
+    assert resp.status_code == 200
+    modes = [s["mode"] for s in resp.json()]
+    order = {"dokumen": 0, "data": 1, "gabungan": 2}
+    assert modes == sorted(modes, key=lambda m: order.get(m, 99))
+
+
+# ── POST /api/configure ── error paths ────────────────────────────────────────
+
+def test_configure_rejects_unknown_keys():
+    """POST /api/configure must return 400 for keys outside the allowlist."""
+    client = _make_app_client()
+    resp = client.post("/api/configure", json={"env_vars": {"TOTALLY_UNKNOWN_KEY": "val"}})
+    assert resp.status_code == 400
+    assert "Unknown config keys" in resp.json()["detail"]
+
+
+def test_configure_accepts_known_keys(tmp_path, monkeypatch):
+    """POST /api/configure must return 200 and report saved=True for valid keys."""
+    from app import api as api_module
+
+    monkeypatch.setattr(api_module, "_OVERRIDE_PATH", tmp_path / ".env.local")
+    client = _make_app_client()
+    resp = client.post("/api/configure", json={"env_vars": {"LLM_PROVIDER": "openai"}})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["saved"] is True
+    assert "LLM_PROVIDER" in data["keys_updated"]
+
+
+def test_configure_empty_value_removes_key(tmp_path, monkeypatch):
+    """Sending an empty string for a key must remove it from the override file."""
+    from app import api as api_module
+
+    override = tmp_path / ".env.local"
+    override.write_text("LLM_PROVIDER=cloudera\n", encoding="utf-8")
+    monkeypatch.setattr(api_module, "_OVERRIDE_PATH", override)
+    client = _make_app_client()
+    resp = client.post("/api/configure", json={"env_vars": {"LLM_PROVIDER": ""}})
+    assert resp.status_code == 200
+    assert "LLM_PROVIDER" not in override.read_text()

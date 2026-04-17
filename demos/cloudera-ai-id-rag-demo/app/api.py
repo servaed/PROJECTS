@@ -78,13 +78,32 @@ async def lifespan(app: FastAPI):
     else:
         logger.error("app/static/index.html not found — GET / will return 404")
 
-    # Check vector store
-    vs_path = Path(settings.vector_store_path) / "index.faiss"
+    # Check vector store + verify SHA-256 integrity hash
+    vs_path   = Path(settings.vector_store_path) / "index.faiss"
+    hash_path = Path(settings.vector_store_path) / "index.sha256"
     if vs_path.exists():
-        logger.info("Startup check — vector store: OK (%s)", settings.vector_store_path)
+        if hash_path.exists():
+            import hashlib as _hashlib
+            _vs_dir  = Path(settings.vector_store_path)
+            combined = b""
+            for _f in ("index.faiss", "index.pkl"):
+                _fp = _vs_dir / _f
+                if _fp.exists():
+                    combined += _fp.read_bytes()
+            actual   = _hashlib.sha256(combined).hexdigest()
+            expected = hash_path.read_text(encoding="utf-8").strip()
+            if actual == expected:
+                logger.info("Startup check - vector store: OK, hash verified (%s)", settings.vector_store_path)
+            else:
+                logger.warning(
+                    "Startup check - vector store: hash MISMATCH - index may be corrupt. "
+                    "Re-run document ingestion to rebuild."
+                )
+        else:
+            logger.info("Startup check - vector store: OK (%s)", settings.vector_store_path)
     else:
         logger.warning(
-            "Startup check — vector store: NOT FOUND at %s. "
+            "Startup check - vector store: NOT FOUND at %s. "
             "Run document ingestion before answering questions.",
             settings.vector_store_path,
         )
@@ -122,8 +141,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow all origins so the React SPA can reach the API from any host
-# (Cloudera AI Applications proxies everything; this also covers local dev)
+# CORS — allow all origins.  This is safe because Cloudera AI Applications
+# handles authentication at the platform level (SSO/LDAP proxy) before any
+# request reaches this server.  For self-hosted / local dev, there is no
+# sensitive data exposure beyond what the LLM already returns.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -523,9 +544,12 @@ async def api_test_component(component: str):
         try:
             from src.retrieval.embeddings import get_embeddings
             emb = get_embeddings()
-            # Smoke-test: embed a short string
+            # Smoke-test: embed a short string (5 s timeout to prevent thread exhaustion)
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(None, emb.embed_query, "test")
+            await asyncio.wait_for(
+                loop.run_in_executor(None, emb.embed_query, "test"),
+                timeout=5.0,
+            )
             latency_ms = round((_time.monotonic() - t0) * 1000)
             return {"ok": True, "provider": settings.embeddings_provider,
                     "model": settings.embeddings_model, "latency_ms": latency_ms, "fix": None}
@@ -546,6 +570,9 @@ async def api_test_component(component: str):
                 "fix": None if files else "Add at least one document file to DOCS_SOURCE_PATH."}
 
 
+_MODE_ORDER = {"dokumen": 0, "data": 1, "gabungan": 2}
+
+
 @app.get("/api/samples")
 async def api_samples(domain: str = _DEFAULT_DOMAIN, lang: str = "id"):
     """Return sample prompts for the given domain and language.
@@ -557,13 +584,17 @@ async def api_samples(domain: str = _DEFAULT_DOMAIN, lang: str = "id"):
     Each item has:
       text  — the prompt string in the requested language
       mode  — expected routing mode: dokumen | data | gabungan
+
+    Results are ordered by difficulty: dokumen -> data -> gabungan.
     """
+    if domain not in DOMAIN_CONFIG:
+        domain = _DEFAULT_DOMAIN
     text_key = "text_en" if lang == "en" else "text_id"
-    return [
-        {"text": s[text_key], "mode": s["mode"]}
-        for s in _SAMPLES
-        if s["domain"] == domain
-    ]
+    filtered = sorted(
+        [s for s in _SAMPLES if s["domain"] == domain],
+        key=lambda s: _MODE_ORDER.get(s["mode"], 99),
+    )
+    return [{"text": s[text_key], "mode": s["mode"]} for s in filtered]
 
 
 @app.get("/api/domains")
@@ -671,6 +702,12 @@ async def api_configure_post(body: ConfigureRequest):
             shadowed_by_env.append(key)
 
     _write_override_file(existing)
+    # Invalidate BM25 cache so next retrieval rebuilds with any new document path
+    try:
+        from src.retrieval.retriever import invalidate_bm25_cache
+        invalidate_bm25_cache()
+    except Exception:
+        pass
     logger.info("Configuration updated via /api/configure: %s", sorted(body.env_vars.keys()))
 
     shadow_msg = (
@@ -755,6 +792,9 @@ async def _chat_sse(
                     token_q.put(tok)
             except Exception as exc:
                 logger.error("stream_synthesis error: %s", exc)
+                # Put error tuple before the done-sentinel so the consumer can
+                # emit an error SSE event instead of silently ending the stream.
+                token_q.put(("__error__", str(exc)))
             finally:
                 token_q.put(None)  # sentinel — always signals completion
 
@@ -763,12 +803,24 @@ async def _chat_sse(
 
         think_filter = _ThinkingFilter()
         full_text = ""
+        was_thinking = False
         while True:
-            tok = await loop.run_in_executor(None, token_q.get)
-            if tok is None:
+            item = await loop.run_in_executor(None, token_q.get)
+            if item is None:
                 break
+            # Error sentinel emitted by _produce on mid-stream failure
+            if isinstance(item, tuple) and item[0] == "__error__":
+                yield _sse("error", {"message": item[1]})
+                break
+            tok = item
             full_text += tok
             visible = think_filter.feed(tok)
+            # Notify frontend when model enters or exits a thinking block
+            if think_filter.thinking and not was_thinking:
+                yield _sse("thinking", {"active": True})
+            elif not think_filter.thinking and was_thinking:
+                yield _sse("thinking", {"active": False})
+            was_thinking = think_filter.thinking
             if visible:
                 yield _sse("token", {"text": visible})
 
@@ -943,6 +995,9 @@ class _ThinkingFilter:
     inside <think> tags before the actual answer.  This filter discards those blocks
     so only the final answer reaches the frontend.
 
+    Nesting is handled via a depth counter so nested <think> blocks (produced by
+    some o1-class models) are fully discarded rather than leaking inner open tags.
+
     Usage — call feed(tok) for each incoming token; it returns the text to emit
     (may be empty string while inside a thinking block).  Call flush() after the
     last token to release any text held in the lookahead buffer.
@@ -952,8 +1007,12 @@ class _ThinkingFilter:
     _CLOSE = "</think>"
 
     def __init__(self) -> None:
-        self._buf = ""
-        self._thinking = False
+        self._buf   = ""
+        self._depth = 0   # nesting depth; 0 = normal output
+
+    @property
+    def thinking(self) -> bool:
+        return self._depth > 0
 
     @staticmethod
     def _tail_overlap(s: str, tag: str) -> int:
@@ -967,22 +1026,30 @@ class _ThinkingFilter:
         self._buf += tok
         out = ""
         while self._buf:
-            if self._thinking:
-                idx = self._buf.find(self._CLOSE)
-                if idx >= 0:
-                    self._thinking = False
-                    # Drop the close tag and any immediately following newline(s)
-                    self._buf = self._buf[idx + len(self._CLOSE):].lstrip("\n")
+            if self._depth > 0:
+                close_idx = self._buf.find(self._CLOSE)
+                open_idx  = self._buf.find(self._OPEN)
+                # Handle whichever tag comes first
+                if close_idx >= 0 and (open_idx < 0 or close_idx <= open_idx):
+                    self._depth -= 1
+                    after = self._buf[close_idx + len(self._CLOSE):]
+                    self._buf = after.lstrip("\n") if self._depth == 0 else after
+                elif open_idx >= 0:
+                    self._depth += 1
+                    self._buf = self._buf[open_idx + len(self._OPEN):]
                 else:
-                    # Hold back any potential partial close tag at the tail
-                    hold = self._tail_overlap(self._buf, self._CLOSE)
+                    # Hold back any potential partial tag at the tail
+                    hold = max(
+                        self._tail_overlap(self._buf, self._CLOSE),
+                        self._tail_overlap(self._buf, self._OPEN),
+                    )
                     self._buf = self._buf[-hold:] if hold else ""
                     break
             else:
                 idx = self._buf.find(self._OPEN)
                 if idx >= 0:
                     out += self._buf[:idx]
-                    self._thinking = True
+                    self._depth += 1
                     self._buf = self._buf[idx + len(self._OPEN):]
                 else:
                     hold = self._tail_overlap(self._buf, self._OPEN)
@@ -997,7 +1064,7 @@ class _ThinkingFilter:
 
     def flush(self) -> str:
         """Release any buffered text that isn't inside a thinking block."""
-        if not self._thinking:
+        if self._depth == 0:
             result, self._buf = self._buf, ""
             return result
         return ""

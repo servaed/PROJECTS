@@ -1,0 +1,126 @@
+PANDUAN OPERASIONAL JARINGAN DAN REGULASI FREKUENSI
+Nomor: TLC/NET/OPS/002/2026 | Revisi: 2.1 | Berlaku: 1 Januari 2026
+Ditetapkan oleh: Direktur Teknologi PT Nusantara Telekomunikasi Tbk
+
+BAB I - ALOKASI FREKUENSI DAN LISENSI
+
+Pasal 1 - Alokasi Spektrum yang Dimiliki
+
+PT Nusantara Telekomunikasi Tbk mengelola spektrum frekuensi berikut sesuai
+izin yang diterbitkan oleh Kementerian Komunikasi dan Informatika (Kominfo):
+
+Frekuensi 4G LTE:
+- 1800 MHz (Band 3)  : 20 MHz FDD, cakupan nasional
+- 2100 MHz (Band 1)  : 15 MHz FDD, 32 kota besar
+- 2300 MHz (Band 40) : 30 MHz TDD, area metropolitan
+
+Frekuensi 5G:
+- 3500 MHz (Band n78): 100 MHz TDD, tahap 1: 10 kota (2024-2026)
+- 26 GHz (mmWave)    : 400 MHz, pilot hotspot Jakarta dan Surabaya
+
+Frekuensi Legacy:
+- 900 MHz (Band 8)   : 10 MHz FDD, cakupan rural dan pelosok
+- 2100 MHz (3G/UMTS) : 5 MHz FDD, dijadwalkan sunset 2027
+
+Pasal 2 - Kewajiban Cakupan (Coverage Obligation)
+
+Sesuai izin dari Kominfo dan perjanjian Universal Service Obligation (USO):
+- Cakupan 4G di seluruh ibu kota kabupaten/kota: 100% sebelum akhir 2025 (TERPENUHI)
+- Cakupan 4G di kecamatan dengan populasi lebih dari 10.000 jiwa: 95% sebelum akhir 2026
+- Cakupan 3G di seluruh wilayah daratan: 98% (terpenuhi per 2023)
+- Cakupan 5G di 50 kota besar: 60% sebelum akhir 2028
+
+BAB II - STANDAR TEKNIS JARINGAN
+
+Pasal 3 - Kapasitas dan Utilisasi BTS
+
+Standar kapasitas jaringan yang ditetapkan:
+- Kapasitas BTS 4G/LTE standard: 50-150 Mbps (downlink) tergantung konfigurasi
+- Kapasitas BTS 5G NR: 500-2000 Mbps (downlink) tergantung carrier aggregation
+- Jumlah pengguna aktif per BTS maksimum: 200 pengguna simultan (QoS terjaga)
+
+Threshold utilisasi yang memerlukan tindakan:
+- Utilisasi 70-80% : Perencanaan kapasitas dipercepat, koordinasi dengan regional
+- Utilisasi 80-85% : Optimasi frekuensi dan parameter jaringan wajib dilakukan
+- Utilisasi 85-90% : Eskalasi ke NOC pusat, rencana pengadaan BTS tambahan
+- Utilisasi lebih dari 90%: Status kritis, pembatasan aktivasi SIM baru di area terdampak
+
+Posisi utilisasi jaringan per Maret 2026 (area prioritas pemantauan):
+- Bali (Denpasar dan sekitarnya)   : 90,1% - STATUS KRITIS, eskalasi aktif
+- Jawa Timur (Surabaya raya)       : 85,6% - Status kritis, rencana penambahan BTS
+- Jawa Barat (Bandung metropolitan): 71,2% - Status perhatian, monitoring intensif
+- Jakarta                           : 78,3% - Status perhatian, carrier aggregation aktif
+- Jawa Tengah (Semarang)           : 68,9% - Normal
+- Sumatera Utara (Medan)           : 55,0% - Normal, kapasitas memadai
+- Sulawesi Selatan (Makassar)      : 48,2% - Normal
+- Kalimantan Timur (Balikpapan)    : 42,7% - Normal
+
+Pasal 4 - Penanganan Gangguan Jaringan
+
+Klasifikasi gangguan dan prosedur penanganan:
+- Gangguan Tingkat 1 (Minor): kurang dari 10% BTS terdampak di satu area
+  Penanganan: tim lokal, target resolusi 4 jam
+- Gangguan Tingkat 2 (Major): 10-30% BTS terdampak atau area kritis
+  Penanganan: tim regional + NOC pusat, target resolusi 8 jam
+- Gangguan Tingkat 3 (Catastrophic): lebih dari 30% BTS terdampak atau backbone down
+  Penanganan: crisis team + Direksi, target resolusi 24 jam + laporan ke Kominfo
+
+Pasal 5 - Pemeliharaan Jaringan Terjadwal
+
+Jadwal pemeliharaan jaringan (planned maintenance):
+- Pemeliharaan rutin BTS: maksimal 2 jam per bulan per BTS, antara 02:00-05:00 WIB
+- Upgrade software jaringan: dijadwalkan akhir pekan, maksimal 4 jam
+- Pemberitahuan pelanggan: minimal 72 jam sebelum pemeliharaan yang mempengaruhi layanan
+
+BAB III - RENCANA EKSPANSI 5G
+
+Pasal 6 - Roadmap 5G 2024-2028
+
+Fase 1 (2024-2025) - SELESAI:
+- Deployment 5G di Jakarta, Surabaya, Bandung, Medan, Makassar
+- 1.250 BTS 5G aktif dengan kapasitas total 450 Gbps
+- Cakupan populasi: 28% dari populasi nasional
+
+Fase 2 (2026-2027) - BERJALAN:
+- Ekspansi ke 30 kota tier-2: Semarang, Yogyakarta, Palembang, Balikpapan, dll.
+- Target tambahan 3.000 BTS 5G
+- Target investasi: Rp 8,5 triliun
+
+Fase 3 (2028) - PLANNED:
+- Ekspansi ke 50+ kota dan kawasan industri prioritas
+- Integrasi dengan jaringan satelit LEO untuk daerah terpencil
+- Target cakupan 5G: 60% populasi nasional
+
+Pasal 7 - Persyaratan Kualitas Layanan 5G
+
+Standar minimum layanan 5G yang harus dipenuhi:
+- Kecepatan unduhan puncak        : minimal 1 Gbps di area urban
+- Kecepatan unggahan puncak       : minimal 100 Mbps
+- Latency end-to-end               : maksimal 10ms (ultra-low latency slice)
+- Kepadatan koneksi                : minimal 1 juta perangkat per km persegi
+- Ketersediaan jaringan 5G         : minimal 99,7% uptime bulanan
+
+BAB IV - KEAMANAN DAN KEPATUHAN JARINGAN
+
+Pasal 8 - Keamanan Infrastruktur
+
+Standar keamanan yang diwajibkan untuk seluruh infrastruktur jaringan:
+- Enkripsi end-to-end untuk semua komunikasi suara dan data (3GPP standar)
+- Pemantauan keamanan siber 24/7 oleh Security Operations Center (SOC)
+- Penetration testing jaringan inti: minimal 2 kali per tahun oleh pihak ketiga independen
+- Backup power system: minimal 8 jam UPS + genset di setiap site kritis
+
+Pasal 9 - Kepatuhan Regulasi
+
+Laporan wajib kepada Kominfo dan BRTI:
+- Laporan kualitas layanan (QoS) bulanan: paling lambat tanggal 15 bulan berikutnya
+- Laporan gangguan jaringan signifikan: dalam 2 jam sejak kejadian
+- Laporan penggunaan frekuensi tahunan: setiap 31 Januari
+
+Denda pelanggaran regulasi frekuensi:
+- Penggunaan frekuensi tanpa izin: Rp 500 juta - Rp 2 miliar per kasus
+- Keterlambatan laporan QoS: Rp 100 juta per laporan yang terlambat
+- Tidak memenuhi kewajiban cakupan: Rp 1 miliar per kuartal per wilayah
+
+Ditetapkan di Jakarta, 1 Januari 2026
+Direktur Teknologi: Hendra Kusuma Wijaya

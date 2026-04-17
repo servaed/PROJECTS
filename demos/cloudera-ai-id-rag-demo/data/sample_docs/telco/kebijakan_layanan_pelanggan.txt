@@ -1,0 +1,150 @@
+KEBIJAKAN LAYANAN PELANGGAN DAN SERVICE LEVEL AGREEMENT (SLA)
+Nomor: TLC/CS/POL/001/2026 | Revisi: 3.2 | Berlaku: 1 Januari 2026
+Ditetapkan oleh: Direksi PT Nusantara Telekomunikasi Tbk
+
+BAB I - KETENTUAN UMUM
+
+Pasal 1 - Definisi
+
+1.1 Service Level Agreement (SLA) adalah komitmen tertulis yang mendefinisikan standar
+    kualitas layanan minimum yang dijamin oleh perusahaan kepada pelanggan.
+1.2 Churn adalah kondisi dimana pelanggan mengakhiri kontrak berlangganan secara aktif
+    atau tidak memperpanjang kontrak yang habis masa berlakunya.
+1.3 Churn Risk Score adalah nilai prediktif (skala 0-100) yang menggambarkan kemungkinan
+    pelanggan akan churn dalam 90 hari ke depan:
+    - Skor 0-30    : Risiko rendah
+    - Skor 31-69   : Risiko menengah (pantau bulanan)
+    - Skor 70-100  : Risiko tinggi (intervensi aktif wajib dalam 7 hari kerja)
+1.4 Net Promoter Score (NPS): ukuran loyalitas pelanggan, skala -100 hingga +100.
+1.5 First Call Resolution (FCR): persentase keluhan yang diselesaikan dalam kontak pertama.
+
+BAB II - STANDAR KUALITAS JARINGAN
+
+Pasal 2 - Ketersediaan Jaringan (Network Availability)
+
+Ketersediaan jaringan minimum yang dijamin:
+- 4G LTE : minimal 99,5% uptime per bulan (downtime maksimal 3,6 jam/bulan)
+- 5G      : minimal 99,7% uptime per bulan (downtime maksimal 2,2 jam/bulan)
+- 3G      : minimal 98,0% uptime per bulan
+
+Batas utilisasi jaringan:
+- Normal      : utilisasi 0-70% dari kapasitas
+- Perhatian   : utilisasi 70-85% (monitoring intensif, rencana ekspansi dipercepat)
+- Kritis       : utilisasi 85-95% (pembatasan penambahan pelanggan baru)
+- Overcapacity: utilisasi lebih dari 95% (darurat jaringan, aktivasi cadangan wajib)
+
+Pasal 3 - Kecepatan Data Minimum
+
+Kecepatan unduhan minimum yang dijamin dalam SLA:
+- Paket Starter (5 GB)  : minimal 5 Mbps rata-rata
+- Paket Basic (20 GB)   : minimal 10 Mbps rata-rata
+- Paket Standard (50 GB): minimal 20 Mbps rata-rata
+- Paket Premium (100 GB): minimal 30 Mbps rata-rata
+- Paket Unlimited        : minimal 20 Mbps (tanpa throttle selama FUP)
+- Paket Enterprise       : sesuai kontrak individual, minimum 50 Mbps
+
+BAB III - STANDAR LAYANAN PELANGGAN
+
+Pasal 4 - Waktu Penanganan Keluhan
+
+Waktu penyelesaian (ticket resolution time) berdasarkan tingkat keparahan:
+- P1 Kritis (layanan mati total, lebih dari 500 pelanggan terdampak): 4 jam
+- P2 Tinggi (degradasi signifikan, 100-500 pelanggan terdampak)     : 8 jam
+- P3 Menengah (gangguan parsial, kurang dari 100 pelanggan)          : 24 jam
+- P4 Rendah (pertanyaan, permintaan non-kritis)                      : 3 hari kerja
+- P5 Informasi (saran, masukan umum)                                 : 5 hari kerja
+
+Waktu respons pertama per kanal:
+- Hotline 24/7 gangguan kritis : langsung (kurang dari 30 detik)
+- Hotline 24/7 pertanyaan umum : kurang dari 2 menit
+- Live chat aplikasi            : kurang dari 5 menit
+- Email resmi                   : kurang dari 4 jam kerja
+- Gerai GraPARI                : kurang dari 15 menit antrian
+- Media sosial                  : kurang dari 1 jam
+
+Pasal 5 - Target Kepuasan Pelanggan
+
+- Customer Satisfaction Score (CSAT) minimum : 80% pelanggan puas atau sangat puas
+- Net Promoter Score (NPS) target 2026        : minimal +35 poin
+- First Call Resolution (FCR):
+  * Pelanggan prabayar    : minimal 75%
+  * Pelanggan pascabayar  : minimal 80%
+  * Pelanggan korporasi   : minimal 85%
+
+BAB IV - PROGRAM RETENSI PELANGGAN
+
+Pasal 6 - Kriteria Eligibilitas Program Retensi
+
+Program retensi aktif ditawarkan kepada pelanggan yang memenuhi semua kriteria berikut:
+a. Masa berlangganan minimal 12 bulan berturut-turut
+b. Tidak memiliki tunggakan pembayaran dalam 6 bulan terakhir
+c. Churn risk score minimal 70 (risiko tinggi), ATAU
+   kontrak akan berakhir dalam 60 hari ke depan dengan skor lebih dari 50
+
+Pelanggan dengan skor di bawah 70 tidak memenuhi syarat program retensi aktif.
+
+Pasal 7 - Intervensi Berdasarkan Churn Risk Score
+
+- Skor 70-79  : Penawaran diskon perpanjangan 10-15%
+- Skor 80-89  : Penawaran upgrade paket gratis + diskon 15-20%
+- Skor 90-100 : Penawaran khusus (diskon 25-30% + bonus kuota + hadiah loyalitas)
+
+Pasal 8 - Diskon Perpanjangan Kontrak
+
+Syarat mendapatkan diskon perpanjangan:
+a. Pelanggan pascabayar dengan masa berlangganan minimal 12 bulan
+b. Status akun aktif tanpa tunggakan
+c. Komitmen perpanjangan minimal 12 bulan ke depan
+d. Diskon berlaku untuk tagihan bulanan, tidak untuk perangkat
+
+Besaran diskon berdasarkan masa berlangganan kumulatif:
+- 12-23 bulan    : diskon 10% dari tarif langganan bulanan
+- 24-35 bulan    : diskon 15% dari tarif langganan bulanan
+- 36-47 bulan    : diskon 20% dari tarif langganan bulanan
+- 48 bulan ke atas: diskon 25% dari tarif langganan bulanan
+
+Pasal 9 - Target Churn Rate Tahun 2026
+
+Target churn rate bulanan yang tidak boleh terlampaui:
+- Pelanggan prabayar  : maksimal 4,5% per bulan
+- Pelanggan pascabayar: maksimal 1,8% per bulan
+- Pelanggan korporasi : maksimal 0,8% per bulan
+- Churn rate total    : maksimal 3,2% per bulan (weighted average)
+
+BAB V - KOMPENSASI PELANGGARAN SLA
+
+Pasal 10 - Kompensasi Gangguan Jaringan
+
+Apabila perusahaan gagal memenuhi komitmen SLA ketersediaan jaringan, pelanggan
+berhak mendapatkan kompensasi otomatis:
+- Downtime 1-4 jam    : kredit kuota data 500 MB
+- Downtime 4-12 jam   : kredit kuota data 2 GB + diskon tagihan 10%
+- Downtime 12-24 jam  : kredit kuota data 5 GB + diskon tagihan 25%
+- Downtime lebih dari 24 jam: kredit kuota 10 GB + diskon 50% + perpanjangan 1 bulan gratis
+
+Pasal 11 - Kompensasi Keterlambatan Penanganan Keluhan
+
+- Melewati target P1 : kredit Rp 50.000 ke akun pelanggan
+- Melewati target P2 : kredit Rp 25.000 ke akun pelanggan
+- Melewati target P3 : kredit Rp 10.000 ke akun pelanggan
+
+BAB VI - PEMANTAUAN DAN PELAPORAN
+
+Pasal 12 - KPI Bulanan
+
+Divisi Customer Experience wajib melaporkan kepada Direksi setiap bulan:
+- Tingkat churn per segmen dan perbandingan dengan target
+- Distribusi churn risk score portofolio aktif
+- CSAT, NPS, dan CES bulanan
+- SLA achievement rate per kategori keluhan
+- FCR per kanal layanan
+
+Pasal 13 - Eskalasi
+
+Apabila churn rate melampaui batas atau SLA achievement rate turun di bawah 90%
+dalam dua bulan berturut-turut, Kepala Divisi Customer Experience wajib menyampaikan
+rencana perbaikan kepada Direksi dalam 5 hari kerja.
+
+Ditetapkan di Jakarta, 1 Januari 2026
+Direktur Customer Experience: Dewi Pertiwi Rahayu
+Direktur Utama               : Reza Firmansyah

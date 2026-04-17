@@ -1,0 +1,173 @@
+KEBIJAKAN STANDAR PELAYANAN PUBLIK PEMERINTAH DAERAH
+Nomor: PEMDA/YAN/POL/001/2026 | Revisi: 2.0 | Berlaku: 1 Januari 2026
+Ditetapkan oleh: Sekretaris Daerah Pemerintah Kota Nusantara
+
+BAB I - DASAR HUKUM DAN KETENTUAN UMUM
+
+Pasal 1 - Dasar Hukum
+
+a. Undang-Undang No. 25 Tahun 2009 tentang Pelayanan Publik
+b. Undang-Undang No. 23 Tahun 2014 tentang Pemerintahan Daerah
+c. Peraturan Pemerintah No. 96 Tahun 2012 tentang Pelaksanaan UU Pelayanan Publik
+d. Permenpan-RB No. 15 Tahun 2014 tentang Pedoman Standar Pelayanan
+e. Peraturan Daerah Kota Nusantara No. 4 Tahun 2023 tentang Standar Pelayanan Publik
+
+Pasal 2 - Definisi
+
+2.1 Standar Pelayanan adalah tolok ukur yang dipergunakan sebagai pedoman penyelenggaraan
+    pelayanan publik dan acuan penilaian kualitas pelayanan.
+2.2 Indeks Kepuasan Masyarakat (IKM) adalah data dan informasi tentang tingkat kepuasan
+    masyarakat yang diperoleh dari hasil pengukuran secara kuantitatif dan kualitatif
+    atas pendapat masyarakat dalam memperoleh pelayanan.
+2.3 Maklumat Pelayanan adalah pernyataan tertulis dari penyelenggara pelayanan yang berisi
+    komitmen untuk memberikan pelayanan sesuai standar yang telah ditetapkan.
+2.4 Pengaduan adalah penyampaian ketidakpuasan yang disebabkan oleh adanya kerugian, baik
+    yang sudah maupun yang akan dialami oleh pemohon layanan.
+
+BAB II - STANDAR WAKTU PELAYANAN
+
+Pasal 3 - Standar Waktu Penyelesaian Layanan Kependudukan
+
+Layanan Disdukcapil (Dinas Kependudukan dan Pencatatan Sipil):
+
+| Jenis Layanan              | Waktu Penyelesaian | Biaya      |
+|---------------------------|--------------------|------------|
+| KTP Elektronik (baru)     | 3 hari kerja       | Gratis     |
+| KTP Elektronik (rusak)    | 1 hari kerja       | Gratis     |
+| Kartu Keluarga (baru)     | 1 hari kerja       | Gratis     |
+| Kartu Keluarga (perubahan)| 1 hari kerja       | Gratis     |
+| Akta Kelahiran            | 1 hari kerja       | Gratis     |
+| Akta Kematian             | 1 hari kerja       | Gratis     |
+| Akta Perkawinan           | 3 hari kerja       | Rp 50.000  |
+| Surat Pindah              | 1 hari kerja       | Gratis     |
+| Legalisir dokumen         | Hari yang sama     | Gratis     |
+
+Pasal 4 - Standar Waktu Layanan Perizinan
+
+Layanan Dinas Perizinan Terpadu Satu Pintu (DPTSP):
+
+| Jenis Izin                        | Waktu Penyelesaian | Biaya          |
+|----------------------------------|--------------------|----------------|
+| Nomor Induk Berusaha (NIB)       | Otomatis (online)  | Gratis         |
+| Sertifikat Standar Usaha         | 3 hari kerja       | Sesuai PNBP    |
+| IMB/PBG rumah tinggal            | 10 hari kerja      | Sesuai PNBP    |
+| IMB/PBG non-rumah tinggal        | 14 hari kerja      | Sesuai PNBP    |
+| Izin Lingkungan (UKL-UPL)        | 21 hari kerja      | Sesuai PNBP    |
+| Sertifikat Layak Fungsi (SLF)    | 7 hari kerja       | Sesuai PNBP    |
+| Izin Usaha Perdagangan (IUP)     | 3 hari kerja       | Gratis         |
+| Izin Keramaian                   | 3 hari kerja       | Rp 250.000     |
+
+Pasal 5 - Standar Waktu Layanan Sosial dan Kemasyarakatan
+
+| Jenis Layanan                     | Waktu Penyelesaian | Biaya   |
+|----------------------------------|--------------------|---------|
+| Surat Keterangan Tidak Mampu (SKTM)| 1 hari kerja    | Gratis  |
+| Rekomendasi Beasiswa              | 3 hari kerja       | Gratis  |
+| Surat Keterangan Domisili         | Hari yang sama     | Gratis  |
+| Bantuan Sosial (verifikasi)       | 14 hari kerja      | Gratis  |
+
+Pasal 6 - Kompensasi Keterlambatan Pelayanan
+
+Apabila pelayanan melampaui waktu standar yang ditetapkan, pemohon berhak mendapatkan:
+a. Permintaan maaf resmi dari kepala unit pelayanan
+b. Prioritas antrian pada kunjungan berikutnya
+c. Layanan antar dokumen ke alamat pemohon (untuk keterlambatan lebih dari 2x standar)
+d. Laporan eskalasi ke atasan kepala unit untuk keterlambatan sistemik
+
+Untuk layanan IMB/PBG yang terlambat:
+- Keterlambatan 1-5 hari  : diskon biaya PNBP 10%
+- Keterlambatan 6-14 hari : diskon biaya PNBP 25%
+- Keterlambatan lebih dari 14 hari: diskon biaya PNBP 50% + investigasi internal
+
+BAB III - STANDAR INDEKS KEPUASAN MASYARAKAT
+
+Pasal 7 - Target IKM dan Standar Kepuasan
+
+Target Indeks Kepuasan Masyarakat (IKM) tahun 2026 per unit layanan:
+
+| Unit Layanan           | Target IKM Minimum | Nilai Mutu Minimum |
+|-----------------------|--------------------|---------------------|
+| Disdukcapil            | 82,0 (Baik)        | B                   |
+| Dinas Perizinan (DPTSP)| 80,0 (Baik)        | B                   |
+| Dinas Sosial           | 83,0 (Baik)        | B                   |
+| Kecamatan              | 81,0 (Baik)        | B                   |
+| RSUD Kota              | 80,0 (Baik)        | B                   |
+| Target rata-rata kota  | 81,5 (Baik)        | B                   |
+
+Konversi nilai IKM ke kategori mutu:
+- IKM 88,31 - 100,00 : Mutu A (Sangat Baik)
+- IKM 76,61 - 88,30  : Mutu B (Baik)
+- IKM 65,00 - 76,60  : Mutu C (Kurang Baik)
+- IKM kurang dari 65,00: Mutu D (Tidak Baik) - wajib rencana perbaikan
+
+Pasal 8 - Pengukuran IKM
+
+IKM diukur berdasarkan 9 unsur sesuai Permenpan-RB No. 14 Tahun 2017:
+1. Persyaratan     - kemudahan dan kejelasan persyaratan
+2. Prosedur        - kemudahan dan kejelasan alur pelayanan
+3. Waktu           - kesesuaian waktu dengan standar yang ditetapkan
+4. Biaya           - kesesuaian biaya dengan ketentuan
+5. Produk          - kesesuaian jenis layanan yang diterima
+6. Kompetensi      - kemampuan petugas dalam pelayanan
+7. Perilaku        - kesopanan dan keramahan petugas
+8. Penanganan pengaduan - kemampuan menangani pengaduan
+9. Sarana dan prasarana - kenyamanan lingkungan pelayanan
+
+BAB IV - KANAL PENGADUAN DAN PENANGANANNYA
+
+Pasal 9 - Kanal Pengaduan Resmi
+
+Kanal pengaduan yang tersedia untuk masyarakat:
+a. Aplikasi NusantaraKu (mobile app Android/iOS):
+   - Respons pertama: kurang dari 24 jam
+   - Tersedia 24/7, integrasi langsung dengan SKPD terkait
+
+b. Hotline Kota 1500-XXX:
+   - Layanan hari kerja: Senin-Jumat 08:00-16:00 WIB
+   - Darurat infrastruktur: 24/7
+
+c. Loket Pengaduan di Balai Kota:
+   - Jam operasional: Senin-Jumat 08:00-15:00 WIB
+   - Petugas khusus penanganan pengaduan
+
+d. Email resmi: pengaduan@nusantarakota.go.id
+   - Respons awal: kurang dari 2 hari kerja
+
+e. Surat resmi ke kantor Ombudsman Kota:
+   - Untuk pengaduan yang tidak terselesaikan di tingkat SKPD
+
+Pasal 10 - Prosedur Penanganan Pengaduan
+
+Tahapan penanganan pengaduan:
+1. Registrasi dan verifikasi: 1 hari kerja
+2. Klarifikasi ke unit terkait: 3 hari kerja
+3. Investigasi dan analisis: 5-10 hari kerja (tergantung kompleksitas)
+4. Respons kepada pelapor: paling lambat 14 hari kerja sejak pengaduan diterima
+5. Monitoring tindak lanjut: 30 hari setelah respons
+
+Batas waktu penyelesaian pengaduan berdasarkan kategori:
+- Pengaduan administrasi (dokumen, waktu proses): 7 hari kerja
+- Pengaduan perilaku petugas: 10 hari kerja
+- Pengaduan kebijakan/regulasi: 21 hari kerja
+- Pengaduan lintas SKPD: 30 hari kerja
+
+BAB V - MEKANISME KONTROL DAN EVALUASI
+
+Pasal 11 - Pelaporan Rutin
+
+Unit layanan wajib menyampaikan laporan kepada Sekretaris Daerah:
+- Laporan kinerja pelayanan bulanan (IKM, volume permohonan, tingkat tepat waktu)
+- Laporan pengaduan bulanan (jumlah, jenis, status penyelesaian)
+- Laporan tahunan evaluasi standar pelayanan
+
+Pasal 12 - Sanksi Unit Pelayanan
+
+Unit layanan yang secara konsisten tidak memenuhi standar:
+- Peringatan tertulis pertama: IKM di bawah target 2 bulan berturut-turut
+- Peringatan tertulis kedua dan rencana perbaikan 30 hari: IKM di bawah target 3 bulan
+- Audit pelayanan eksternal: IKM di bawah target 4 bulan atau banyak pengaduan
+- Evaluasi kepemimpinan unit: IKM di bawah target 6 bulan berturut-turut
+
+Ditetapkan di Kota Nusantara, 1 Januari 2026
+Sekretaris Daerah: Dr. Andi Prasetyo, M.Si.
+Walikota         : H. Bambang Triyono, S.H., M.H.

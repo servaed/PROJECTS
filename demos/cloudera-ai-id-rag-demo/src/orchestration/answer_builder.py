@@ -287,6 +287,6 @@ def _format_doc_context(chunks: list[RetrievedChunk]) -> str:
 
 
 def _format_sql_summary(result: QueryResult | None) -> str:
-    if result is None or result.is_empty:
+    if result is None or result.error or result.is_empty:
         return "Tidak ada data yang cocok dengan permintaan."
     return result.to_markdown_table(max_rows=20)

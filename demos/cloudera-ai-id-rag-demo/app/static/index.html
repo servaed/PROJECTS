@@ -234,6 +234,11 @@
       color: var(--t2); font-style: italic; margin: 0.7em 0;
     }
     .prose a { color: var(--o-text); text-decoration: underline; }
+    .cite-icon { display:inline-flex; align-items:center; font-size:0.6rem; font-weight:700;
+      padding:1px 5px; border-radius:8px; margin:0 2px; vertical-align:middle; line-height:1.5;
+      letter-spacing:0.02em; }
+    .cite-dok  { background:var(--t-dim); color:var(--teal); }
+    .cite-dat  { background:var(--i-dim); color:var(--indigo); }
 
     /* ── Animations ─────────────────────────────────────────────────── */
     @keyframes blink    { 0%,100%{opacity:1} 50%{opacity:0} }
@@ -303,7 +308,12 @@
 
   marked.setOptions({ breaks: true, gfm: true });
   // Sanitize LLM output before rendering to prevent XSS from prompt-injected HTML
-  const md = (text) => ({ __html: DOMPurify.sanitize(marked.parse(text || '')) });
+  const md = (text) => {
+    var t = (text || '')
+      .replace(/\[dokumen\]/g, '<span class="cite-icon cite-dok">◈</span>')
+      .replace(/\[data\]/g,    '<span class="cite-icon cite-dat">⬡</span>');
+    return { __html: DOMPurify.sanitize(marked.parse(t)) };
+  };
 
   // Highlight query keywords in source chunk text (plain-text input → safe HTML output)
   function highlightHtml(text, query) {
@@ -345,8 +355,9 @@
       case 'USER':      return [...msgs, { id:a.id, role:'user', content:a.content }];
       case 'ASSISTANT': return [...msgs, { id:a.id, role:'assistant', content:'', mode:null, isStreaming:true, docCitations:[], sqlCitation:null, usage:null, error:null, question:a.question||'' }];
       case 'MODE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{mode:a.mode}) : m);
-      case 'TOKEN':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{content:m.content+a.text}) : m);
-      case 'DONE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,docCitations:a.docCitations,sqlCitation:a.sqlCitation,usage:a.usage}) : m);
+      case 'TOKEN':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{content:m.content+a.text,isThinking:false}) : m);
+      case 'THINKING':  return msgs.map(m => m.id===a.id ? Object.assign({},m,{isThinking:a.active}) : m);
+      case 'DONE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,isThinking:false,docCitations:a.docCitations,sqlCitation:a.sqlCitation,usage:a.usage}) : m);
       case 'ERROR':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,error:a.message}) : m);
       case 'RESET':     return [];
       default:          return msgs;
@@ -812,7 +823,12 @@
         >
           <${IcoDB}/>
           <span style=${{ fontSize:'0.77rem', fontWeight:500, flex:1, textAlign:'left', color:'var(--indigo)' }}>
-            Structured Data · ${sc.row_count} rows · ${sc.latency_ms ? sc.latency_ms.toFixed(1) : '?'} ms
+            Structured Data · ${sc.row_count} rows · ${(function(){
+              var ms = sc.latency_ms;
+              if (ms == null) return html`<span style=${{color:'var(--t3)'}}>? ms</span>`;
+              var color = ms < 100 ? 'var(--teal)' : ms < 500 ? 'var(--orange)' : 'var(--err)';
+              return html`<span style=${{color}}>${ms.toFixed(1)} ms</span>`;
+            })()}
           </span>
           <${IcoCaret} open=${open}/>
         </button>
@@ -838,6 +854,40 @@
               <div className="prose" dangerouslySetInnerHTML=${md(sc.table_markdown)}/>
             `}
           </div>`}
+      </div>`;
+  }
+
+  // ── Collapsible document citation list ────────────────────────────
+  var _DOC_PREVIEW = 2;   // number of cards shown before "Show all" toggle
+  function DocCitationList(props) {
+    var cits = props.citations || [];
+    var [showAll, setShowAll] = useState(false);
+    var visible = (!showAll && cits.length > _DOC_PREVIEW) ? cits.slice(0, _DOC_PREVIEW) : cits;
+    return html`
+      <div>
+        <div style=${{
+          fontSize:'0.63rem', color:'var(--t3)',
+          textTransform:'uppercase', letterSpacing:'0.08em',
+          display:'flex', alignItems:'center', gap:'5px', marginBottom:'7px',
+        }}>
+          <${IcoDoc}/> Source Documents · ${cits.length} found
+        </div>
+        ${visible.map(function(c, i) { return html`<${DocCard} key=${i} cit=${c} idx=${i+1} query=${props.question}/>`; })}
+        ${cits.length > _DOC_PREVIEW && html`
+          <button
+            onClick=${function() { setShowAll(!showAll); }}
+            style=${{
+              marginTop:'5px', background:'transparent',
+              border:'1px solid var(--border)', borderRadius:'6px',
+              padding:'3px 10px', fontSize:'0.68rem', color:'var(--t2)',
+              cursor:'pointer', transition:'all 0.15s',
+            }}
+            onMouseEnter=${function(e){ e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.color='var(--orange)'; }}
+            onMouseLeave=${function(e){ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--t2)'; }}
+          >
+            ${showAll ? 'Sembunyikan' : 'Tampilkan semua '+cits.length+' sumber'}
+          </button>
+        `}
       </div>`;
   }
 
@@ -880,8 +930,15 @@
           ${msg.error
             ? html`<div style=${{ color:'var(--err)', fontSize:'0.84rem' }}>⚠ ${msg.error}</div>`
             : html`
+              ${msg.isThinking && html`
+                <div style=${{ fontSize:'0.75rem', color:'var(--t3)', fontStyle:'italic',
+                  marginBottom:'6px', display:'flex', alignItems:'center', gap:'6px' }}>
+                  <div className="spin" style=${{ width:'10px', height:'10px', borderWidth:'1.5px' }}/>
+                  sedang berpikir…
+                </div>
+              `}
               <div className="prose" dangerouslySetInnerHTML=${md(msg.content)}/>
-              ${msg.isStreaming && html`<span className="cursor"/>`}
+              ${msg.isStreaming && !msg.isThinking && html`<span className="cursor"/>`}
             `}
           ${!msg.isStreaming && !msg.error && msg.content && html`
             <button
@@ -905,14 +962,7 @@
         ${hasCits && !msg.isStreaming && html`
           <div style=${{ marginTop:'10px', paddingLeft:'2px' }}>
             ${msg.docCitations && msg.docCitations.length > 0 && html`
-              <div style=${{
-                fontSize:'0.63rem', color:'var(--t3)',
-                textTransform:'uppercase', letterSpacing:'0.08em',
-                display:'flex', alignItems:'center', gap:'5px', marginBottom:'7px',
-              }}>
-                <${IcoDoc}/> Source Documents · ${msg.docCitations.length} found
-              </div>
-              ${msg.docCitations.map(function(c, i) { return html`<${DocCard} key=${i} cit=${c} idx=${i+1} query=${msg.question}/>`; })}
+              <${DocCitationList} citations=${msg.docCitations} question=${msg.question}/>
             `}
             ${msg.sqlCitation && html`
               <div style=${{ marginTop:(msg.docCitations && msg.docCitations.length ? 8 : 0)+'px' }}>
@@ -1061,7 +1111,7 @@
       }}>
         <div
           style=${{
-            display:'flex', alignItems:'flex-end', gap:'10px',
+            display:'flex', alignItems:'center', gap:'10px',
             background:'var(--inp-bg)',
             border:'1px solid var(--inp-bd)',
             borderRadius:'14px', padding:'12px 12px 12px 18px',
@@ -1102,6 +1152,8 @@
               display:'flex', alignItems:'center', justifyContent:'center',
               transition:'all 0.15s',
               boxShadow: active ? '0 2px 8px var(--o-glow)' : 'none',
+              cursor: props.disabled ? 'not-allowed' : (active ? 'pointer' : 'default'),
+              opacity: props.disabled ? 0.55 : 1,
             }}
           >${props.disabled ? html`<div className="spin"/>` : html`<${IcoSend}/>`}</button>
         </div>
@@ -1113,14 +1165,18 @@
 
   // ── App root ───────────────────────────────────────────────────────
   function App() {
+    var _SS_KEY = 'cld-chat';
+    var _SS_VER = 2;   // bump when message shape changes to avoid corrupt history
     const [msgs, dispatch]              = useReducer(reduce, [], function() {
       try {
-        var raw = sessionStorage.getItem('cld-chat');
+        var raw = sessionStorage.getItem(_SS_KEY);
         if (raw) {
           var stored = JSON.parse(raw);
+          // Reject storage written by an older schema version
+          if (!stored || stored._v !== _SS_VER || !Array.isArray(stored.msgs)) return [];
           // Ensure no message is left mid-stream after a page reload
-          return stored.map(function(m) {
-            return m.isStreaming ? Object.assign({},m,{isStreaming:false}) : m;
+          return stored.msgs.map(function(m) {
+            return m.isStreaming ? Object.assign({},m,{isStreaming:false,isThinking:false}) : m;
           });
         }
       } catch(e) {}
@@ -1150,7 +1206,7 @@
 
     // Persist chat to sessionStorage so a page refresh doesn't lose the conversation
     useEffect(function() {
-      try { sessionStorage.setItem('cld-chat', JSON.stringify(msgs)); } catch(e) {}
+      try { sessionStorage.setItem(_SS_KEY, JSON.stringify({_v: _SS_VER, msgs: msgs})); } catch(e) {}
     }, [msgs]);
 
     // Keep refs in sync
@@ -1192,10 +1248,11 @@
       async function run() {
         try {
           for await (var ev of ssePost('/api/chat', { question:question, history:history, domain:domainRef.current, language:languageRef.current })) {
-            if (ev.event==='mode')  { dispatch({ type:'MODE',  id:aid, mode:ev.data.mode });                                                              setLoading(false); }
-            if (ev.event==='token') { dispatch({ type:'TOKEN', id:aid, text:ev.data.text }); }
-            if (ev.event==='done')  { dispatch({ type:'DONE',  id:aid, docCitations:ev.data.doc_citations, sqlCitation:ev.data.sql_citation, usage:ev.data.usage||null }); gotDone=true; }
-            if (ev.event==='error') { dispatch({ type:'ERROR', id:aid, message:ev.data.message }); gotDone=true; }
+            if (ev.event==='mode')     { dispatch({ type:'MODE',     id:aid, mode:ev.data.mode });                                                              setLoading(false); }
+            if (ev.event==='token')    { dispatch({ type:'TOKEN',    id:aid, text:ev.data.text }); }
+            if (ev.event==='thinking') { dispatch({ type:'THINKING', id:aid, active:ev.data.active }); }
+            if (ev.event==='done')     { dispatch({ type:'DONE',     id:aid, docCitations:ev.data.doc_citations, sqlCitation:ev.data.sql_citation, usage:ev.data.usage||null }); gotDone=true; }
+            if (ev.event==='error')    { dispatch({ type:'ERROR',    id:aid, message:ev.data.message }); gotDone=true; }
           }
         } catch(err) {
           dispatch({ type:'ERROR', id:aid, message:err.message });
@@ -1230,8 +1287,8 @@
         var q = typeof samps[idx] === 'string' ? samps[idx] : samps[idx].text;
         handleSubmitRef.current(q, function() {
           if (!autoPlayRef.current) return;
-          // Brief pause between questions so the user can read each answer
-          setTimeout(function() { playNext(idx + 1); }, 1800);
+          // Pause between questions so the audience has time to read each answer
+          setTimeout(function() { playNext(idx + 1); }, 3000);
         });
       }
       playNext(0);
@@ -1248,7 +1305,7 @@
         <${TopBar}
           theme=${theme}
           onToggle=${function() { setTheme(function(t){ return t==='dark'?'light':'dark'; }); }}
-          onReset=${function() { stopAutoPlay(); dispatch({ type:'RESET' }); try { sessionStorage.removeItem('cld-chat'); } catch(e){} }}
+          onReset=${function() { stopAutoPlay(); dispatch({ type:'RESET' }); try { sessionStorage.removeItem(_SS_KEY); } catch(e){} }}
           domain=${domain}
           domains=${domains}
           onDomainChange=${function(d) { setDomain(d); }}
