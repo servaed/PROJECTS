@@ -35,7 +35,7 @@ developer laptops, CI, and Cloudera AI Workbench (CML) with zero external depend
 | Configure wizard | Set LLM credentials via browser UI at `/configure`; inline Test LLM |
 | Model suggestions | Provider-aware model ID dropdown suggestions in `/configure` |
 | .env download | Export current (non-secret) config as a `.env` file from `/configure` |
-| Health dashboard | `/setup` shows live status, startup banner, in-app log viewer, QR code |
+| Health dashboard | `/setup` shows live status, startup banner, in-app log viewer, QR code, Re-ingest button |
 | First-launch overlay | Setup guide shown automatically when LLM is not yet configured |
 | Self-contained Docker | MinIO + Nessie + Trino embedded in the image — no Compose needed |
 | One-command startup | `make dev` (local) or `docker compose up` for instant bring-up |
@@ -155,7 +155,7 @@ cloudera-ai-id-rag-demo/
 │  │  ├─ banking/                # kebijakan_kredit_umkm, prosedur_kyc, regulasi_ojk_2025
 │  │  ├─ telco/                  # kebijakan_layanan_pelanggan, regulasi_spektrum_frekuensi
 │  │  └─ government/             # kebijakan_pelayanan_publik, regulasi_anggaran_daerah
-│  ├─ sample_tables/             # SQLite seeder (seed_database.py) — 9 tables, 148+ rows
+│  ├─ sample_tables/             # SQLite seeder + shared generator (sample_data.py) — 9 tables, 1485 rows
 │  ├─ manifests/
 │  └─ .env.local                 # ← written by /configure wizard (gitignored)
 ├─ deployment/
@@ -406,13 +406,14 @@ See the full guide in [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ## Sample Data
 
-The demo ships with realistic data across 9 tables (148+ rows):
+The demo ships with realistic data across 9 tables (**1485 rows**), generated
+deterministically from `data/sample_tables/sample_data.py` (fixed seed 42):
 
 | Domain | Tables | Highlights |
 |--------|--------|-----------|
-| Banking | `kredit_umkm` (45 rows), `nasabah` (15), `cabang` (14) | Multi-month outstanding, NPL kualitas, regional targets |
-| Telco | `pelanggan` (20), `penggunaan_data` (30), `jaringan` (15) | Churn risk scores, ARPU, network utilisasi (Bali 90.1% kritis) |
-| Government | `penduduk` (15), `anggaran_daerah` (26), `layanan_publik` (23) | TW1–TW3 realisasi, IKM per service, processing times |
+| Banking | `kredit_umkm` (540), `nasabah` (80), `cabang` (25) | 15 cities × 3 segments × 12 months, NPL tiers, 25 branches nationwide |
+| Telco | `pelanggan` (80), `penggunaan_data` (480), `jaringan` (20) | Churn risk scores, ARPU, 80 customers × 6 months usage, 20 stations |
+| Government | `penduduk` (40), `anggaran_daerah` (88), `layanan_publik` (132) | 40 districts, 11 programs × 4 quarters × 2 years, 11 service types × 12 months |
 
 Documents per domain:
 
