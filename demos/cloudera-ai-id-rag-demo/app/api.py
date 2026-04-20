@@ -15,7 +15,10 @@ import asyncio
 import json
 import logging
 import queue
+import re
 import threading
+import time
+from collections import defaultdict
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
@@ -28,11 +31,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import datetime
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import text as sa_text
 
 from src.config.logging import setup_logging
@@ -47,9 +50,44 @@ _STATIC = Path(__file__).parent / "static"
 # Cache index.html content at startup — avoids a disk read on every GET /
 _INDEX_HTML: str = ""
 
+# Server start time — used by /api/status to expose uptime for fast-poll logic
+_STARTUP_TIME: float = time.monotonic()
+
 # Persistent config override file — written by POST /api/configure,
 # sourced by launch_app.sh on every restart.
 _OVERRIDE_PATH = Path("data/.env.local")
+
+# ── Rate limiter (sliding window, no external dependency) ──────────────────
+
+_rate_store: dict[str, list[float]] = defaultdict(list)
+_RATE_LIMIT_MAX    = 30    # max requests per window
+_RATE_LIMIT_WINDOW = 60.0  # window size in seconds
+
+
+def _check_rate_limit(client_ip: str) -> bool:
+    now    = time.monotonic()
+    cutoff = now - _RATE_LIMIT_WINDOW
+    times  = _rate_store[client_ip]
+    _rate_store[client_ip] = [t for t in times if t > cutoff]
+    if len(_rate_store[client_ip]) >= _RATE_LIMIT_MAX:
+        return False
+    _rate_store[client_ip].append(now)
+    return True
+
+
+# Strip control characters from configure values to prevent .env.local corruption
+_CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0a-\x1f\x7f]")
+
+
+def _sanitize_config_value(value: str) -> str:
+    """Remove control characters that could corrupt .env.local or enable injection.
+
+    Truncates at the first newline first — prevents KEY=val\\nINJECTED=evil attacks
+    where stripping \\n would otherwise concatenate the injected content onto the value.
+    """
+    first_line = value.splitlines()[0] if value else value
+    return _CONTROL_CHAR_RE.sub("", first_line).strip()
+
 
 # Env-var keys that POST /api/configure is allowed to write.
 _CONFIGURE_ALLOWED_KEYS = frozenset({
@@ -116,13 +154,33 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("Startup check — database: FAILED — %s", exc)
 
-    # Check LLM configuration (presence only — no live ping to avoid slow startup)
+    # Check LLM configuration + fire a background warm-up ping
     if settings.llm_base_url or settings._live_provider in ("bedrock", "anthropic"):
         logger.info(
             "Startup check — LLM: configured (provider=%s, model=%s)",
             settings._live_provider,
             settings.llm_model_id,
         )
+        import threading as _threading
+        from concurrent.futures import ThreadPoolExecutor as _TPE
+
+        def _warm_up_llm() -> None:
+            try:
+                from src.llm.inference_client import get_llm_client
+                client = get_llm_client()
+                with _TPE(max_workers=1) as ex:
+                    fut = ex.submit(
+                        client.chat,
+                        [{"role": "user", "content": "ping"}],
+                        1,   # temperature
+                        1,   # max_tokens
+                    )
+                    fut.result(timeout=5)
+                logger.info("Startup - LLM warm-up: OK (model cache primed)")
+            except Exception as exc:
+                logger.info("Startup - LLM warm-up: %s (non-critical, first response may be slower)", exc)
+
+        _threading.Thread(target=_warm_up_llm, daemon=True).start()
     else:
         logger.warning(
             "Startup check — LLM: provider '%s' has no base URL configured. "
@@ -281,13 +339,50 @@ class ChatRequest(BaseModel):
 
 # ── API routes ─────────────────────────────────────────────────────────────
 
-@app.get("/api/status")
+@app.get("/health", tags=["ops"])
+async def health():
+    """Liveness/readiness probe for Kubernetes, Docker, and Cloudera AI.
+
+    Returns 200 when the app is fully operational, 503 when any critical
+    component (vector store, database) is unavailable.
+    """
+    checks: dict[str, bool] = {}
+
+    vs_path = Path(settings.vector_store_path) / "index.faiss"
+    checks["vector_store"] = vs_path.exists()
+
+    try:
+        from src.connectors.db_adapter import get_table_names
+        get_table_names()
+        checks["database"] = True
+    except Exception:
+        checks["database"] = False
+
+    checks["llm_configured"] = bool(
+        settings.llm_base_url or settings._live_provider in ("bedrock", "anthropic")
+    )
+
+    all_ok = all(checks.values())
+    return JSONResponse(
+        status_code=200 if all_ok else 503,
+        content={
+            "status": "ok" if all_ok else "degraded",
+            "checks": checks,
+            "uptime_s": round(time.monotonic() - _STARTUP_TIME),
+        },
+    )
+
+
+@app.get("/api/status", tags=["status"])
 async def api_status():
     """Return live system status for the sidebar indicators."""
     result: dict = {}
 
-    vs_path = Path(settings.vector_store_path) / "index.faiss"
-    result["vector_store"] = {"ok": vs_path.exists()}
+    vs_path   = Path(settings.vector_store_path) / "index.faiss"
+    hash_path = Path(settings.vector_store_path) / "index.sha256"
+    vs_ok = vs_path.exists()
+    hash_ok = hash_path.exists() if vs_ok else False
+    result["vector_store"] = {"ok": vs_ok, "hash_verified": hash_ok}
 
     try:
         from src.connectors.db_adapter import get_table_names
@@ -487,56 +582,27 @@ async def api_test_component(component: str):
     # ── LLM ────────────────────────────────────────────────────────────
     if component == "llm":
         live_provider = settings._live_provider
-        base_url = settings.llm_base_url
         model_id  = settings.llm_model_id
-        if not base_url and live_provider not in ("bedrock", "anthropic"):
-            return {"ok": False, "provider": live_provider, "model": None,
-                    "latency_ms": None,
-                    "fix": f"Set LLM_BASE_URL (and optionally LLM_API_KEY, LLM_MODEL_ID) for provider '{live_provider}'."}
         t0 = _time.monotonic()
         try:
-            from openai import OpenAI
-            # Build a fresh client using current env values — bypasses the stale singleton
-            test_client = OpenAI(
-                base_url=base_url or None,
-                api_key=settings.llm_api_key or "no-key",
-                timeout=10.0,
-            )
+            from src.llm.inference_client import get_llm_client
+            client = get_llm_client()
+
             def _ping():
-                # Try /models first; fall back to a minimal chat completion so
-                # endpoints that don't expose /models still pass.
-                try:
-                    test_client.models.list()
-                    return None  # success, no error
-                except Exception as models_err:
-                    # /models failed — try a 1-token chat as final check
-                    try:
-                        test_client.chat.completions.create(
-                            model=model_id,
-                            messages=[{"role": "user", "content": "ping"}],
-                            max_tokens=1,
-                        )
-                        return None  # success
-                    except Exception as chat_err:
-                        # Return the more informative of the two errors
-                        return chat_err
+                client.chat([{"role": "user", "content": "ping"}], max_tokens=1)
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                err = ex.submit(_ping).result(timeout=15.0)
+                ex.submit(_ping).result(timeout=15.0)
             latency_ms = round((_time.monotonic() - t0) * 1000)
-            if err is None:
-                return {"ok": True, "provider": live_provider, "model": model_id,
-                        "latency_ms": latency_ms, "fix": None}
-            else:
-                return {"ok": False, "provider": live_provider, "model": model_id,
-                        "latency_ms": latency_ms,
-                        "fix": f"{type(err).__name__}: {err}"}
+            return {"ok": True, "provider": live_provider, "model": model_id,
+                    "latency_ms": latency_ms, "fix": None}
         except concurrent.futures.TimeoutError:
             return {"ok": False, "provider": live_provider, "model": model_id,
                     "latency_ms": None, "fix": "Connection timed out (15 s). Check that the endpoint URL is reachable."}
         except Exception as exc:
+            latency_ms = round((_time.monotonic() - t0) * 1000)
             return {"ok": False, "provider": live_provider, "model": model_id,
-                    "latency_ms": None, "fix": f"{type(exc).__name__}: {exc}"}
+                    "latency_ms": latency_ms, "fix": f"{type(exc).__name__}: {exc}"}
 
     # ── Embeddings ─────────────────────────────────────────────────────
     if component == "embeddings":
@@ -679,9 +745,10 @@ async def api_configure_post(body: ConfigureRequest):
     shadowed_by_env: list[str] = []
 
     for key, value in body.env_vars.items():
-        if value.strip():
-            existing[key] = value.strip()
-            os.environ[key] = value.strip()
+        sanitized = _sanitize_config_value(value)
+        if sanitized:
+            existing[key] = sanitized
+            os.environ[key] = sanitized
         else:
             existing.pop(key, None)
             os.environ.pop(key, None)
@@ -744,9 +811,15 @@ async def api_logs(level: str = "DEBUG", limit: int = 200):
     return {"entries": entries, "total": len(entries)}
 
 
-@app.post("/api/chat")
-async def api_chat(body: ChatRequest):
+@app.post("/api/chat", tags=["chat"])
+async def api_chat(body: ChatRequest, request: Request):
     """Stream a chat response via Server-Sent Events."""
+    client_ip = (request.client.host if request.client else "unknown")
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Terlalu banyak permintaan. Tunggu sebentar sebelum mengirim pertanyaan berikutnya.",
+        )
     domain = body.domain if body.domain in DOMAIN_CONFIG else _DEFAULT_DOMAIN
     domain_tables = DOMAIN_CONFIG[domain]["tables"]
     return StreamingResponse(
@@ -850,6 +923,7 @@ async def _chat_sse(
                 "ingest_timestamp": c.ingest_timestamp,
                 "excerpt": c.excerpt,
                 "full_text": chunk_text_lookup.get((c.source_path, c.chunk_index), c.excerpt),
+                "score": round(c.score, 3),
             }
             for c in (result.doc_citations or [])
         ]

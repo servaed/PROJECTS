@@ -20,7 +20,10 @@ User (Bahasa Indonesia or English)
        ├─ GET  /api/domains   → available domain list
        ├─ GET  /api/setup     → detailed health report (used by /setup page)
        ├─ GET  /api/configure → current config state, secrets masked
-       └─ POST /api/configure → validate → write data/.env.local → os.environ update
+       ├─ POST /api/configure → validate → write data/.env.local → os.environ update
+       ├─ POST /api/test/llm  → send 1-token ping to LLM, return provider/model/latency
+       ├─ GET  /api/logs      → last N lines from _MemoryHandler ring buffer
+       └─ GET  /health        → {status, checks:{vector_store,database,llm_configured}, uptime_s}
   → Orchestration Router (classify → dokumen / data / gabungan)
        ├─ Keyword heuristics (4-tier: show-verb → gabungan → data → dokumen)
        └─ LLM fallback for ambiguous questions
@@ -53,8 +56,12 @@ LLM tokens via Server-Sent Events on `POST /api/chat`.
 | `app/api.py` | **FastAPI entry point (production)** — all routes |
 | `app/main.py` | Streamlit entry point (local/notebook fallback) |
 | `app/static/index.html` | React SPA — chat interface (htm tagged templates, no build step) |
-| `app/static/setup.html` | Health dashboard — auto-refreshes every 30 s |
-| `app/static/configure.html` | Env-var wizard — saves to `data/.env.local` |
+| `app/static/setup.html` | Health dashboard — auto-refreshes every 30 s; QR popup; startup banner; log viewer |
+| `app/static/configure.html` | Env-var wizard — saves to `data/.env.local`; Test LLM; .env download; model datalists |
+| `app/static/vendor/` | Self-hosted JS: React, htm, DOMPurify, QRCode.js |
+| `Makefile` | Dev shortcuts: `make dev`, `make docker`, `make test`, `make docker-push` |
+| `docker-compose.yml` | One-command local startup with named volumes + healthcheck |
+| `.github/workflows/docker-build.yml` | GitHub Actions CI/CD → GHCR push on main/semver tags |
 | `src/config/` | Settings (pydantic-settings), logging config |
 | `src/llm/` | LLM abstraction base (`chat` + `stream_chat`), OpenAI-compatible client, bilingual prompts |
 | `src/retrieval/` | Document loaders, chunking, embeddings (e5-large), FAISS + BM25 hybrid retriever |
@@ -73,16 +80,13 @@ LLM tokens via Server-Sent Events on `POST /api/chat`.
 
 ## Development Commands
 ```bash
-# Install dependencies
+# One-command local dev (pip install + seed + uvicorn)
+make dev
+
+# Or step by step:
 pip install -r requirements.txt
-
-# Seed demo SQLite database
 python data/sample_tables/seed_database.py
-
-# Ingest sample documents into vector store
 python -m src.retrieval.document_loader
-
-# Run app locally on port 8080 (FastAPI + React SPA — production entry point)
 uvicorn app.api:app --host 0.0.0.0 --port 8080 --reload
 
 # Configure via browser (open after starting the app)
@@ -90,6 +94,19 @@ uvicorn app.api:app --host 0.0.0.0 --port 8080 --reload
 
 # Run all tests
 pytest tests/ -v
+make test          # same via Makefile
+make test-fast     # pytest -x (stop on first failure)
+
+# Docker workflow
+make docker                          # build image
+make docker-run                      # run with env from shell
+make docker-push REGISTRY=ghcr.io/X  # tag and push
+
+# One-command Docker Compose startup
+docker compose up
+
+# Force re-ingestion (after adding new documents)
+make reset-vs   # deletes data/vector_store/, next uvicorn start re-ingests
 
 # Run full 36-question evaluation against running app
 python eval_all.py
@@ -203,14 +220,29 @@ The app responds in the same language the user asks in:
 The React SPA uses **htm tagged templates** — no build step, no JSX, no bundler.
 
 Key patterns:
-- `useReducer(reduce, [], initializer)` — initializer reads `sessionStorage` for persistence
-- ASSISTANT messages store `question` field for DocCard keyword highlighting
+- `useReducer(reduce, [], initializer)` — initializer reads `localStorage` for persistence (`_SS_VER=3`)
+- ASSISTANT messages store `question` + `latency_ms` fields; `⚡ X.Xs` badge rendered from `latency_ms`
 - `handleSubmit(question, _onDone)` — `_onDone` callback enables auto-play chaining
-- Auto-play uses three refs (`autoPlayRef`, `samplesRef`, `handleSubmitRef`) to avoid stale closures
+- Auto-play uses three refs (`autoPlayRef`, `samplesRef`, `handleSubmitRef`) + pause refs
+  (`autoPausedRef`, `pausedAtIdxRef`, `playNextRef`) to avoid stale closures
 - `highlightHtml(text, query)` — HTML-escapes then wraps matched words in `<mark>` tags (safe)
-- Session chat persisted to `sessionStorage` key `cld-chat`; cleared on RESET dispatch
+- Chat persisted to `localStorage` key `cld-chat`; cleared on RESET dispatch and full reset
 - Domain tabs and language toggle are in the **sidebar** (not topbar)
 - SSE token events use `{"text": "..."}` key (not `"token"`)
+- `Welcome` component: domain-aware with icon + description + 3 clickable sample prompts
+- `DataChart` component: Canvas bar chart for SQL results with 2–12 rows (`ctx.roundRect()`)
+- `SetupOverlay` component: full-screen first-launch guide when `llm_configured === false`
+- Keyboard shortcuts: Ctrl+Shift+D (demo), Ctrl+K (clear), Ctrl+Shift+R (reset), Escape (stop)
+- `/health` endpoint (not `/api/status`) used for setup overlay check — has `checks.llm_configured`
+
+## /health vs /api/status
+**Critical distinction** — these are separate endpoints with different response shapes:
+- `/health` → `{status:"ok"|"degraded", checks:{vector_store:bool, database:bool, llm_configured:bool}, uptime_s:int}`
+  Used by: setup overlay in `index.html`, fast-poll in `setup.html`, `docker-compose.yml` healthcheck
+- `/api/status` → `{vector_store:{ok:bool,...}, database:{ok:bool,...}, llm:{ok:bool,...}}`
+  Used by: sidebar component indicators in `index.html`
+  
+Do NOT use `/api/status` for startup/health polling — it lacks `uptime_s` and `checks.*`.
 
 ## Language Policy
 | Content | Language |

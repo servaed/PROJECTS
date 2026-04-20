@@ -178,6 +178,7 @@
       background: var(--surface); border-top: 1px solid var(--border);
       padding: 14px 24px; display: flex; align-items: center; gap: 10px;
       margin: 0 -24px; /* bleed to page edges */
+      flex-wrap: wrap;
     }
     .btn-primary {
       padding: 9px 22px; border-radius: 8px; border: none;
@@ -196,6 +197,18 @@
     }
     .btn-secondary:hover { background: var(--s3); color: var(--t1); }
     .action-note { margin-left: auto; font-size: 0.71rem; color: var(--t3); }
+
+    /* ── Inline test result ──────────────────────────────────────────────── */
+    #testResult {
+      display: none; padding: 8px 14px; border-radius: 8px;
+      font-size: 0.79rem; font-weight: 500; margin-top: 12px;
+      border: 1px solid transparent;
+    }
+    #testResult.ok   { display: block; background: var(--ok-bg);  border-color: rgba(52,168,83,0.3);  color: #1e6e38; }
+    #testResult.err  { display: block; background: var(--err-bg); border-color: rgba(234,67,53,0.3);  color: #b71c1c; }
+    #testResult.busy { display: block; background: var(--s2);     border-color: var(--border);         color: var(--t2); }
+    [data-theme="dark"] #testResult.ok  { color: #81c784; }
+    [data-theme="dark"] #testResult.err { color: #ef9a9a; }
 
     /* ── Spin ────────────────────────────────────────────────────────────── */
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -323,12 +336,55 @@
             </label>
             <span id="src_LLM_MODEL_ID" class="src-badge src-none">Not set</span>
           </div>
+          <!-- datalists — swapped by onProviderChange() -->
+          <datalist id="models_cloudera">
+            <option value="meta/llama-3.1-70b-instruct"/>
+            <option value="meta/llama-3.1-8b-instruct"/>
+            <option value="meta/llama-3.3-70b-instruct"/>
+            <option value="mistralai/mistral-7b-instruct-v0.3"/>
+            <option value="mistralai/mixtral-8x7b-instruct-v0.1"/>
+          </datalist>
+          <datalist id="models_openai">
+            <option value="gpt-4o"/>
+            <option value="gpt-4o-mini"/>
+            <option value="gpt-4-turbo"/>
+            <option value="gpt-4.1"/>
+            <option value="gpt-3.5-turbo"/>
+          </datalist>
+          <datalist id="models_azure">
+            <option value="gpt-4o"/>
+            <option value="gpt-4o-mini"/>
+            <option value="gpt-4.1"/>
+            <option value="gpt-4-turbo"/>
+          </datalist>
+          <datalist id="models_bedrock">
+            <option value="anthropic.claude-3-5-sonnet-20241022-v2:0"/>
+            <option value="anthropic.claude-3-haiku-20240307-v1:0"/>
+            <option value="amazon.titan-text-premier-v1:0"/>
+            <option value="meta.llama3-1-70b-instruct-v1:0"/>
+          </datalist>
+          <datalist id="models_anthropic">
+            <option value="claude-sonnet-4-6"/>
+            <option value="claude-opus-4-7"/>
+            <option value="claude-haiku-4-5-20251001"/>
+            <option value="claude-3-5-sonnet-20241022"/>
+          </datalist>
+          <datalist id="models_local">
+            <option value="llama3.2"/>
+            <option value="llama3.1:70b"/>
+            <option value="mistral"/>
+            <option value="phi3"/>
+            <option value="gemma2"/>
+          </datalist>
           <input type="text" id="LLM_MODEL_ID" name="LLM_MODEL_ID"
                  placeholder="e.g. meta/llama-3.1-70b-instruct"/>
           <div class="field-hint" id="hint_LLM_MODEL_ID">
             The model identifier as expected by the provider.
           </div>
         </div>
+
+        <!-- Inline test connection result -->
+        <div id="testResult"></div>
 
         <!-- Azure OpenAI-specific fields -->
         <div class="field hidden" id="f_AZURE_OPENAI_ENDPOINT">
@@ -553,7 +609,9 @@
     <!-- ── Action bar ─────────────────────────────────────────────────────── -->
     <div class="action-bar">
       <button type="submit" class="btn-primary" id="saveBtn">Save Configuration</button>
-      <a href="/setup" class="btn-secondary">Test Connection →</a>
+      <button type="button" class="btn-secondary" id="testBtn" onclick="testLlm()">⚡ Test LLM</button>
+      <button type="button" class="btn-secondary" id="exportBtn" onclick="exportEnv()">⬇ Download .env</button>
+      <a href="/setup" class="btn-secondary">⊕ Full Status</a>
       <span class="action-note" id="actionNote"></span>
     </div>
 
@@ -593,6 +651,18 @@ function renderBadge(key, source) {
   else                        { el.className += ' src-none'; el.textContent = 'Not set'; }
 }
 
+// ── Model ID datalist — swap list based on selected provider ─────────────
+function updateModelDatalist(provider) {
+  var inp = document.getElementById('LLM_MODEL_ID');
+  if (!inp) return;
+  var listId = 'models_' + provider;
+  if (document.getElementById(listId)) {
+    inp.setAttribute('list', listId);
+  } else {
+    inp.removeAttribute('list');
+  }
+}
+
 // ── Provider selector → show/hide fields ─────────────────────────────────
 var PROVIDER_FIELDS = {
   cloudera:   ['f_LLM_BASE_URL', 'f_LLM_API_KEY', 'f_LLM_MODEL_ID'],
@@ -628,13 +698,14 @@ function onProviderChange() {
     var el = document.getElementById(id);
     if (el) el.classList.remove('hidden');
   });
-  // Update model ID placeholder for non-Azure providers
+  // Update model ID placeholder + datalist for this provider
   var hint = document.getElementById('hint_LLM_MODEL_ID');
   var modelInp = document.getElementById('LLM_MODEL_ID');
   if (hint && MODEL_HINTS[provider]) {
     modelInp.placeholder = MODEL_HINTS[provider];
     hint.textContent = 'The model identifier as expected by ' + provider + '.';
   }
+  updateModelDatalist(provider);
 }
 
 // ── Banner ────────────────────────────────────────────────────────────────
@@ -773,6 +844,73 @@ document.getElementById('configForm').onsubmit = function(e) {
     showBanner('Network error: ' + err.message, 'err');
   });
 };
+
+// ── Inline LLM test ───────────────────────────────────────────────────────
+function testLlm() {
+  var btn = document.getElementById('testBtn');
+  var box = document.getElementById('testResult');
+  btn.disabled = true;
+  btn.textContent = '↻ Testing…';
+  box.className = 'busy';
+  box.textContent = 'Connecting to LLM endpoint… (up to 15 s)';
+
+  var t0 = Date.now();
+  fetch('/api/test/llm')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var ms = d.latency_ms != null ? d.latency_ms : (Date.now() - t0);
+      btn.disabled = false;
+      btn.textContent = '⚡ Test LLM';
+      if (d.ok) {
+        box.className = 'ok';
+        box.textContent = '✓ LLM connected — ' + (d.provider || '') +
+          (d.model ? ' / ' + d.model : '') + ' — ' + ms + ' ms';
+      } else {
+        box.className = 'err';
+        box.textContent = '✗ ' + (d.fix || 'Connection failed');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = '⚡ Test LLM';
+      box.className = 'err';
+      box.textContent = '✗ Request failed: ' + err.message;
+    });
+}
+
+// ── .env export ───────────────────────────────────────────────────────────
+function exportEnv() {
+  fetch('/api/configure')
+    .then(function(r) { return r.json(); })
+    .then(function(cfg) {
+      var lines = [
+        '# Cloudera AI RAG Demo — configuration export',
+        '# Generated: ' + new Date().toISOString(),
+        '# Paste into .env or set as Cloudera AI Application environment variables.',
+        '',
+      ];
+      var isSecret = function(k) {
+        return /KEY|SECRET|PASSWORD|TOKEN/.test(k);
+      };
+      Object.keys(cfg).forEach(function(rawKey) {
+        var key = rawKey.toUpperCase();
+        var entry = cfg[rawKey];
+        if (!entry.value) return;
+        var val = isSecret(key) ? '<REDACTED>' : entry.value;
+        var src = entry.source === 'env' ? ' # from platform environment' : '';
+        lines.push(key + '=' + val + src);
+      });
+      var blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '.env';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    })
+    .catch(function(err) {
+      showBanner('Export failed: ' + err.message, 'err');
+    });
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────
 loadConfig();

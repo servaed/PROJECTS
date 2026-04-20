@@ -2,7 +2,7 @@
 
 All configuration is loaded from environment variables.
 For local development, copy `.env.example` to `.env`.
-For CML deployment, set these in the Application **Environment Variables** panel.
+For Docker / CML deployment, set these in the Application **Environment Variables** panel.
 
 See `DEPLOYMENT.md` for the full deployment guide.
 
@@ -18,51 +18,48 @@ See `DEPLOYMENT.md` for the full deployment guide.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `CLOUDERA_INFERENCE_URL` | If cloudera | — | Full endpoint URL from AI Inference service |
-| `CLOUDERA_INFERENCE_API_KEY` | If cloudera | — | API key from the endpoint detail page |
-| `CLOUDERA_INFERENCE_MODEL_ID` | No | `meta-llama-3-8b-instruct` | Model name |
+| `LLM_BASE_URL` | Yes | — | Full endpoint URL from AI Inference service |
+| `LLM_API_KEY` | Yes | — | API key from the endpoint detail page |
+| `LLM_MODEL_ID` | No | `meta-llama-3-8b-instruct` | Model name |
 
 ### OpenAI
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `OPENAI_API_KEY` | If openai | — | `sk-...` API key |
-| `OPENAI_MODEL_ID` | No | `gpt-4o` | Model name |
+| `LLM_API_KEY` | Yes | — | `sk-...` API key |
+| `LLM_MODEL_ID` | No | `gpt-4o` | Model name |
 
 ### Azure OpenAI
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `AZURE_OPENAI_ENDPOINT` | If azure | — | `https://resource.openai.azure.com` |
-| `AZURE_OPENAI_API_KEY` | If azure | — | Azure API key |
-| `AZURE_OPENAI_DEPLOYMENT` | No | `gpt-4o` | Deployment name (not model name) |
-| `AZURE_OPENAI_API_VERSION` | No | `2024-02-01` | API version string |
+| `LLM_BASE_URL` | Yes | — | `https://resource.openai.azure.com/openai/deployments/gpt-4o` |
+| `LLM_API_KEY` | Yes | — | Azure API key |
+| `LLM_MODEL_ID` | No | `gpt-4o` | Deployment name |
 
 ### Amazon Bedrock
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `BEDROCK_REGION` | If bedrock | `us-east-1` | AWS region where Bedrock is enabled |
-| `BEDROCK_MODEL_ID` | If bedrock | `anthropic.claude-3-sonnet-20240229-v1:0` | Bedrock model ID |
-| `BEDROCK_ACCESS_KEY` | No | — | AWS access key (leave empty to use instance role) |
-| `BEDROCK_SECRET_KEY` | No | — | AWS secret key |
-| `BEDROCK_SESSION_TOKEN` | No | — | STS temporary session token |
-| `BEDROCK_PROFILE` | No | — | Named AWS profile (`~/.aws/credentials`) |
+| `LLM_MODEL_ID` | Yes | — | Bedrock model ID (e.g. `anthropic.claude-3-5-sonnet-20241022-v2:0`) |
+| `AWS_DEFAULT_REGION` | Yes | `us-east-1` | AWS region |
+| `AWS_ACCESS_KEY_ID` | No | — | Leave empty to use IAM instance role |
+| `AWS_SECRET_ACCESS_KEY` | No | — | AWS secret key |
 
 ### Anthropic (direct)
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `ANTHROPIC_API_KEY` | If anthropic | — | `sk-ant-...` API key |
-| `ANTHROPIC_MODEL_ID` | No | `claude-3-5-sonnet-20241022` | Claude model name |
+| `LLM_API_KEY` | Yes | — | `sk-ant-...` API key |
+| `LLM_MODEL_ID` | No | `claude-3-5-sonnet-20241022` | Claude model name |
 
 ### Local (Ollama / LM Studio / vLLM)
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `LOCAL_LLM_URL` | If local | `http://localhost:11434/v1` | Base URL of local server |
-| `LOCAL_LLM_MODEL_ID` | No | `llama3` | Model name as known to the local server |
-| `LOCAL_LLM_API_KEY` | No | `no-key` | API key (most local servers ignore this) |
+| `LLM_BASE_URL` | Yes | `http://localhost:11434/v1` | Base URL of local server |
+| `LLM_MODEL_ID` | No | `llama3` | Model name as known to the local server |
+| `LLM_API_KEY` | No | `no-key` | API key (most local servers ignore this) |
 
 ---
 
@@ -84,28 +81,66 @@ See `DEPLOYMENT.md` for the full deployment guide.
 
 ---
 
-## Document Storage
+## Query Engine
+
+The demo supports two query engines. The Dockerfile sets `QUERY_ENGINE=trino` automatically.
+Local dev defaults to `sqlite`.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `DOCS_SOURCE_PATH` | No | `./data/sample_docs` | Source document directory or URI |
-| `DOCS_STORAGE_TYPE` | No | `local` | `local`, `hdfs`, or `s3` |
-| `HDFS_URL` | If hdfs | `http://namenode:9870` | HDFS WebHDFS endpoint |
-| `HDFS_USER` | If hdfs | `hdfs` | HDFS user |
-| `S3_ENDPOINT_URL` | If s3 | — | S3-compatible endpoint |
-| `S3_BUCKET` | If s3 | — | Bucket name |
-| `S3_ACCESS_KEY` | If s3 | — | S3 access key |
-| `S3_SECRET_KEY` | If s3 | — | S3 secret key |
+| `QUERY_ENGINE` | No | `sqlite` | `sqlite` (local dev) or `trino` (Docker/CML) |
+
+### Trino settings (when `QUERY_ENGINE=trino`)
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `TRINO_HOST` | If trino | `localhost` | Trino coordinator hostname |
+| `TRINO_PORT` | If trino | `8085` | Trino HTTP port |
+| `TRINO_CATALOG` | If trino | `iceberg` | Catalog name in Trino (Iceberg connector) |
+| `TRINO_SCHEMA` | If trino | `demo` | Schema within the catalog |
+| `TRINO_USER` | If trino | `admin` | Trino username |
+
+For CDP production, point `TRINO_HOST` to your Cloudera Data Warehouse (CDW) endpoint.
+
+### SQLite settings (when `QUERY_ENGINE=sqlite`)
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DATABASE_URL` | No | `sqlite:///./data/sample_tables/demo.db` | SQLAlchemy connection URL |
+| `SQL_APPROVED_TABLES` | No | all 9 demo tables | Comma-separated table allowlist |
+| `SQL_MAX_ROWS` | No | `500` | Max rows per SQL result (hard cap: 1000) |
 
 ---
 
-## SQL / Database
+## Document Storage
+
+Two storage backends are supported. The Dockerfile sets `DOCS_STORAGE_TYPE=s3` automatically.
+Local dev defaults to `local`.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `DATABASE_URL` | No | SQLite demo | SQLAlchemy connection URL |
-| `SQL_APPROVED_TABLES` | No | all 9 demo tables | Comma-separated table allowlist |
-| `SQL_MAX_ROWS` | No | `500` | Max rows per SQL result (hard cap: 1000) |
+| `DOCS_STORAGE_TYPE` | No | `local` | `local`, `hdfs`, or `s3` |
+| `DOCS_SOURCE_PATH` | No | `./data/sample_docs` | Used when `DOCS_STORAGE_TYPE=local` |
+
+### MinIO / Ozone settings (when `DOCS_STORAGE_TYPE=s3`)
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `MINIO_ENDPOINT` | If s3 | `http://localhost:9000` | S3-compatible endpoint URL |
+| `MINIO_ACCESS_KEY` | If s3 | `minioadmin` | S3 access key |
+| `MINIO_SECRET_KEY` | If s3 | `minioadmin` | S3 secret key |
+| `MINIO_DOCS_BUCKET` | If s3 | `rag-docs` | Bucket containing source documents |
+| `MINIO_WAREHOUSE_BUCKET` | If s3 | `rag-warehouse` | Iceberg table warehouse bucket |
+
+For CDP production, set `MINIO_ENDPOINT` to your Ozone S3 Gateway URL
+(e.g. `http://ozone-s3g.your-cluster:9878`) and update the access credentials.
+
+### HDFS settings (when `DOCS_STORAGE_TYPE=hdfs`)
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `HDFS_URL` | If hdfs | `http://namenode:9870` | HDFS WebHDFS endpoint |
+| `HDFS_USER` | If hdfs | `hdfs` | HDFS user |
 
 ---
 

@@ -19,6 +19,7 @@ class DocumentCitation:
     chunk_index: int
     excerpt: str          # short snippet shown in UI
     ingest_timestamp: str
+    score: float = 0.0    # RRF/cosine relevance score (0–1)
 
 
 @dataclass
@@ -47,6 +48,7 @@ def build_document_citations(chunks: list[RetrievedChunk], excerpt_length: int =
                 chunk_index=chunk.chunk_index,
                 excerpt=excerpt,
                 ingest_timestamp=chunk.ingest_timestamp,
+                score=chunk.score,
             )
         )
     return citations

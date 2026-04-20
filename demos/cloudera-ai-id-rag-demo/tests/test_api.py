@@ -362,3 +362,146 @@ def test_configure_empty_value_removes_key(tmp_path, monkeypatch):
     resp = client.post("/api/configure", json={"env_vars": {"LLM_PROVIDER": ""}})
     assert resp.status_code == 200
     assert "LLM_PROVIDER" not in override.read_text()
+
+
+def test_configure_strips_control_characters(tmp_path, monkeypatch):
+    """Control characters in configure values must be stripped before saving."""
+    from app import api as api_module
+
+    monkeypatch.setattr(api_module, "_OVERRIDE_PATH", tmp_path / ".env.local")
+    client = _make_app_client()
+    # Null byte + newline injection attempt
+    resp = client.post("/api/configure", json={"env_vars": {"LLM_PROVIDER": "openai\x00\nINJECTED=evil"}})
+    assert resp.status_code == 200
+    saved = (tmp_path / ".env.local").read_text(encoding="utf-8")
+    assert "\x00" not in saved
+    assert "INJECTED" not in saved
+
+
+# ── GET /health ───────────────────────────────────────────────────────────────
+
+def test_health_endpoint_exists():
+    """GET /health must exist and return a JSON body with a 'status' key."""
+    from app import api as api_module
+    client = _make_app_client()
+
+    with patch("app.api.Path") as MockPath, \
+         patch("app.api.get_table_names", return_value=[], create=True):
+        mock_faiss = MagicMock()
+        mock_faiss.exists.return_value = True
+        MockPath.return_value.__truediv__.return_value = mock_faiss
+
+        with patch.object(api_module, "settings", MagicMock(
+            vector_store_path="/vs", llm_base_url="http://llm",
+            _live_provider="openai"
+        )):
+            resp = client.get("/health")
+
+    assert resp.status_code in (200, 503)
+    data = resp.json()
+    assert "status" in data
+    assert "checks" in data
+
+
+# ── POST /api/chat — LLM timeout / error ─────────────────────────────────────
+
+def test_chat_sse_emits_error_on_stream_synthesis_failure():
+    """If stream_synthesis raises mid-stream, an error SSE event must be emitted."""
+    from app import api as api_module
+
+    prep = _make_prep("dokumen")
+    result = _make_result()
+
+    def _bad_stream(_):
+        yield "partial token"
+        raise RuntimeError("LLM connection reset")
+
+    with patch("app.api.prepare_answer", return_value=prep), \
+         patch("app.api.stream_synthesis", side_effect=_bad_stream), \
+         patch("app.api.finalize_answer", return_value=result):
+
+        client = _make_app_client()
+        resp = client.post("/api/chat", json={"question": "test?", "history": []})
+
+    events = _parse_sse(resp.text)
+    assert any(e["event"] == "error" for e in events)
+
+
+def test_chat_sse_returns_usage_in_done_event():
+    """The done SSE event must include a usage field with token estimates."""
+    from app import api as api_module
+
+    prep = _make_prep("dokumen")
+    result = _make_result()
+
+    with patch("app.api.prepare_answer", return_value=prep), \
+         patch("app.api.stream_synthesis", return_value=iter(["Answer text."])), \
+         patch("app.api.finalize_answer", return_value=result):
+
+        client = _make_app_client()
+        resp = client.post("/api/chat", json={"question": "apa itu NPL?", "history": []})
+
+    events = _parse_sse(resp.text)
+    done = next((e for e in events if e["event"] == "done"), None)
+    assert done is not None
+    assert "usage" in done["data"]
+    usage = done["data"]["usage"]
+    assert "input_tokens" in usage and "output_tokens" in usage and "total_tokens" in usage
+
+
+# ── E2E pipeline smoke test ───────────────────────────────────────────────────
+
+def test_e2e_dokumen_pipeline(monkeypatch):
+    """Full prepare_answer -> stream_synthesis -> finalize_answer pipeline for dokumen mode."""
+    from unittest.mock import MagicMock, patch
+    from src.orchestration.answer_builder import prepare_answer, stream_synthesis, finalize_answer
+    from src.retrieval.retriever import RetrievedChunk
+
+    fake_chunk = RetrievedChunk(
+        text="Kebijakan kredit UMKM mensyaratkan agunan minimal.",
+        title="Kebijakan Kredit",
+        source_path="/docs/kredit.txt",
+        chunk_index=0,
+        score=0.9,
+        ingest_timestamp="2026-04-17T00:00:00",
+    )
+
+    with patch("src.orchestration.router.classify_question", return_value="dokumen"), \
+         patch("src.orchestration.answer_builder.retrieve", return_value=[fake_chunk]), \
+         patch("src.orchestration.answer_builder.get_llm_client") as mock_llm_factory:
+
+        mock_llm = MagicMock()
+        mock_llm.stream_chat.return_value = iter(["Kebijakan kredit UMKM mensyaratkan agunan."])
+        mock_llm_factory.return_value = mock_llm
+
+        prep = prepare_answer("Apa syarat kredit UMKM?", top_k=1, domain="banking")
+        assert prep.mode == "dokumen"
+        assert len(prep.doc_chunks) == 1
+
+        tokens = list(stream_synthesis(prep))
+        assert len(tokens) > 0
+
+        result = finalize_answer(prep, "".join(tokens))
+        assert result.mode == "dokumen"
+        assert len(result.doc_citations) == 1
+        assert result.doc_citations[0].title == "Kebijakan Kredit"
+
+
+def test_e2e_data_pipeline_sql_failure(monkeypatch):
+    """Data pipeline must return sql_failed fallback when SQL generation fails."""
+    from src.orchestration.answer_builder import prepare_answer, stream_synthesis
+    from src.sql.guardrails import SqlGuardrailError
+
+    with patch("src.orchestration.router.classify_question", return_value="data"), \
+         patch("src.orchestration.answer_builder.generate_sql",
+               side_effect=SqlGuardrailError("Tabel tidak diizinkan.")), \
+         patch("src.orchestration.answer_builder.get_llm_client"):
+
+        prep = prepare_answer("Total kredit ilegal?", top_k=1, domain="banking")
+        assert prep.mode == "data"
+        assert prep.query_result is None
+
+        tokens = list(stream_synthesis(prep))
+        full = "".join(tokens)
+        # Should return the sql_failed fallback string, not call LLM
+        assert len(full) > 0

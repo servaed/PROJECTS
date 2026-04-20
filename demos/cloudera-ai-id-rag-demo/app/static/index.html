@@ -14,17 +14,17 @@
     })();
   </script>
 
-  <!-- Fonts -->
+  <!-- Fonts: Google Fonts with local system-font fallback for offline use -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Google+Sans+Display:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 
-  <!-- React 18 UMD + marked + DOMPurify + htm — no build step -->
-  <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.js"></script>
+  <!-- Vendor JS — self-hosted for offline/restricted-network resilience -->
+  <script src="/static/vendor/react.production.min.js"></script>
+  <script src="/static/vendor/react-dom.production.min.js"></script>
+  <script src="/static/vendor/marked.min.js"></script>
+  <script src="/static/vendor/purify.min.js"></script>
+  <script src="/static/vendor/htm.js"></script>
 
   <style>
     /* ── Reset ─────────────────────────────────────────────────────── */
@@ -294,6 +294,42 @@
     button { cursor: pointer; font-family: var(--font); }
     button:disabled { cursor: default; }
     textarea { font-family: var(--font); }
+
+    /* ── First-launch setup overlay ──────────────────────────────────── */
+    .setup-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .setup-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 36px 40px; max-width: 460px; width: 100%;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    .setup-card h2 {
+      font-family: var(--display); font-size: 1.4rem; font-weight: 700;
+      color: var(--t1); margin: 14px 0 10px; letter-spacing: -0.02em;
+    }
+    .setup-card p {
+      font-size: 0.875rem; color: var(--t2); line-height: 1.7; margin-bottom: 24px;
+    }
+    .setup-steps {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 28px; text-align: left;
+    }
+    .setup-step {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 0.82rem; color: var(--t1); line-height: 1.5;
+    }
+    .setup-step-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--o-dim); border: 1.5px solid rgba(249,103,2,0.3);
+      color: var(--o-text); font-size: 0.7rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -357,7 +393,7 @@
       case 'MODE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{mode:a.mode}) : m);
       case 'TOKEN':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{content:m.content+a.text,isThinking:false}) : m);
       case 'THINKING':  return msgs.map(m => m.id===a.id ? Object.assign({},m,{isThinking:a.active}) : m);
-      case 'DONE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,isThinking:false,docCitations:a.docCitations,sqlCitation:a.sqlCitation,usage:a.usage}) : m);
+      case 'DONE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,isThinking:false,docCitations:a.docCitations,sqlCitation:a.sqlCitation,usage:a.usage,latency_ms:a.latency_ms||null}) : m);
       case 'ERROR':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,error:a.message}) : m);
       case 'RESET':     return [];
       default:          return msgs;
@@ -696,20 +732,35 @@
             ? html`
               <div>
                 <div style=${{ fontSize:'0.7rem', color:'var(--t2)', marginBottom:'7px', display:'flex', alignItems:'center', gap:'6px' }}>
-                  <span style=${{ display:'inline-block', width:'7px', height:'7px', borderRadius:'50%', background:'var(--orange)', flexShrink:0, animation:'dotpulse 1s ease-in-out infinite' }}/>
-                  Question ${props.autoPlayIdx + 1} of ${props.autoPlayTotal}
+                  <span style=${{ display:'inline-block', width:'7px', height:'7px', borderRadius:'50%',
+                    background: props.isAutoPaused ? 'var(--t3)' : 'var(--orange)', flexShrink:0,
+                    animation: props.isAutoPaused ? 'none' : 'dotpulse 1s ease-in-out infinite' }}/>
+                  ${props.isAutoPaused ? 'Paused — ' : ''}Q ${props.autoPlayIdx + 1} / ${props.autoPlayTotal}
                 </div>
-                <button
-                  onClick=${props.onStopAutoPlay}
-                  style=${{
-                    width:'100%', padding:'6px 10px', borderRadius:'7px',
-                    border:'1px solid var(--err)', background:'transparent',
-                    color:'var(--err)', fontSize:'0.74rem', fontWeight:500,
-                    cursor:'pointer', transition:'all 0.15s',
-                  }}
-                  onMouseEnter=${function(e){ e.currentTarget.style.background='rgba(234,67,53,0.08)'; }}
-                  onMouseLeave=${function(e){ e.currentTarget.style.background='transparent'; }}
-                >⏹ Stop Demo</button>
+                <div style=${{ display:'flex', gap:'5px' }}>
+                  <button
+                    onClick=${props.isAutoPaused ? props.onResumeAutoPlay : props.onPauseAutoPlay}
+                    style=${{
+                      flex:1, padding:'6px 6px', borderRadius:'7px',
+                      border:'1px solid var(--border)', background:'var(--s2)',
+                      color:'var(--t2)', fontSize:'0.72rem', fontWeight:500,
+                      cursor:'pointer', transition:'all 0.15s',
+                    }}
+                    onMouseEnter=${function(e){ e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.color='var(--orange)'; }}
+                    onMouseLeave=${function(e){ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--t2)'; }}
+                  >${props.isAutoPaused ? '▶ Resume' : '⏸ Pause'}</button>
+                  <button
+                    onClick=${props.onStopAutoPlay}
+                    style=${{
+                      flex:1, padding:'6px 6px', borderRadius:'7px',
+                      border:'1px solid var(--err)', background:'transparent',
+                      color:'var(--err)', fontSize:'0.72rem', fontWeight:500,
+                      cursor:'pointer', transition:'all 0.15s',
+                    }}
+                    onMouseEnter=${function(e){ e.currentTarget.style.background='rgba(234,67,53,0.08)'; }}
+                    onMouseLeave=${function(e){ e.currentTarget.style.background='transparent'; }}
+                  >⏹ Stop</button>
+                </div>
               </div>`
             : html`
               <button
@@ -729,11 +780,24 @@
         </div>
 
         <!-- Footer -->
-        <div style=${{
-          padding:'12px 16px', borderTop:'1px solid var(--border)',
-          fontSize:'0.65rem', color:'var(--t3)',
-        }}>
-          Powered by <span style=${{ color:'var(--orange)', fontWeight:600 }}>Cloudera AI Inference</span>
+        <div style=${{ padding:'10px 14px 12px', borderTop:'1px solid var(--border)' }}>
+          ${props.onFullReset && html`
+            <button
+              onClick=${props.onFullReset}
+              title="Reset to Banking / Bahasa Indonesia, clear chat history (Ctrl+Shift+R)"
+              style=${{
+                width:'100%', padding:'5px 10px', borderRadius:'7px',
+                border:'1px solid var(--border)', background:'transparent',
+                color:'var(--t3)', fontSize:'0.68rem', fontWeight:500,
+                cursor:'pointer', transition:'all 0.15s', marginBottom:'8px',
+              }}
+              onMouseEnter=${function(e){ e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.color='var(--orange)'; }}
+              onMouseLeave=${function(e){ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--t3)'; }}
+            >↺ Reset Demo</button>
+          `}
+          <div style=${{ fontSize:'0.65rem', color:'var(--t3)', textAlign:'center' }}>
+            Powered by <span style=${{ color:'var(--orange)', fontWeight:600 }}>Cloudera AI Inference</span>
+          </div>
         </div>
       </aside>`;
   }
@@ -750,6 +814,25 @@
         color:m.color, fontSize:'0.67rem', fontWeight:700,
         letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:'8px',
       }}>${m.icon} ${m.label}</div>`;
+  }
+
+  // ── Relevance badge: score → gold/silver/bronze indicator ────────────
+  function RelevanceBadge(props) {
+    var score = props.score || 0;
+    var label, color, bg;
+    if (score >= 0.75) {
+      label = 'high'; color = 'var(--teal)'; bg = 'var(--t-dim)';
+    } else if (score >= 0.45) {
+      label = 'med';  color = 'var(--orange)'; bg = 'var(--o-dim)';
+    } else {
+      label = 'low';  color = 'var(--t3)'; bg = 'var(--s3)';
+    }
+    return html`
+      <span title=${'Relevance score: '+score.toFixed(2)} style=${{
+        fontSize:'0.58rem', fontWeight:700, letterSpacing:'0.05em',
+        padding:'1px 5px', borderRadius:'6px',
+        color, background:bg, flexShrink:0, textTransform:'uppercase',
+      }}>${label}</span>`;
   }
 
   // ── Doc citation card (with full-chunk preview + keyword highlighting) ────
@@ -772,6 +855,7 @@
         >
           <span style=${{ fontFamily:'var(--mono)', fontSize:'0.67rem', color:'var(--orange)', fontWeight:600, flexShrink:0 }}>[${props.idx}]</span>
           <span style=${{ fontSize:'0.77rem', fontWeight:500, flex:1, textAlign:'left' }}>${props.cit.title}</span>
+          ${props.cit.score != null && html`<${RelevanceBadge} score=${props.cit.score}/>`}
           <${IcoCaret} open=${open}/>
         </button>
         ${open && html`
@@ -798,6 +882,92 @@
             `}
           </div>`}
       </div>`;
+  }
+
+  // ── DataChart: canvas bar chart for SQL results (2–12 rows) ───────
+  function DataChart(props) {
+    var canvasRef = useRef(null);
+    var sc = props.sc;
+
+    useEffect(function() {
+      if (!sc || !sc.table_markdown || !canvasRef.current) return;
+      var lines = sc.table_markdown.trim().split('\n').filter(function(l) { return l.trim().startsWith('|'); });
+      if (lines.length < 3) return;
+
+      function parseCells(line) {
+        return line.split('|').slice(1, -1).map(function(c) { return c.trim(); });
+      }
+      var headers = parseCells(lines[0]);
+      var rows    = lines.slice(2).map(parseCells);
+      if (!rows.length || headers.length < 2) return;
+
+      // Find the first numeric column (skip the label column)
+      var valCol = -1;
+      for (var ci = 1; ci < headers.length; ci++) {
+        if (rows.some(function(r) { return r[ci] && !isNaN(parseFloat((r[ci] || '').replace(/,/g, ''))); })) {
+          valCol = ci; break;
+        }
+      }
+      if (valCol === -1) return;
+
+      var labels = rows.map(function(r) { return r[0] || ''; });
+      var values = rows.map(function(r) { return parseFloat((r[valCol] || '0').replace(/,/g, '')) || 0; });
+
+      var canvas = canvasRef.current;
+      var dpr = window.devicePixelRatio || 1;
+      var W   = canvas.offsetWidth || 320;
+      var H   = 150;
+      canvas.width  = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.height = H + 'px';
+      var ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      var isDark  = document.documentElement.getAttribute('data-theme') === 'dark';
+      var colText = isDark ? '#8E9BB5' : '#5F6368';
+      var colBar  = isDark ? '#818CF8' : '#5C6BC0';
+      var colBg   = isDark ? '#1C2538' : '#F1F3F4';
+
+      // Background
+      ctx.fillStyle = colBg;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(0, 0, W, H, 8); else ctx.rect(0, 0, W, H);
+      ctx.fill();
+
+      var padL = 10, padR = 10, padT = 22, padB = 28;
+      var chartW = W - padL - padR;
+      var chartH = H - padT - padB;
+      var n      = labels.length;
+      var maxVal = Math.max.apply(null, values.map(Math.abs)) || 1;
+      var barW   = Math.max(4, Math.min(48, (chartW / n) - 6));
+      var gap    = (chartW - barW * n) / (n + 1);
+
+      // Column title
+      ctx.fillStyle = colText;
+      ctx.font = '600 9px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(headers[valCol].slice(0, 32), W / 2, 14);
+
+      values.forEach(function(v, i) {
+        var bh = Math.max(2, (Math.abs(v) / maxVal) * chartH);
+        var bx = padL + gap * (i + 1) + barW * i;
+        var by = padT + chartH - bh;
+
+        ctx.fillStyle = colBar;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(bx, by, barW, bh, [3, 3, 0, 0]); else ctx.rect(bx, by, barW, bh);
+        ctx.fill();
+
+        // X-axis label
+        ctx.fillStyle = colText;
+        ctx.font = '8px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        var lbl = labels[i].length > 9 ? labels[i].slice(0, 8) + '…' : labels[i];
+        ctx.fillText(lbl, bx + barW / 2, H - padB + 12);
+      });
+    }, [sc]);
+
+    return html`<canvas ref=${canvasRef} style=${{ width:'100%', display:'block', borderRadius:'8px', marginBottom:'8px' }}/>`;
   }
 
   // ── SQL trace panel ────────────────────────────────────────────────
@@ -849,6 +1019,9 @@
             <pre style=${{ background:'var(--bg)', border:'1px solid var(--border)', borderRadius:'6px', padding:'9px 12px', overflowX:'auto', margin:'0 0 10px' }}>
               <code style=${{ fontFamily:'var(--mono)', fontSize:'0.76rem', color:'var(--indigo)', whiteSpace:'pre' }}>${sc.sql}</code>
             </pre>
+            ${sc.table_markdown && sc.row_count >= 2 && sc.row_count <= 12 && html`
+              <${DataChart} sc=${sc}/>
+            `}
             ${sc.table_markdown && html`
               <div style=${{ fontSize:'0.63rem', color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'6px' }}>Results</div>
               <div className="prose" dangerouslySetInnerHTML=${md(sc.table_markdown)}/>
@@ -910,9 +1083,27 @@
     const msg = props.msg;
     const hasCits = (msg.docCitations && msg.docCitations.length > 0) || msg.sqlCitation;
     const [copied, setCopied] = useState(false);
+    const [copiedFull, setCopiedFull] = useState(false);
+
     function copyAnswer() {
       navigator.clipboard.writeText(msg.content || '').then(function() {
         setCopied(true); setTimeout(function() { setCopied(false); }, 2000);
+      });
+    }
+
+    function copyWithSources() {
+      var parts = [msg.content || ''];
+      if (msg.docCitations && msg.docCitations.length) {
+        parts.push('\n\n---\nSumber Dokumen:');
+        msg.docCitations.forEach(function(c, i) {
+          parts.push((i + 1) + '. ' + c.title + ' (chunk ' + (c.chunk_index + 1) + ')');
+        });
+      }
+      if (msg.sqlCitation) {
+        parts.push('\n---\nSQL: ' + msg.sqlCitation.sql);
+      }
+      navigator.clipboard.writeText(parts.join('\n')).then(function() {
+        setCopiedFull(true); setTimeout(function() { setCopiedFull(false); }, 2000);
       });
     }
     return html`
@@ -941,22 +1132,41 @@
               ${msg.isStreaming && !msg.isThinking && html`<span className="cursor"/>`}
             `}
           ${!msg.isStreaming && !msg.error && msg.content && html`
-            <button
-              onClick=${copyAnswer}
-              title="Copy answer"
-              style=${{
-                position:'absolute', top:'8px', right:'8px',
-                background:'transparent', border:'1px solid var(--border)',
-                borderRadius:'5px', padding:'3px 7px',
-                color: copied ? 'var(--teal)' : 'var(--t3)',
-                fontSize:'0.65rem', display:'flex', alignItems:'center', gap:'4px',
-                cursor:'pointer', transition:'all 0.15s', opacity:0.7,
-              }}
-              onMouseEnter=${function(e){ e.currentTarget.style.opacity='1'; e.currentTarget.style.borderColor='var(--orange)'; }}
-              onMouseLeave=${function(e){ e.currentTarget.style.opacity='0.7'; e.currentTarget.style.borderColor='var(--border)'; }}
-            >
-              <${IcoCopy}/>${copied ? ' Copied' : ' Copy'}
-            </button>
+            <div style=${{ position:'absolute', top:'8px', right:'8px', display:'flex', gap:'5px' }}>
+              ${hasCits && html`
+                <button
+                  onClick=${copyWithSources}
+                  title="Copy answer with source citations"
+                  style=${{
+                    background:'transparent', border:'1px solid var(--border)',
+                    borderRadius:'5px', padding:'3px 7px',
+                    color: copiedFull ? 'var(--teal)' : 'var(--t3)',
+                    fontSize:'0.65rem', display:'flex', alignItems:'center', gap:'4px',
+                    cursor:'pointer', transition:'all 0.15s', opacity:0.7,
+                    whiteSpace:'nowrap',
+                  }}
+                  onMouseEnter=${function(e){ e.currentTarget.style.opacity='1'; e.currentTarget.style.borderColor='var(--teal)'; }}
+                  onMouseLeave=${function(e){ e.currentTarget.style.opacity='0.7'; e.currentTarget.style.borderColor='var(--border)'; }}
+                >
+                  <${IcoCopy}/>${copiedFull ? ' Copied!' : ' + Sources'}
+                </button>
+              `}
+              <button
+                onClick=${copyAnswer}
+                title="Copy answer text only"
+                style=${{
+                  background:'transparent', border:'1px solid var(--border)',
+                  borderRadius:'5px', padding:'3px 7px',
+                  color: copied ? 'var(--teal)' : 'var(--t3)',
+                  fontSize:'0.65rem', display:'flex', alignItems:'center', gap:'4px',
+                  cursor:'pointer', transition:'all 0.15s', opacity:0.7,
+                }}
+                onMouseEnter=${function(e){ e.currentTarget.style.opacity='1'; e.currentTarget.style.borderColor='var(--orange)'; }}
+                onMouseLeave=${function(e){ e.currentTarget.style.opacity='0.7'; e.currentTarget.style.borderColor='var(--border)'; }}
+              >
+                <${IcoCopy}/>${copied ? ' Copied' : ' Copy'}
+              </button>
+            </div>
           `}
         </div>
         ${hasCits && !msg.isStreaming && html`
@@ -971,15 +1181,22 @@
             `}
           </div>
         `}
-        ${!msg.isStreaming && !msg.error && msg.usage && html`
+        ${!msg.isStreaming && !msg.error && (msg.usage || msg.latency_ms) && html`
           <div style=${{
             marginTop:'6px', paddingLeft:'2px',
             fontSize:'0.62rem', color:'var(--t3)',
             display:'flex', alignItems:'center', gap:'10px', opacity:0.7,
           }}>
-            <span title="Estimated token usage (1 token ≈ 4 chars)">
-              ≈ ${msg.usage.input_tokens.toLocaleString()} in · ${msg.usage.output_tokens.toLocaleString()} out · ${msg.usage.total_tokens.toLocaleString()} total tokens
-            </span>
+            ${msg.latency_ms != null && html`
+              <span title="Total response time" style=${{ color:'var(--ok)', fontFamily:'var(--mono)', fontWeight:600 }}>
+                ⚡ ${(msg.latency_ms / 1000).toFixed(1)}s
+              </span>
+            `}
+            ${msg.usage && html`
+              <span title="Estimated token usage (1 token ≈ 4 chars)">
+                ≈ ${msg.usage.input_tokens.toLocaleString()} in · ${msg.usage.output_tokens.toLocaleString()} out · ${msg.usage.total_tokens.toLocaleString()} total tokens
+              </span>
+            `}
           </div>
         `}
       </div>`;
@@ -1001,28 +1218,63 @@
       </div>`;
   }
 
-  // ── Welcome screen ─────────────────────────────────────────────────
-  function Welcome() {
+  // ── Welcome screen — domain-aware ─────────────────────────────────
+  function Welcome(props) {
+    var domainInfo = {
+      banking:    { icon:'🏦', name:'Banking',    desc:'UMKM credit policy, KYC procedures, OJK regulations, branch performance & customer data.' },
+      telco:      { icon:'📡', name:'Telco',      desc:'Customer SLA policy, spectrum regulations, churn risk scores, ARPU & network utilisation.' },
+      government: { icon:'🏛', name:'Government', desc:'Public service standards, budget regulations, population data, APBD absorption & IKM scores.' },
+    };
+    var d = domainInfo[props.domain] || domainInfo.banking;
+    var topSamples = (props.samples || []).slice(0, 3);
+
     return html`
       <div style=${{
         flex:1, display:'flex', flexDirection:'column',
         alignItems:'center', justifyContent:'center',
-        gap:'28px', padding:'40px',
+        gap:'22px', padding:'40px',
         backgroundImage:'radial-gradient(circle, var(--border) 1px, transparent 1px)',
         backgroundSize:'28px 28px',
         backgroundPosition:'center center',
+        overflowY:'auto',
       }}>
-        <img src="/static/cloudera-logo.png" alt="Cloudera" className="cld-logo" style=${{ height:'40px', width:'auto', opacity:0.55 }}/>
-        <div style=${{ textAlign:'center', maxWidth:'480px' }}>
-          <div style=${{ fontFamily:'var(--display)', fontSize:'2rem', fontWeight:700, color:'var(--t1)', marginBottom:'12px', letterSpacing:'-0.03em', lineHeight:1.2 }}>
-            How can I help you today?
+        <img src="/static/cloudera-logo.png" alt="Cloudera" className="cld-logo" style=${{ height:'32px', width:'auto', opacity:0.45 }}/>
+        <div style=${{ textAlign:'center', maxWidth:'520px' }}>
+          <div style=${{ fontSize:'2rem', lineHeight:1, marginBottom:'6px' }}>${d.icon}</div>
+          <div style=${{ fontFamily:'var(--display)', fontSize:'1.75rem', fontWeight:700, color:'var(--t1)', marginBottom:'10px', letterSpacing:'-0.03em', lineHeight:1.2 }}>
+            ${d.name} Enterprise Assistant
           </div>
-          <div style=${{ fontSize:'0.92rem', color:'var(--t2)', lineHeight:1.75 }}>
-            Ask about enterprise documents, structured data, or both.
-            Select a sample prompt from the sidebar to get started.
-          </div>
+          <div style=${{ fontSize:'0.88rem', color:'var(--t2)', lineHeight:1.75 }}>${d.desc}</div>
         </div>
-        <div style=${{ display:'flex', gap:'10px', flexWrap:'wrap', justifyContent:'center' }}>
+        ${topSamples.length > 0 && html`
+          <div style=${{ display:'flex', flexDirection:'column', gap:'8px', width:'100%', maxWidth:'520px' }}>
+            ${topSamples.map(function(s, i) {
+              var text = typeof s === 'string' ? s : s.text;
+              var mode = (typeof s === 'object' && s.mode) ? s.mode : null;
+              var m = mode ? getMode(mode) : null;
+              return html`
+                <button
+                  key=${i}
+                  onClick=${function() { if (props.onPick) props.onPick(text); }}
+                  style=${{
+                    width:'100%', padding:'10px 16px', borderRadius:'10px',
+                    background:'var(--surface)', border:'1px solid var(--border)',
+                    color:'var(--t1)', fontSize:'0.83rem', textAlign:'left',
+                    cursor:'pointer', transition:'all 0.15s',
+                    boxShadow:'0 1px 4px rgba(0,0,0,0.06)',
+                    display:'flex', alignItems:'center', gap:'10px',
+                  }}
+                  onMouseEnter=${function(e){ e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.background='var(--o-dim)'; }}
+                  onMouseLeave=${function(e){ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.background='var(--surface)'; }}
+                >
+                  ${m && html`<span style=${{ color:m.color, fontSize:'0.9rem', flexShrink:0 }}>${m.icon}</span>`}
+                  <span style=${{ flex:1 }}>${text.length > 90 ? text.slice(0, 90) + '…' : text}</span>
+                  <span style=${{ color:'var(--t3)', fontSize:'0.8rem', flexShrink:0 }}>→</span>
+                </button>`;
+            })}
+          </div>
+        `}
+        <div style=${{ display:'flex', gap:'8px', flexWrap:'wrap', justifyContent:'center' }}>
           ${[
             { icon:'◈', color:'var(--teal)',   text:'Document RAG' },
             { icon:'⬡', color:'var(--indigo)', text:'Structured Data' },
@@ -1030,13 +1282,12 @@
           ].map(function(p) {
             return html`
               <div key=${p.text} style=${{
-                display:'flex', alignItems:'center', gap:'7px',
-                padding:'7px 18px', borderRadius:'24px',
+                display:'flex', alignItems:'center', gap:'6px',
+                padding:'5px 14px', borderRadius:'20px',
                 background:'var(--surface)', border:'1px solid var(--border)',
-                fontSize:'0.82rem', color:'var(--t2)',
-                boxShadow:'0 1px 6px rgba(0,0,0,0.07)',
+                fontSize:'0.78rem', color:'var(--t2)',
               }}>
-                <span style=${{ color:p.color, fontSize:'1rem' }}>${p.icon}</span>
+                <span style=${{ color:p.color, fontSize:'0.9rem' }}>${p.icon}</span>
                 <span style=${{ fontWeight:500 }}>${p.text}</span>
               </div>`;
           })}
@@ -1051,7 +1302,7 @@
       if (endRef.current) endRef.current.scrollIntoView({ behavior:'smooth' });
     }, [props.msgs]);
 
-    if (!props.msgs.length) return html`<${Welcome}/>`;
+    if (!props.msgs.length) return html`<${Welcome} domain=${props.domain} samples=${props.samples} onPick=${props.onPick}/>`;
 
     return html`
       <div style=${{ flex:1, overflowY:'auto', padding:'28px 36px', background:'var(--bg)' }}>
@@ -1158,7 +1409,55 @@
           >${props.disabled ? html`<div className="spin"/>` : html`<${IcoSend}/>`}</button>
         </div>
         <div style=${{ fontSize:'0.62rem', color:'var(--t3)', textAlign:'center', marginTop:'6px' }}>
-          Enter to send · Shift+Enter for new line
+          Enter to send · Shift+Enter for new line · Ctrl+K clear · Ctrl+Shift+D demo
+        </div>
+      </div>`;
+  }
+
+  // ── First-launch setup overlay ─────────────────────────────────────
+  function SetupOverlay(props) {
+    if (!props.show) return null;
+    return html`
+      <div className="setup-overlay">
+        <div className="setup-card">
+          <img src="/static/cloudera-logo.png" alt="Cloudera" className="cld-logo"
+               style=${{ height:'28px', width:'auto', margin:'0 auto', opacity:0.7 }}/>
+          <h2>Configure your LLM to get started</h2>
+          <p>
+            The assistant needs an LLM connection before it can answer questions.
+            This takes about 2 minutes to set up.
+          </p>
+          <div className="setup-steps">
+            ${[
+              'Open the Configure page (link below)',
+              'Select your LLM provider (Cloudera AI Inference, OpenAI, Azure, Bedrock…)',
+              'Enter your API key and model ID',
+              'Click Save — the app will restart automatically',
+            ].map(function(txt, i) {
+              return html`
+                <div key=${i} className="setup-step">
+                  <div className="setup-step-num">${i + 1}</div>
+                  <span>${txt}</span>
+                </div>`;
+            })}
+          </div>
+          <div style=${{ display:'flex', gap:'10px', justifyContent:'center' }}>
+            <a href="/configure" style=${{
+              padding:'10px 24px', borderRadius:'8px',
+              background:'var(--orange)', color:'#fff',
+              fontSize:'0.85rem', fontWeight:600,
+              textDecoration:'none', display:'inline-block',
+              boxShadow:'0 2px 8px rgba(249,103,2,0.35)',
+            }}>⚙ Configure LLM</a>
+            <button
+              onClick=${props.onDismiss}
+              style=${{
+                padding:'10px 20px', borderRadius:'8px',
+                border:'1px solid var(--border)', background:'var(--s2)',
+                color:'var(--t2)', fontSize:'0.85rem', cursor:'pointer',
+              }}
+            >Continue anyway</button>
+          </div>
         </div>
       </div>`;
   }
@@ -1166,10 +1465,10 @@
   // ── App root ───────────────────────────────────────────────────────
   function App() {
     var _SS_KEY = 'cld-chat';
-    var _SS_VER = 2;   // bump when message shape changes to avoid corrupt history
+    var _SS_VER = 3;   // bump when message shape changes to avoid corrupt history
     const [msgs, dispatch]              = useReducer(reduce, [], function() {
       try {
-        var raw = sessionStorage.getItem(_SS_KEY);
+        var raw = localStorage.getItem(_SS_KEY);
         if (raw) {
           var stored = JSON.parse(raw);
           // Reject storage written by an older schema version
@@ -1192,10 +1491,15 @@
     const [domains, setDomains]         = useState([
       {id:'banking',label:'Banking'},{id:'telco',label:'Telco'},{id:'government',label:'Government'}
     ]);
-    const [isAutoPlaying, setIsAutoPlaying] = useState(false);
-    const [autoPlayIdx, setAutoPlayIdx]     = useState(0);
+    const [showSetupOverlay, setShowSetupOverlay] = useState(false);
+    const [isAutoPlaying, setIsAutoPlaying]   = useState(false);
+    const [isAutoPaused,  setIsAutoPaused]    = useState(false);
+    const [autoPlayIdx,   setAutoPlayIdx]     = useState(0);
     // Refs so auto-play setTimeout callbacks always read latest state/fn
     const autoPlayRef     = useRef(false);
+    const autoPausedRef   = useRef(false);
+    const pausedAtIdxRef  = useRef(0);
+    const playNextRef     = useRef(null);
     const samplesRef      = useRef([]);
     const handleSubmitRef = useRef(null);
     const domainRef       = useRef(domain);
@@ -1204,9 +1508,9 @@
     // Apply theme to <html> whenever it changes
     useEffect(function() { setThemeAttr(theme); }, [theme]);
 
-    // Persist chat to sessionStorage so a page refresh doesn't lose the conversation
+    // Persist chat to localStorage so conversations survive tab close and reload
     useEffect(function() {
-      try { sessionStorage.setItem(_SS_KEY, JSON.stringify({_v: _SS_VER, msgs: msgs})); } catch(e) {}
+      try { localStorage.setItem(_SS_KEY, JSON.stringify({_v: _SS_VER, msgs: msgs})); } catch(e) {}
     }, [msgs]);
 
     // Keep refs in sync
@@ -1214,9 +1518,18 @@
     useEffect(function() { domainRef.current = domain; }, [domain]);
     useEffect(function() { languageRef.current = language; }, [language]);
 
-    // Fetch status once, and available domains
+    // Fetch status once, and available domains; show setup overlay on first load if LLM not configured
     useEffect(function() {
-      function ls() { fetch('/api/status').then(function(r){return r.json();}).then(setStatus).catch(console.error); }
+      var overlayDismissed = sessionStorage.getItem('cld-overlay-dismissed') === '1';
+      function ls() {
+        fetch('/api/status').then(function(r){return r.json();}).then(function(s) {
+          setStatus(s);
+          // Show overlay on first load only if LLM not configured and user hasn't dismissed it
+          if (!overlayDismissed && s.checks && !s.checks.llm_configured) {
+            setShowSetupOverlay(true);
+          }
+        }).catch(console.error);
+      }
       fetch('/api/domains').then(function(r){return r.json();}).then(setDomains).catch(console.error);
       ls();
       var iv = setInterval(ls, 30000);
@@ -1236,6 +1549,7 @@
     const handleSubmit = useCallback(function(question, _onDone) {
       var uid = Date.now();
       var aid = uid + 1;
+      var t0  = Date.now();
       var history = msgs
         .filter(function(m) { return m.content; })
         .map(function(m) { return { role:m.role, content:m.content }; });
@@ -1251,7 +1565,7 @@
             if (ev.event==='mode')     { dispatch({ type:'MODE',     id:aid, mode:ev.data.mode });                                                              setLoading(false); }
             if (ev.event==='token')    { dispatch({ type:'TOKEN',    id:aid, text:ev.data.text }); }
             if (ev.event==='thinking') { dispatch({ type:'THINKING', id:aid, active:ev.data.active }); }
-            if (ev.event==='done')     { dispatch({ type:'DONE',     id:aid, docCitations:ev.data.doc_citations, sqlCitation:ev.data.sql_citation, usage:ev.data.usage||null }); gotDone=true; }
+            if (ev.event==='done')     { dispatch({ type:'DONE',     id:aid, docCitations:ev.data.doc_citations, sqlCitation:ev.data.sql_citation, usage:ev.data.usage||null, latency_ms:Date.now()-t0 }); gotDone=true; }
             if (ev.event==='error')    { dispatch({ type:'ERROR',    id:aid, message:ev.data.message }); gotDone=true; }
           }
         } catch(err) {
@@ -1272,40 +1586,101 @@
     // ── Auto-play: run every sample prompt sequentially ───────────────
     function startAutoPlay() {
       if (!samplesRef.current.length || autoPlayRef.current) return;
-      autoPlayRef.current = true;
+      autoPlayRef.current   = true;
+      autoPausedRef.current = false;
       setIsAutoPlaying(true);
+      setIsAutoPaused(false);
       setAutoPlayIdx(0);
+
       function playNext(idx) {
         if (!autoPlayRef.current) return;
         var samps = samplesRef.current;
         if (idx >= samps.length) {
           autoPlayRef.current = false;
           setIsAutoPlaying(false);
+          setIsAutoPaused(false);
           return;
         }
         setAutoPlayIdx(idx);
         var q = typeof samps[idx] === 'string' ? samps[idx] : samps[idx].text;
         handleSubmitRef.current(q, function() {
           if (!autoPlayRef.current) return;
-          // Pause between questions so the audience has time to read each answer
+          if (autoPausedRef.current) { pausedAtIdxRef.current = idx + 1; return; }
+          // Brief pause between questions so the audience can read each answer
           setTimeout(function() { playNext(idx + 1); }, 3000);
         });
       }
+
+      playNextRef.current = playNext;
       playNext(0);
     }
 
-    function stopAutoPlay() {
-      autoPlayRef.current = false;
-      setIsAutoPlaying(false);
+    function pauseAutoPlay() {
+      autoPausedRef.current = true;
+      setIsAutoPaused(true);
     }
+
+    function resumeAutoPlay() {
+      if (!autoPlayRef.current || !autoPausedRef.current) return;
+      autoPausedRef.current = false;
+      setIsAutoPaused(false);
+      if (playNextRef.current) playNextRef.current(pausedAtIdxRef.current);
+    }
+
+    function stopAutoPlay() {
+      autoPlayRef.current   = false;
+      autoPausedRef.current = false;
+      setIsAutoPlaying(false);
+      setIsAutoPaused(false);
+    }
+
+    // ── Keyboard shortcuts ────────────────────────────────────────────
+    useEffect(function() {
+      function onKeyDown(e) {
+        // Ctrl+Shift+D — toggle demo (start / stop auto-play)
+        if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+          e.preventDefault();
+          if (isAutoPlaying) stopAutoPlay(); else startAutoPlay();
+        }
+        // Ctrl+K — clear conversation
+        if (e.ctrlKey && !e.shiftKey && (e.key === 'k' || e.key === 'K')) {
+          e.preventDefault();
+          stopAutoPlay();
+          dispatch({ type:'RESET' });
+          try { localStorage.removeItem(_SS_KEY); } catch(err) {}
+        }
+        // Ctrl+Shift+R — full demo reset
+        if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+          e.preventDefault();
+          stopAutoPlay();
+          setDomain('banking');
+          setLanguage('id');
+          dispatch({ type:'RESET' });
+          try { localStorage.removeItem(_SS_KEY); } catch(err) {}
+        }
+        // Escape — stop demo if playing
+        if (e.key === 'Escape' && isAutoPlaying) {
+          stopAutoPlay();
+        }
+      }
+      window.addEventListener('keydown', onKeyDown);
+      return function() { window.removeEventListener('keydown', onKeyDown); };
+    }, [isAutoPlaying, isAutoPaused]);
 
     return html`
       <div style=${{ display:'flex', flexDirection:'column', width:'100vw', height:'100vh', overflow:'hidden' }}>
+        <${SetupOverlay}
+          show=${showSetupOverlay}
+          onDismiss=${function() {
+            setShowSetupOverlay(false);
+            try { sessionStorage.setItem('cld-overlay-dismissed', '1'); } catch(e) {}
+          }}
+        />
         <!-- GCP-style top bar (full width) -->
         <${TopBar}
           theme=${theme}
           onToggle=${function() { setTheme(function(t){ return t==='dark'?'light':'dark'; }); }}
-          onReset=${function() { stopAutoPlay(); dispatch({ type:'RESET' }); try { sessionStorage.removeItem(_SS_KEY); } catch(e){} }}
+          onReset=${function() { stopAutoPlay(); dispatch({ type:'RESET' }); try { localStorage.removeItem(_SS_KEY); } catch(e){} }}
           domain=${domain}
           domains=${domains}
           onDomainChange=${function(d) { setDomain(d); }}
@@ -1320,19 +1695,29 @@
             samples=${samples}
             onPick=${function(p) { if (!isAutoPlaying && !loading) setPrefill(p); }}
             isAutoPlaying=${isAutoPlaying}
+            isAutoPaused=${isAutoPaused}
             autoPlayIdx=${autoPlayIdx}
             autoPlayTotal=${samples.length}
             onStartAutoPlay=${startAutoPlay}
+            onPauseAutoPlay=${pauseAutoPlay}
+            onResumeAutoPlay=${resumeAutoPlay}
             onStopAutoPlay=${stopAutoPlay}
             domain=${domain}
             domains=${domains}
             language=${language}
             onDomainChange=${function(d) { setDomain(d); }}
             onLanguageChange=${function(l) { setLanguage(l); }}
+            onFullReset=${function() {
+              stopAutoPlay();
+              setDomain('banking');
+              setLanguage('id');
+              dispatch({ type:'RESET' });
+              try { localStorage.removeItem(_SS_KEY); } catch(e) {}
+            }}
           />
           <!-- Main: chat + input -->
           <div style=${{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <${ChatWindow} msgs=${msgs} isLoading=${loading}/>
+            <${ChatWindow} msgs=${msgs} isLoading=${loading} domain=${domain} samples=${samples} onPick=${function(p) { if (!isAutoPlaying && !loading) setPrefill(p); }}/>
             <${InputBar}
               onSubmit=${handleSubmit}
               disabled=${loading || isAutoPlaying}

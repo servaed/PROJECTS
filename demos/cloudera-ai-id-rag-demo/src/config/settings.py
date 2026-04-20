@@ -2,8 +2,9 @@
 
 import os
 import pathlib
+import warnings
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, model_validator
 from typing import Literal
 
 
@@ -133,6 +134,36 @@ class Settings(BaseSettings):
     app_title: str = "Asisten Enterprise Cloudera AI"
     log_level: str = "INFO"
     history_path: str = "./.claude/history"
+
+    # ── Cross-field validation ────────────────────────────────────────────
+
+    @model_validator(mode="after")
+    def _validate_s3_consistency(self) -> "Settings":
+        """Warn when docs_storage_type=s3 but required S3 settings are absent."""
+        if self.docs_storage_type == "s3":
+            missing = [
+                f for f in ("s3_endpoint_url", "s3_bucket", "s3_access_key", "s3_secret_key")
+                if not getattr(self, f)
+            ]
+            if missing:
+                warnings.warn(
+                    f"docs_storage_type=s3 but these S3 settings are empty: {missing}. "
+                    "Document loading will fail until they are configured.",
+                    stacklevel=2,
+                )
+        return self
+
+    def __repr__(self) -> str:
+        """Mask sensitive fields to prevent credential leakage in logs/tracebacks."""
+        safe: dict = {}
+        for k, v in self.model_dump().items():
+            if v and any(tok in k.upper() for tok in ("KEY", "SECRET", "PASSWORD", "TOKEN")):
+                safe[k] = "●●●●●●●●"
+            else:
+                safe[k] = v
+        return f"Settings({safe})"
+
+    __str__ = __repr__
 
     # ── Derived properties ────────────────────────────────────────────────
 
