@@ -4,13 +4,18 @@ on:
   push:
     branches: [main, master]
     tags:     ["v*.*.*"]
+    paths:
+      - "demos/cloudera-ai-id-rag-demo/**"   # only trigger when this demo changes
   pull_request:
-    branches: [main, master]   # build only (no push) for PRs
-  workflow_dispatch:            # allow manual trigger from GitHub UI
+    branches: [main, master]
+    paths:
+      - "demos/cloudera-ai-id-rag-demo/**"
+  workflow_dispatch:                          # allow manual trigger from GitHub UI
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}   # e.g. your-org/cloudera-ai-id-rag-demo
+  REGISTRY:   ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/cloudera-ai-id-rag-demo
+  DEMO_DIR:   demos/cloudera-ai-id-rag-demo
 
 jobs:
   build:
@@ -41,27 +46,30 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # Always tag with branch name (main → :main, master → :master)
+            # Branch name (master → :master)
             type=ref,event=branch
-            # Tag with version number for semver releases (v1.2.3 → :1.2.3 + :latest)
+            # Semver releases (v1.2.3 → :1.2.3 and :1.2)
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            # Latest for default branch
+            # :latest on default branch
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
-            # Short SHA for every push (useful for rollback)
+            # Short SHA on every push (useful for rollback)
             type=sha,prefix=sha-,format=short
 
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          context:  ${{ env.DEMO_DIR }}
+          file:     ${{ env.DEMO_DIR }}/Dockerfile
+          push:     ${{ github.event_name != 'pull_request' }}
+          tags:     ${{ steps.meta.outputs.tags }}
+          labels:   ${{ steps.meta.outputs.labels }}
           # Cache layers in GHCR to speed up subsequent builds
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
           cache-to:   type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
 
-      - name: Image digest
+      - name: Print image digest
         if: github.event_name != 'pull_request'
-        run: echo "Pushed ${{ steps.meta.outputs.tags }}"
+        run: |
+          echo "Image pushed:"
+          echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n'
