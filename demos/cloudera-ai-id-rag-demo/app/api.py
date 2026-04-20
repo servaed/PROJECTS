@@ -807,6 +807,97 @@ async def api_configure_post(body: ConfigureRequest):
     }
 
 
+_ingest_state: dict = {
+    "running": False,
+    "started_at": None,
+    "finished_at": None,
+    "last_result": None,
+}
+_ingest_lock = threading.Lock()
+
+
+class IngestRequest(BaseModel):
+    reseed_db: bool = False
+
+
+@app.post("/api/ingest")
+async def api_ingest(body: IngestRequest = IngestRequest()):
+    """Rebuild the FAISS vector store from source documents in the background.
+
+    Source documents (in MinIO or local filesystem) are NOT deleted — only the
+    FAISS index files are overwritten.  Optionally also re-seeds the SQLite
+    database when reseed_db=true and QUERY_ENGINE != trino.
+
+    Returns immediately with status=started.  Poll GET /api/ingest/status.
+    """
+    with _ingest_lock:
+        if _ingest_state["running"]:
+            return JSONResponse(
+                {"status": "running", "message": "Ingestion already in progress — check /api/ingest/status."},
+                status_code=409,
+            )
+        _ingest_state["running"] = True
+        _ingest_state["started_at"] = time.time()
+        _ingest_state["finished_at"] = None
+        _ingest_state["last_result"] = None
+
+    def _run_ingest() -> None:
+        result: dict = {}
+        try:
+            from src.retrieval.document_loader import load_documents
+            from src.retrieval.chunking import chunk_documents
+            from src.retrieval.embeddings import get_embeddings
+            from src.retrieval.vector_store import build_vector_store
+
+            logger.info("Ingest API: loading documents...")
+            docs = load_documents()
+            logger.info("Ingest API: loaded %d documents — chunking...", len(docs))
+            chunks = chunk_documents(docs)
+            logger.info("Ingest API: %d chunks — building vector store...", len(chunks))
+            embeddings = get_embeddings()
+            build_vector_store(chunks, embeddings)
+            logger.info("Ingest API: vector store rebuilt — %d chunks indexed.", len(chunks))
+
+            if body.reseed_db and settings.query_engine != "trino":
+                logger.info("Ingest API: re-seeding SQLite database...")
+                import importlib.util as _ilu
+                _seed_path = Path(__file__).parent.parent / "data/sample_tables/seed_database.py"
+                _spec = _ilu.spec_from_file_location("_seed_db", _seed_path)
+                _mod = _ilu.module_from_spec(_spec)
+                _spec.loader.exec_module(_mod)
+                _mod.seed()
+                logger.info("Ingest API: database re-seeded.")
+
+            result = {"ok": True, "docs": len(docs), "chunks": len(chunks)}
+        except Exception as exc:
+            logger.exception("Ingest API: ingestion failed")
+            result = {"ok": False, "error": str(exc)}
+        finally:
+            with _ingest_lock:
+                _ingest_state["running"] = False
+                _ingest_state["finished_at"] = time.time()
+                _ingest_state["last_result"] = result
+
+    threading.Thread(target=_run_ingest, daemon=True, name="ingest-worker").start()
+    return {"status": "started", "message": "Vector store rebuild started. Poll /api/ingest/status for progress."}
+
+
+@app.get("/api/ingest/status")
+async def api_ingest_status():
+    """Return the current or last ingest job status."""
+    started = _ingest_state["started_at"]
+    finished = _ingest_state["finished_at"]
+    return {
+        "running":     _ingest_state["running"],
+        "started_at":  started,
+        "finished_at": finished,
+        "elapsed_s":   round(time.time() - started) if started and not finished else (
+                       round(finished - started) if started and finished else None
+                       ),
+        "last_result": _ingest_state["last_result"],
+    }
+
+
 @app.get("/api/logs")
 async def api_logs(level: str = "DEBUG", limit: int = 200):
     """Return recent in-memory log entries for the troubleshooting panel.

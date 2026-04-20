@@ -355,6 +355,7 @@
   <div class="topbar-title">Enterprise <span>Assistant</span> — Setup Check</div>
   <div class="topbar-right">
     <button class="refresh-btn" id="refreshBtn" onclick="load()">↻ Refresh</button>
+    <button class="refresh-btn" id="ingestBtn" onclick="triggerIngest()" title="Rebuild vector store from source documents">⟳ Re-ingest</button>
     <button class="log-btn" id="logBtn" onclick="toggleLogs()">⬛ Logs</button>
     <!-- QR code button -->
     <div class="qr-wrap" id="qrWrap">
@@ -890,6 +891,90 @@
       document.getElementById('qrPopup').classList.remove('open');
     }
   }
+
+  // ── Re-ingest handler ────────────────────────────────────────────────
+  var _ingestPollTimer = null;
+
+  window.triggerIngest = function() {
+    var btn = document.getElementById('ingestBtn');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = '⟳ Starting…';
+
+    fetch('/api/ingest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reseed_db: false }),
+    })
+      .then(function(r) {
+        if (r.status === 409) {
+          btn.textContent = '⟳ Already running';
+          setTimeout(function() { btn.disabled = false; btn.textContent = '⟳ Re-ingest'; }, 3000);
+          _startIngestPoll();
+          return null;
+        }
+        return r.json();
+      })
+      .then(function(d) {
+        if (!d) return;
+        if (d.status === 'started') {
+          btn.textContent = '⟳ Ingesting…';
+          _startIngestPoll();
+        } else {
+          btn.disabled = false;
+          btn.textContent = '⟳ Re-ingest';
+        }
+      })
+      .catch(function() {
+        btn.disabled = false;
+        btn.textContent = '⟳ Re-ingest';
+      });
+  };
+
+  function _startIngestPoll() {
+    if (_ingestPollTimer) return;
+    _ingestPollTimer = setInterval(function() {
+      fetch('/api/ingest/status')
+        .then(function(r) { return r.json(); })
+        .then(function(s) {
+          var btn = document.getElementById('ingestBtn');
+          if (s.running) {
+            var elapsed = s.elapsed_s || 0;
+            if (btn) btn.textContent = '⟳ ' + elapsed + 's…';
+          } else {
+            clearInterval(_ingestPollTimer);
+            _ingestPollTimer = null;
+            if (btn) {
+              var res = s.last_result;
+              if (res && res.ok) {
+                btn.textContent = '✓ ' + res.chunks + ' chunks';
+                setTimeout(function() {
+                  btn.disabled = false;
+                  btn.textContent = '⟳ Re-ingest';
+                  load();
+                }, 3000);
+              } else {
+                btn.textContent = '✗ Failed';
+                setTimeout(function() { btn.disabled = false; btn.textContent = '⟳ Re-ingest'; }, 4000);
+              }
+            }
+          }
+        })
+        .catch(function() {});
+    }, 2000);
+  }
+
+  // Resume poll if ingest was already running when page loaded
+  fetch('/api/ingest/status')
+    .then(function(r) { return r.json(); })
+    .then(function(s) {
+      if (s.running) {
+        var btn = document.getElementById('ingestBtn');
+        if (btn) { btn.disabled = true; btn.textContent = '⟳ Ingesting…'; }
+        _startIngestPoll();
+      }
+    })
+    .catch(function(){});
 
   load();
 })();

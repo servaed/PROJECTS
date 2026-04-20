@@ -34,10 +34,11 @@ on Cloudera AI Workbench (CML).
 5. [Startup Timeline](#5-startup-timeline)
 6. [Verify the Deployment](#6-verify-the-deployment)
 7. [Update the Application](#7-update-the-application)
-8. [Resource Profiles](#8-resource-profiles)
-9. [Production Checklist](#9-production-checklist)
-10. [Troubleshooting](#10-troubleshooting)
-11. [Environment Variable Reference](#11-environment-variable-reference)
+8. [Adding Documents to the Knowledge Base](#8-adding-documents-to-the-knowledge-base)
+9. [Resource Profiles](#10-resource-profiles)
+10. [Production Checklist](#11-production-checklist)
+11. [Troubleshooting](#12-troubleshooting)
+12. [Environment Variable Reference](#13-environment-variable-reference)
 
 ---
 
@@ -712,7 +713,150 @@ rm -rf data/vector_store/
 
 ---
 
-## 8. Resource Profiles
+## 8. Adding Documents to the Knowledge Base
+
+The assistant answers document questions from a **FAISS vector store** built by ingesting
+source files. You can add new documents at any time without redeploying the application.
+
+### Supported file types
+
+| Extension | Notes |
+|---|---|
+| `.txt` | Plain text — best for policies, regulations, manuals |
+| `.pdf` | Extracted page by page with `pypdf` |
+| `.docx` | Word documents via `python-docx` |
+| `.md` | Markdown (rendered as plain text) |
+| `.html` | HTML stripped with `BeautifulSoup` |
+
+### Directory structure
+
+Organise files under `data/sample_docs/` using **domain subdirectories**.
+The domain tag is inferred from the parent folder name:
+
+```
+data/sample_docs/
+  banking/           ← domain = "banking"
+    kebijakan_kredit_umkm.txt
+    regulasi_ojk_2025.txt
+    your_new_policy.pdf      ← add here
+  telco/             ← domain = "telco"
+    kebijakan_layanan_pelanggan.txt
+    your_new_sla.docx        ← add here
+  government/        ← domain = "government"
+    kebijakan_pelayanan_publik.txt
+    perda_nomor_5_2025.pdf   ← add here
+```
+
+Files placed directly in `data/sample_docs/` (no subdirectory) default to domain `banking`.
+
+In **Docker/CML mode** (`DOCS_STORAGE_TYPE=s3`), documents live in MinIO bucket `rag-docs`
+with the same `banking/`, `telco/`, `government/` key prefixes. Upload using the MinIO
+console at `http://<host>:9000` or `mc cp`:
+
+```bash
+mc alias set local http://localhost:9000 minioadmin minioadmin
+mc cp your_policy.pdf local/rag-docs/banking/
+```
+
+### Step 1 — Place the file
+
+**Git source (local filesystem):**
+```bash
+cp your_policy.pdf data/sample_docs/banking/
+```
+
+**Docker/CML (MinIO):**
+```bash
+# Via mc (MinIO client)
+mc cp your_policy.pdf local/rag-docs/banking/
+
+# Or via Python
+import boto3
+s3 = boto3.client("s3", endpoint_url="http://localhost:9000",
+                  aws_access_key_id="minioadmin", aws_secret_access_key="minioadmin")
+s3.upload_file("your_policy.pdf", "rag-docs", "banking/your_policy.pdf")
+```
+
+### Step 2 — Rebuild the vector store
+
+**Option A — Re-ingest button (no shell access needed):**
+
+1. Open `http://<app-url>/setup`
+2. Click **⟳ Re-ingest** in the top-right toolbar
+3. The button shows elapsed seconds while ingestion runs (typically 1–5 min)
+4. On completion it shows `✓ N chunks` — the new document is indexed
+
+**Option B — CLI (local dev / shell access):**
+
+```bash
+# From the project root
+python -m src.retrieval.document_loader
+```
+
+**Option C — API call:**
+
+```bash
+curl -X POST http://localhost:8080/api/ingest
+
+# Poll for completion
+curl http://localhost:8080/api/ingest/status
+# → {"running": false, "last_result": {"ok": true, "docs": 11, "chunks": 99}, ...}
+```
+
+**Option D — Force re-ingest on next restart (delete the hash file):**
+
+```bash
+rm data/vector_store/index.sha256
+# Restart the application — ingestion runs automatically at startup
+```
+
+### What the Re-ingest button does
+
+1. Calls `POST /api/ingest` — starts a background thread
+2. Runs `load_documents()` → reads all files from MinIO or local filesystem  
+   **Source files are never deleted — only the FAISS index is rebuilt**
+3. Runs `chunk_documents()` → splits text into 800-char chunks with 100-char overlap
+4. Runs `build_vector_store()` → encodes chunks with `multilingual-e5-large`, writes new `index.faiss` + `index.sha256`
+5. Button shows `✓ N chunks` and refreshes the status cards
+
+The old index is overwritten atomically — if ingestion fails, the previous index remains intact.
+
+### Adding structured data (new table columns or rows)
+
+Structured data (SQL queries) lives in the database — **not** in the vector store.
+
+**SQLite path (local dev / Git source):**
+
+```bash
+# Edit data/sample_tables/seed_database.py to add rows or tables, then:
+python data/sample_tables/seed_database.py
+# Restart the app (new schema is picked up automatically)
+```
+
+**Iceberg path (Docker / CML with Trino):**
+
+```bash
+# Option 1 — force re-seed (drops and recreates all tables):
+QUERY_ENGINE=trino python deployment/seed_iceberg.py --force
+
+# Option 2 — manual Trino INSERT (preserves existing rows):
+trino --server localhost:8085 --catalog iceberg --schema demo \
+  --execute "INSERT INTO kredit_umkm VALUES (541, 1, 'Surabaya', 'Mikro', 250000000, 'Lancar', '2026-04')"
+```
+
+To expose a new table to the SQL assistant, add it to `SQL_APPROVED_TABLES`:
+
+```bash
+# In CML UI environment variables:
+SQL_APPROVED_TABLES=kredit_umkm,nasabah,cabang,your_new_table
+
+# Or via /configure wizard:
+# http://<app-url>/configure → SQL_APPROVED_TABLES field
+```
+
+---
+
+## 10. Resource Profiles
 
 | Deployment | vCPU | RAM | Notes |
 |---|---|---|---|
@@ -726,7 +870,7 @@ rm -rf data/vector_store/
 
 ---
 
-## 9. Production Checklist
+## 11. Production Checklist
 
 ### Before go-live
 
@@ -754,7 +898,7 @@ rm -rf data/vector_store/
 
 ---
 
-## 10. Troubleshooting
+## 12. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -776,7 +920,7 @@ rm -rf data/vector_store/
 
 ---
 
-## 11. Environment Variable Reference
+## 13. Environment Variable Reference
 
 > Variables can be set via:
 > - **CML platform UI** (Applications → environment variables) — takes highest precedence, locks field in `/configure`
