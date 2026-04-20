@@ -1,11 +1,20 @@
 """Seed script — creates MinIO buckets, uploads documents, and seeds Iceberg tables.
 
 Run automatically by deployment/entrypoint.sh after MinIO, Nessie, and Trino
-are healthy.  Safe to re-run: drops and recreates the Iceberg schema each time
-(MinIO is ephemeral in the container so data files are always fresh).
+are healthy.
+
+Idempotency:
+  In CML mode (SEED_SENTINEL env var set by entrypoint.sh), seeding is skipped
+  on subsequent restarts if the sentinel file already exists — MinIO data
+  persists on the project filesystem so tables and objects are still there.
+
+  In Docker mode (no sentinel), the schema is always dropped and recreated
+  because MinIO data is ephemeral.
+
+  Pass --force to always re-seed regardless of sentinel.
 
 Can also be run manually against any running stack:
-    QUERY_ENGINE=trino python deployment/seed_iceberg.py
+    QUERY_ENGINE=trino python deployment/seed_iceberg.py [--force]
 """
 
 from __future__ import annotations
@@ -14,6 +23,12 @@ import os
 import sys
 import time
 from pathlib import Path
+
+FORCE_SEED = "--force" in sys.argv
+
+# Sentinel file path set by entrypoint.sh in CML mode.
+# When it exists the seed is skipped (data is already on persistent MinIO).
+_SENTINEL = Path(os.environ.get("SEED_SENTINEL", "")) if os.environ.get("SEED_SENTINEL") else None
 
 import boto3
 import botocore.exceptions
@@ -124,11 +139,34 @@ def upload_documents() -> None:
 
 # ── Step 3: Seed Iceberg tables ────────────────────────────────────────────
 
+def _already_seeded() -> bool:
+    """Return True if Iceberg tables are already present and populated."""
+    if _SENTINEL and _SENTINEL.exists():
+        return True
+    # Fall back to a live Trino probe (handles cases where sentinel was deleted)
+    try:
+        cur = _trino_cursor()
+        cur.execute(
+            f"SELECT COUNT(*) FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.kredit_umkm"
+        )
+        row = cur.fetchone()
+        return bool(row and row[0] > 0)
+    except Exception:
+        return False
+
+
+def _mark_seeded() -> None:
+    if _SENTINEL:
+        _SENTINEL.touch()
+        print(f"[seed] Sentinel written: {_SENTINEL}")
+
+
 def seed_tables() -> None:
     print("[seed] Seeding Iceberg tables via Trino...")
     cur = _trino_cursor()
 
-    # Drop + recreate schema (clean slate — MinIO is ephemeral)
+    # Drop + recreate schema so tables match the current seed definition.
+    # In CML mode this only runs on first boot (sentinel guards subsequent runs).
     cur.execute(f"DROP SCHEMA IF EXISTS {TRINO_CATALOG}.{TRINO_SCHEMA} CASCADE")
     cur.execute(
         f"CREATE SCHEMA {TRINO_CATALOG}.{TRINO_SCHEMA} "
@@ -511,10 +549,17 @@ if __name__ == "__main__":
     print("=" * 60)
     print(" Iceberg seed — MinIO + Nessie + Trino")
     print("=" * 60)
+
+    if not FORCE_SEED and _already_seeded():
+        print("[seed] Data already present — skipping seed (use --force to override).")
+        print("[seed] Sentinel:", _SENTINEL)
+        sys.exit(0)
+
     try:
         create_buckets()
         upload_documents()
         seed_tables()
+        _mark_seeded()
         print("=" * 60)
         print(" Seed complete.")
         print("=" * 60)

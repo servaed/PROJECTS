@@ -57,6 +57,11 @@ _STARTUP_TIME: float = time.monotonic()
 # sourced by launch_app.sh on every restart.
 _OVERRIDE_PATH = Path("data/.env.local")
 
+# Services-ready sentinel written by entrypoint.sh after MinIO/Nessie/Trino/seed
+# complete.  Only enforced in Docker/CML mode (QUERY_ENGINE=trino).
+# In SQLite mode this file is never written and the gate is bypassed.
+_SERVICES_READY_FLAG = Path("/tmp/.cml_services_ready")
+
 # ── Rate limiter (sliding window, no external dependency) ──────────────────
 
 _rate_store: dict[str, list[float]] = defaultdict(list)
@@ -361,6 +366,10 @@ async def health():
     checks["llm_configured"] = bool(
         settings.llm_base_url or settings._live_provider in ("bedrock", "anthropic")
     )
+
+    # In Docker/CML mode report whether data services (Trino stack) are ready
+    if settings.query_engine == "trino":
+        checks["services_ready"] = _SERVICES_READY_FLAG.exists()
 
     all_ok = all(checks.values())
     return JSONResponse(
@@ -811,6 +820,11 @@ async def api_logs(level: str = "DEBUG", limit: int = 200):
     return {"entries": entries, "total": len(entries)}
 
 
+def _services_starting_up() -> bool:
+    """True when running in Docker/CML mode and data services are not yet ready."""
+    return settings.query_engine == "trino" and not _SERVICES_READY_FLAG.exists()
+
+
 @app.post("/api/chat", tags=["chat"])
 async def api_chat(body: ChatRequest, request: Request):
     """Stream a chat response via Server-Sent Events."""
@@ -820,6 +834,24 @@ async def api_chat(body: ChatRequest, request: Request):
             status_code=429,
             detail="Terlalu banyak permintaan. Tunggu sebentar sebelum mengirim pertanyaan berikutnya.",
         )
+
+    # Gate: in Docker/CML mode, block chat until MinIO/Nessie/Trino are ready.
+    # Emit a friendly SSE error rather than a silent connection failure.
+    if _services_starting_up():
+        uptime = round(time.monotonic() - _STARTUP_TIME)
+        msg = (
+            f"Layanan data sedang disiapkan ({uptime}s sejak mulai). "
+            "Trino, MinIO, dan Nessie memerlukan 3–5 menit untuk startup pertama. "
+            "Buka /setup untuk melihat status komponen secara langsung."
+        )
+        async def _starting_up_sse():
+            yield _sse("error", {"message": msg})
+        return StreamingResponse(
+            _starting_up_sse(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
     domain = body.domain if body.domain in DOMAIN_CONFIG else _DEFAULT_DOMAIN
     domain_tables = DOMAIN_CONFIG[domain]["tables"]
     return StreamingResponse(

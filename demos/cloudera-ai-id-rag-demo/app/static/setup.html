@@ -776,34 +776,58 @@
   // If the server just started (uptime < 120 s) and components aren't all green,
   // poll every 5 s instead of 30 s and show the startup banner.
   var _fastPollTimer = null;
+  function _checksAllOk(c) {
+    // checks.services_ready only present in Docker/CML mode (query_engine=trino)
+    return c && c.vector_store && c.database && c.llm_configured &&
+      (c.services_ready === undefined || c.services_ready === true);
+  }
   function maybeStartFastPoll(h) {
-    // h = /health response: {status, checks:{vector_store,database,llm_configured}, uptime_s}
+    // h = /health response: {status, checks:{vector_store,database,llm_configured,[services_ready]}, uptime_s}
     var uptime = h && h.uptime_s != null ? h.uptime_s : 999;
-    var allOk  = h && h.checks &&
-      h.checks.vector_store && h.checks.database && h.checks.llm_configured;
+    var allOk  = h && h.checks && _checksAllOk(h.checks);
 
     var banner = document.getElementById('startupBanner');
     var upEl   = document.getElementById('startupUptime');
+    var bannerMsg = document.getElementById('startupMsg');
     if (banner) {
-      banner.classList.toggle('visible', !allOk && uptime < 120);
+      var showing = !allOk && uptime < 600;  // show banner for up to 10 min
+      banner.classList.toggle('visible', showing);
       if (upEl) upEl.textContent = uptime + 's uptime';
+      if (bannerMsg && h && h.checks) {
+        var pending = [];
+        if (!h.checks.vector_store) pending.push('vector store');
+        if (h.checks.services_ready === false) pending.push('Trino / MinIO / Nessie');
+        if (!h.checks.llm_configured) pending.push('LLM credentials');
+        bannerMsg.textContent = pending.length
+          ? 'Waiting for: ' + pending.join(', ') + '...'
+          : 'Services ready — reloading...';
+      }
     }
 
-    if (!allOk && uptime < 120) {
+    if (!allOk && uptime < 600) {
       if (!_fastPollTimer) {
         _fastPollTimer = setInterval(function() {
           fetch('/health')
             .then(function(r) { return r.json(); })
             .then(function(s) {
-              var nowOk = s.checks && s.checks.vector_store && s.checks.database && s.checks.llm_configured;
+              var nowOk = s.checks && _checksAllOk(s.checks);
               var nowUptime = s.uptime_s != null ? s.uptime_s : 999;
-              if (nowOk || nowUptime >= 120) {
+              if (nowOk || nowUptime >= 600) {
                 clearInterval(_fastPollTimer); _fastPollTimer = null;
                 load();  // full reload to update component cards
               }
               if (banner) {
-                banner.classList.toggle('visible', !nowOk && nowUptime < 120);
+                banner.classList.toggle('visible', !nowOk && nowUptime < 600);
                 if (upEl) upEl.textContent = nowUptime + 's uptime';
+                if (bannerMsg && s.checks) {
+                  var pending = [];
+                  if (!s.checks.vector_store) pending.push('vector store');
+                  if (s.checks.services_ready === false) pending.push('Trino / MinIO / Nessie');
+                  if (!s.checks.llm_configured) pending.push('LLM credentials');
+                  bannerMsg.textContent = pending.length
+                    ? 'Waiting for: ' + pending.join(', ') + '...'
+                    : 'Services ready — reloading...';
+                }
               }
             })
             .catch(function(){});
