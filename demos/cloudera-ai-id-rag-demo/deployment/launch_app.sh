@@ -40,7 +40,7 @@ else
     echo "[0/5] No override file found at $OVERRIDE_FILE (use /configure to create one)."
 fi
 
-PORT="${CDSW_APP_PORT:-${APP_PORT:-8080}}"
+PORT="${APP_PORT:-${CDSW_APP_PORT:-8080}}"
 LOG_LEVEL="${LOG_LEVEL:-INFO}"
 VECTOR_STORE_PATH="${VECTOR_STORE_PATH:-./data/vector_store}"
 LLM_PROVIDER="${LLM_PROVIDER:-cloudera}"
