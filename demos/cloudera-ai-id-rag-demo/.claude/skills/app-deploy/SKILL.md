@@ -1,157 +1,201 @@
 ---
 name: app-deploy
-description: Steps for preparing and validating deployment as a Cloudera AI Application. Covers both Docker image path (MinIO+Nessie+Trino) and Git source path (SQLite), env vars, configure wizard, and startup scripts.
+description: Steps for preparing and validating deployment as a Cloudera AI Application. Covers Script (Python launcher) path (SQLite), env vars, configure wizard, startup scripts, and CML-specific constraints sourced from official Cloudera documentation.
 ---
 
-# Skill: App Deployment
+# Skill: App Deployment (Cloudera AI Workbench)
+
+## Key Facts from Official Cloudera Documentation
+
+- **Script field accepts Python files only** — CML runs the Script as Python, not bash.
+  To run a bash script, create a Python launcher (`run_app.py`) that calls it via `subprocess`.
+- **No Docker image source in the UI** — CML uses Source-to-Image (S2I) internally.
+  Users cannot specify a custom Docker image URL in the New Application form.
+- **Port**: Use `CDSW_APP_PORT` environment variable (not hardcoded 8080). CML injects this.
+  `APP_PORT=8080` works because CML sets `CDSW_APP_PORT=8080` by default.
+- **Environment variable precedence**: Application-level vars override project-level vars.
+- **Public access**: Disabled by default. Admin must explicitly enable
+  "Allow applications to be configured with unauthenticated access" in Site Administration.
+- **Auth headers**: CML injects `Remote-user=<username>` and `Remote-user-perm=<RO/RW/Unauthorized>`
+  into every request — the app does not need its own auth logic.
+- **Applications do not auto-timeout** — unlike Sessions (60 min). Must be stopped manually.
+- **SSH through HTTP proxy is not supported** — use HTTPS for Git cloning instead.
+- **Static subdomain support**: introduced in CML 2.0.45-b54.
+- **Subdomain format**: DNS-compliant — letters a–z, digits 0–9, hyphens only.
+- **Resource profiles**: Admin pre-configures and whitelists available profiles.
+  Resources must be contiguous on a single node (pods cannot span nodes).
+
+---
+
+## Python Launcher (required for bash startup scripts)
+
+CML's Script field runs Python, not bash. Use this wrapper to invoke `launch_app.sh`:
+
+```python
+# run_app.py — place at demos/cloudera-ai-id-rag-demo/run_app.py
+import os
+import subprocess
+import sys
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+sys.exit(subprocess.call(["bash", "deployment/launch_app.sh"]))
+```
+
+Set **Script** in the Application form to:
+```
+demos/cloudera-ai-id-rag-demo/run_app.py
+```
+
+---
 
 ## Pre-Deployment Checklist
 
-- [ ] `APP_PORT=8080` is set (or left as default)
-- [ ] LLM credentials set via platform env vars **or** saved via `/configure` wizard
-- [ ] `SQL_APPROVED_TABLES` is set to only the tables needed for the demo
-- [ ] No credentials in version control (`.env` and `data/.env.local` are in `.gitignore`)
+- [ ] `run_app.py` exists and points to the correct `launch_app.sh` path
+- [ ] `APP_PORT` left as default (8080) — matches CML's `CDSW_APP_PORT`
+- [ ] LLM credentials set via Application env vars **or** saved via `/configure` wizard
+- [ ] `SQL_APPROVED_TABLES` limits exposed tables for the demo
+- [ ] No credentials in version control (`.env` and `data/.env.local` in `.gitignore`)
 - [ ] `requirements.txt` is up to date
 - [ ] All tests pass: `pytest tests/ -v`
-- [ ] **Docker path**: image builds cleanly (`docker build -t ... .`)
-- [ ] **Git path**: `deployment/launch_app.sh` is executable and tested locally
 
-## Two Deployment Paths
+---
 
-### Path A — Docker Image (recommended for full Cloudera demo)
+## Creating a CML Application (UI)
 
-```bash
-# Build (5-10 min first time — downloads MinIO, Nessie, Trino)
-docker build -t <registry>/cloudera-ai-id-rag-demo:latest .
-docker push <registry>/cloudera-ai-id-rag-demo:latest
+**Navigate to:** Project → Applications → New Application
 
-# Local test
-docker run --rm -p 8080:8080 \
-  -e LLM_PROVIDER=openai \
-  -e LLM_API_KEY=sk-... \
-  -e LLM_MODEL_ID=gpt-4o \
-  <registry>/cloudera-ai-id-rag-demo:latest
+| Field | Value |
+|---|---|
+| **Name** | `Asisten Enterprise ID` |
+| **Subdomain** | `asisten-enterprise` (a–z, 0–9, hyphens only) |
+| **Script** | `demos/cloudera-ai-id-rag-demo/run_app.py` |
+| **Editor** | `Workbench` |
+| **Kernel** | `Python 3.10` |
+| **Edition** | `Standard` (not Nvidia GPU — no GPU needed) |
+| **Resource Profile** | `4 vCPU / 8 GiB` minimum (embedding model needs ~3 GB RAM) |
+| **Enable Spark** | OFF |
+| **Enable GPU** | OFF |
+
+**Environment Variables** (click `+` for each):
+
+| Key | Value |
+|---|---|
+| `LLM_PROVIDER` | `openai` / `azure` / `bedrock` / `anthropic` / `cloudera` |
+| `LLM_API_KEY` | your API key |
+| `LLM_MODEL_ID` | e.g. `gpt-4o` |
+
+Application-level env vars override project-level env vars.
+
+---
+
+## Creating a CML Application (API v2)
+
+```python
+import cmlapi
+
+client = cmlapi.default_client(url="https://ml-xxxx.cloudera.com", cml_api_key="...")
+
+app = client.create_application(
+    body=cmlapi.CreateApplicationRequest(
+        name="Asisten Enterprise ID",
+        subdomain="asisten-enterprise",
+        project_id="<project-id>",
+        script="demos/cloudera-ai-id-rag-demo/run_app.py",
+        kernel="python3",
+        cpu=4,
+        memory=8,
+        environment={"LLM_PROVIDER": "openai", "LLM_API_KEY": "sk-..."}
+    ),
+    project_id="<project-id>"
+)
 ```
 
-In Cloudera AI: Source = **Docker Image**, Image URL = registry path.
-Entry point is `deployment/entrypoint.sh` (set in Dockerfile CMD).
+---
 
-### Path B — Git Source (lightweight, SQLite only)
+## Git Project Setup (cloning into CML)
 
-In Cloudera AI: Source = **Git Repository**, Launch Command = `bash deployment/launch_app.sh`.
-Uses SQLite + local filesystem. No Java services.
-
-## Local Validation
-
-```bash
-# Option A: Docker
-docker run --rm -p 8080:8080 -e LLM_PROVIDER=... <image>
-# Option B: local Python
-uvicorn app.api:app --host 0.0.0.0 --port 8080 --reload
-
-# Validate:
-# 1. http://localhost:8080        — React SPA loads
-# 2. http://localhost:8080/setup  — all component cards green
-# 3. http://localhost:8080/configure — credentials form loads
-# 4. Submit a test question       — streaming response with source citations
-# 5. Click ▶ Run Demo             — auto-play walks through all sample prompts
-# 6. GET /api/status              — returns ok for vector_store, database, llm
+**HTTPS** (recommended — SSH through HTTP proxy is not supported):
+```
+https://github.com/servaed/PROJECTS.git
+```
+With PAT for private repos:
+```
+https://servaed:<GITHUB_PAT>@github.com/servaed/PROJECTS.git
 ```
 
-## Credential Configuration Options
+**SSH** (only if workspace has direct internet access):
+```
+git@github.com:servaed/PROJECTS.git
+```
+Requires: User Settings → SSH Keys → copy public key → add to GitHub.
 
-### Option A — Cloudera AI platform UI (before or after deploy)
-Set `LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL_ID` in the
-Environment Variables section of the Application config.
+Branch: `master`
 
-### Option B — /configure wizard (after deploy, no shell access needed)
-1. Open `http://<app-url>/configure`
-2. Select provider, fill in credentials, click **Save Configuration**
-3. Restart from Cloudera AI Applications UI
+---
 
-Platform env vars always take precedence over `/configure` wizard values.
-
-## What entrypoint.sh Does (Docker/CML mode)
+## What launch_app.sh Does (Git source mode)
 
 ```
-[1/6] Start MinIO on :9000       wait for health check
-[2/6] Start Nessie on :19120     wait for health check
-[3/6] Start Trino on :8085       wait for health check (up to 5 min)
-[4/6] Run seed_iceberg.py        create buckets + upload docs + seed 9 Iceberg tables
-[5/6] Build FAISS vector store   (skipped if index already exists)
-[6/6] exec uvicorn on port $PORT
-```
-
-## What launch_app.sh Does (Git source / local dev mode)
-
-```
-[0/5] Source data/.env.local if it exists (written by /configure wizard)
-[1/5] pip install -r requirements.txt (skipped after first run)
+[0/5] Source data/.env.local (written by /configure wizard on prior runs)
+[1/5] pip install -r requirements.txt (skipped after first run via marker file)
 [2/5] Install provider-specific SDK if needed (boto3 / anthropic)
-[3/5] Seed demo SQLite database (idempotent)
-[4/5] Ingest documents into FAISS vector store (skipped if index exists)
-[5/5] Start uvicorn on port 8080
+[3/5] Seed SQLite demo database — 9 tables, 1485 rows (idempotent)
+[4/5] Build FAISS vector store (skipped if index.faiss already exists)
+[5/5] exec uvicorn app.api:app --host 0.0.0.0 --port $APP_PORT
 ```
 
-## Cloudera AI Applications Deployment Steps (Docker Image)
+First boot: ~3–5 min (embedding model download ~500 MB).
+Warm restart: ~30 s (pip and vector store both skipped).
 
-1. Build and push Docker image to registry
-2. Open Cloudera AI → Applications → New Application
-3. Set **Source** to **Docker Image**, enter image URL
-4. Set LLM env vars (or skip and use `/configure` after deploy)
-5. Select resource profile: 4 vCPU / 8 GB RAM (MinIO + Nessie + Trino + Python)
-6. Set auth: SSO for production, Unauthenticated for demo only
-7. Click Deploy and wait for status → Running (~5–15 min first boot)
-8. Verify at `/setup` — all status cards should be green
+---
 
-## Cloudera AI Applications Deployment Steps (Git Source)
+## Credential Configuration
 
-1. Push repo to Git (GitHub, GitLab, Bitbucket)
-2. Open Cloudera AI → Applications → New Application
-3. Set **Source** to Git, enter repo URL and branch
-4. Set **Launch Command**: `bash deployment/launch_app.sh`
-5. Set LLM env vars; select 4 vCPU / 8 GB for local embeddings
-6. Click Deploy and wait for status → Running (first boot: 3–10 min)
+### Method A — Application env vars (UI, before or after deploy)
+Set in Applications → your app → ⋯ → Edit → Environment Variables.
+Takes highest precedence. Field appears locked ("From environment") in `/configure` wizard.
+
+### Method B — /configure browser wizard (after deploy, no shell needed)
+1. Open `http://<app-url>/configure`
+2. Select provider, fill credentials, click **Save Configuration**
+3. Restart from Applications UI → changes take effect
+
+### Method C — Project-level env vars
+Set in Project Settings → Advanced → Environment Variables.
+Application-level vars (Method A) override these.
+
+---
+
+## Access Control
+
+- **Authenticated (SSO)**: Default. CML injects `Remote-user` / `Remote-user-perm` headers.
+  The app reads these if needed — no custom auth logic required.
+- **Unauthenticated (public)**: Must be explicitly enabled by admin in Site Administration.
+  Use only for internal demos — never with real customer data.
+
+---
 
 ## Updating a Running Application
 
-### Docker path
-1. Rebuild and push the image
-2. In Cloudera AI → Applications → Restart
+| Change | Action |
+|---|---|
+| Code change | `git pull` in a CML Session, then Applications → Restart |
+| Credential change | `/configure` → Save, then Applications → Restart |
+| New documents | `/setup` → ⟳ Re-ingest button (no restart needed) |
+| Force full re-seed | Delete `data/vector_store/` in Session, then Restart |
 
-### Git source path
-1. Push code changes to the Git branch
-2. In Cloudera AI → Applications → Restart
-
-To update credentials without a code change: use `/configure` → then Restart.
-
-To force re-ingestion (after adding new documents):
-1. Stop the application
-2. Delete `data/vector_store/`
-3. Restart — ingestion runs automatically, new `index.sha256` is written
-
-## Key Environment Variables
-
-| Variable | Docker default | Local dev default | Notes |
-|---|---|---|---|
-| `QUERY_ENGINE` | `trino` | `sqlite` | Set by Dockerfile ENV |
-| `DOCS_STORAGE_TYPE` | `s3` | `local` | Set by Dockerfile ENV |
-| `LLM_PROVIDER` | — | — | Required |
-| `APP_PORT` | `8080` | `8080` | Must stay 8080 |
-
-See `DEPLOYMENT.md` Section 12 and `deployment/app_config.md` for full reference.
+---
 
 ## Troubleshooting
 
-| Symptom | Action |
-|---------|--------|
-| App stuck starting | Check logs; often missing env var or failed pip install |
-| `ImportError` | Check `requirements.txt` includes all needed packages |
-| Trino not ready | Trino takes 2–4 min on first boot; entrypoint.sh waits up to 5 min |
-| MinIO bucket missing | `seed_iceberg.py` failed — check logs for boto3 connection errors |
-| LLM indicator red | Open `/configure`, check provider credentials, save and restart |
-| LLM red for Bedrock/Anthropic | No `LLM_BASE_URL` needed — configure `LLM_PROVIDER` correctly |
-| Vector store missing | Ingestion should auto-run; check logs for `document_loader` errors |
-| `integrity check FAILED` | Delete `data/vector_store/` and restart to force re-ingestion |
-| Port conflict | Ensure no other service on port 8080; check `APP_PORT` |
-| `/configure` shows "From environment" but field locked | Update via Cloudera AI platform UI instead |
+| Symptom | Cause | Fix |
+|---|---|---|
+| `SyntaxError` in app logs | Script field pointing to `.sh` file | Change Script to `run_app.py` Python launcher |
+| App stuck at "Starting" | pip install or embedding model download | Check logs; first boot takes 3–5 min |
+| `ModuleNotFoundError` | `requirements.txt` incomplete | Add missing package, restart |
+| LLM indicator red | Wrong credentials or URL | Open `/configure` → Test LLM → fix |
+| `/configure` field shows "From environment" | Application env var overrides wizard | Update via Applications UI → env vars |
+| `integrity check FAILED` | `index.sha256` mismatch | Delete `data/vector_store/` → restart |
+| SSH clone fails | SSH through HTTP proxy not supported | Switch to HTTPS with PAT |
+| App URL not accessible | Subdomain has invalid characters | Use only a–z, 0–9, hyphens |
+| Public access denied | Unauthenticated access not enabled | Ask admin to enable in Site Administration |

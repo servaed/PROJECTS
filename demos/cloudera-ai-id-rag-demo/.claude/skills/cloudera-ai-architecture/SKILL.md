@@ -1,77 +1,155 @@
 ---
 name: cloudera-ai-architecture
-description: Architecture guidance for Cloudera AI Application design. Covers port 8080, two deployment paths (Docker image vs Git source), embedded service stack (MinIO/Nessie/Trino), and enterprise CDP mapping.
+description: Architecture guidance for Cloudera AI Application design. Covers CML application constraints, port handling, deployment path (Git/Script), auth, resource profiles, and enterprise CDP mapping. Sourced from official Cloudera documentation.
 ---
 
 # Skill: Cloudera AI Architecture
 
-## Key Deployment Constraints
+## CML Applications — Verified Constraints (from Cloudera Docs)
 
-- **Port 8080 is mandatory.** Cloudera AI Applications runtime expects the app on port 8080. Never change this.
-- Deployment modes: **Docker image** (recommended) or **Git repository URL** via the Cloudera AI Applications UI.
-- Auth is handled by the Cloudera AI platform (SSO/LDAP). The app itself must not implement auth.
-- Environment variables are injected at deploy time via the Applications UI — never hardcode.
-- Resource profiles are selected at deploy time. The app must start correctly under the minimum profile.
-- **Single-container constraint**: CML Applications run one container per replica. Docker Compose cannot run directly — all services must be embedded in one image.
+- **Port**: CML injects `CDSW_APP_PORT` (default 8080) and `CDSW_READONLY_PORT`.
+  Always bind to `$CDSW_APP_PORT` — do not hardcode. `APP_PORT=8080` works because CML sets `CDSW_APP_PORT=8080`.
+- **Script field runs Python only** — CML executes the Script as a Python file.
+  Use a Python launcher (`run_app.py`) to invoke bash startup scripts via `subprocess`.
+- **No user-specified Docker image source** — CML uses Source-to-Image (S2I) internally.
+  Custom Docker images cannot be supplied directly in the Applications UI.
+- **Single-node constraint**: All resources for a pod must be contiguous on one node.
+  Pods cannot span multiple worker nodes.
+- **No auto-timeout**: Applications run indefinitely until manually stopped or restarted.
+  Unlike Sessions, which timeout after 60 minutes of inactivity.
+- **Auth**: CML handles SSO/LDAP. App receives `Remote-user` and `Remote-user-perm` headers.
+  The app must not implement its own authentication.
+- **Public access**: Disabled by default. Admin must enable "Allow applications to be
+  configured with unauthenticated access" in Site Administration.
+- **SSH through HTTP proxy**: Not supported. Use HTTPS for Git operations in such environments.
+- **Static subdomains for AMP apps**: Available from CML 2.0.45-b54 onwards.
+- **Subdomain format**: DNS-compliant — lowercase letters, digits, hyphens only.
 
-## Two Deployment Paths
+---
 
-### Path A — Docker Image (recommended)
-- Builds a multi-stage image: Stage 1 downloads MinIO binary, Nessie JAR, Trino 455 tarball; Stage 2 is python:3.11-slim + openjdk-17
-- Entry point: `deployment/entrypoint.sh` — starts MinIO → Nessie → Trino → seeds Iceberg → builds vector store → starts uvicorn
-- ENV in Dockerfile: `QUERY_ENGINE=trino`, `DOCS_STORAGE_TYPE=s3`
-- Represents full Cloudera CDP stack: MinIO → Ozone, Nessie → Unified Metastore, Trino → CDW
+## Application Ports
 
-### Path B — Git Source (local dev / lightweight CML)
-- Launch command: `bash deployment/launch_app.sh`
-- Uses SQLite + local filesystem only — no Java services
-- Faster to start; suitable for iteration and demos without Docker registry
+| Port variable | Access level | Use case |
+|---|---|---|
+| `CDSW_APP_PORT` | Contributors and Admins (RW) | Main application endpoint |
+| `CDSW_READONLY_PORT` | All users with read access (RO) | Read-only dashboards |
 
-## Application Launch (Docker / CML)
+Bind uvicorn to `CDSW_APP_PORT`:
+```bash
+exec uvicorn app.api:app --host 0.0.0.0 --port ${CDSW_APP_PORT:-8080}
+```
 
-`deployment/entrypoint.sh` sequence:
-1. Start MinIO on :9000 — wait for `/minio/health/live`
-2. Start Nessie on :19120 — wait for `/api/v1/config`
-3. Start Trino on :8085 — wait for `/v1/info` (up to 100 × 3 s)
-4. Run `deployment/seed_iceberg.py` — create buckets, upload docs, seed 9 Iceberg tables
-5. Build FAISS vector store if index missing
-6. `exec uvicorn app.api:app --host 0.0.0.0 --port $PORT`
+---
 
-## Application Launch (Git / local)
+## Deployment Path (Git Source + Python Launcher)
 
-`deployment/launch_app.sh` sequence:
-1. Source `data/.env.local` if exists
-2. `pip install -r requirements.txt` (skipped after first run via marker file)
-3. Install provider-specific SDK if needed (boto3 / anthropic)
-4. Seed SQLite demo database (idempotent)
-5. Ingest documents into FAISS vector store (skipped if index exists)
-6. `uvicorn app.api:app --host 0.0.0.0 --port $APP_PORT`
+This is the only supported path in CML 2.0.55 and earlier UI versions.
 
-## LLM Endpoint
+```
+GitHub repo
+  └── demos/cloudera-ai-id-rag-demo/
+        ├── run_app.py              ← Script field points here (Python)
+        └── deployment/
+              └── launch_app.sh    ← Called by run_app.py via subprocess
+```
 
-Cloudera AI Inference endpoints are OpenAI-compatible. Use `LLM_BASE_URL` and `LLM_API_KEY`. The endpoint URL pattern is:
+`run_app.py`:
+```python
+import os, subprocess, sys
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+sys.exit(subprocess.call(["bash", "deployment/launch_app.sh"]))
+```
+
+`launch_app.sh` sequence:
+1. Source `data/.env.local` (saved credentials from /configure wizard)
+2. `pip install -r requirements.txt` (skipped after first run)
+3. Install provider SDK if needed (boto3 / anthropic)
+4. Seed SQLite — 9 tables, 1485 rows (idempotent)
+5. Build FAISS vector store (skipped if `index.faiss` exists)
+6. `exec uvicorn app.api:app --host 0.0.0.0 --port ${CDSW_APP_PORT:-8080}`
+
+---
+
+## LLM Inference Endpoint (Cloudera AI Inference)
+
+Cloudera AI Inference endpoints are OpenAI-compatible. URL pattern:
 ```
 https://<workspace-domain>/namespaces/serving/endpoints/<endpoint-name>/v1
 ```
+Find endpoint URL and key at: CML Workspace → AI Inference → your model → Endpoint Details.
+
+Set environment variables:
+```
+LLM_PROVIDER=cloudera
+LLM_BASE_URL=https://<workspace>/namespaces/serving/endpoints/<model>/v1
+LLM_API_KEY=<key from endpoint detail page>
+LLM_MODEL_ID=meta-llama-3-8b-instruct
+```
+
+---
+
+## Resource Profiles
+
+Admin pre-configures available profiles. Users select at application creation.
+
+| Mode | vCPU | RAM | Notes |
+|---|---|---|---|
+| Local embeddings (e5-large) | 4 | 8 GiB | Model ~3 GB RAM |
+| OpenAI embeddings | 1–2 | 2–4 GiB | No local model |
+
+Set `EMBEDDINGS_PROVIDER=openai` + `OPENAI_API_KEY` to reduce RAM by ~3 GB.
+Minimum absolute: 2 GB RAM (Cloudera docs recommendation).
+
+---
 
 ## Storage Architecture
 
-| Layer | Demo (Docker) | CDP Production |
-|-------|---------------|----------------|
-| Object storage | MinIO :9000 | Apache Ozone S3 Gateway |
-| Documents bucket | `rag-docs` (boto3) | Ozone bucket (same API) |
-| Iceberg warehouse | `rag-warehouse` (MinIO) | Ozone bucket |
-| Iceberg catalog | Nessie REST :19120 | Cloudera Unified Metastore |
-| Query engine | Trino :8085 (Iceberg conn.) | Cloudera Data Warehouse (CDW) |
-| Vector store | FAISS local | Enterprise vector DB |
-| Local dev fallback | SQLite + local FS | N/A |
+| Layer | This demo (Git/SQLite) | CDP Production equivalent |
+|---|---|---|
+| Relational store | SQLite (local file) | Cloudera Data Warehouse (CDW / Trino) |
+| Document store | Local filesystem | Apache Ozone S3 Gateway |
+| Iceberg catalog | N/A | Cloudera Unified Metastore |
+| Vector store | FAISS (local) | Enterprise vector DB |
+| Object storage | N/A | Apache Ozone bucket |
 
-Connector factory in `src/connectors/db_adapter.py` dispatches on `QUERY_ENGINE`:
-- `sqlite` → SQLAlchemy + SQLite (default, local dev)
-- `trino` → `trino_adapter.py` (Docker/CML)
+For production: set `QUERY_ENGINE=trino`, `TRINO_HOST`, `TRINO_CATALOG`, `TRINO_SCHEMA`
+and `DOCS_STORAGE_TYPE=s3`, `MINIO_ENDPOINT=http://ozone-s3gw:9878`.
 
-Document loader in `src/retrieval/document_loader.py` dispatches on `DOCS_STORAGE_TYPE`:
-- `local` → `FilesAdapter` (default, local dev)
-- `s3` → `OzoneAdapter` (boto3, Docker/CML)
+---
 
-Always use adapters (`src/connectors/`) — never hardcode storage access in domain logic.
+## Environment Variable Precedence
+
+```
+Application-level env vars (set in Applications UI)
+  > Project-level env vars (set in Project Settings)
+    > data/.env.local (written by /configure wizard)
+      > code defaults (src/config/settings.py)
+```
+
+Variables set at the Application level appear as locked ("From environment") in the
+`/configure` wizard and cannot be overridden from the browser.
+
+---
+
+## Auth Headers Injected by CML
+
+CML injects these HTTP headers on every authenticated request:
+
+| Header | Value |
+|---|---|
+| `Remote-user` | `<username>` |
+| `Remote-user-perm` | `RO` / `RW` / `Unauthorized` |
+
+The app can read these to determine the logged-in user without implementing SSO itself.
+
+---
+
+## CDP Service Mapping
+
+| Embedded demo component | CDP Production service |
+|---|---|
+| SQLite | Cloudera Data Warehouse (CDW) with Trino + Iceberg |
+| Local filesystem docs | Apache Ozone (S3-compatible gateway) |
+| FAISS (local) | Enterprise vector store / Pinecone / OpenSearch kNN |
+| uvicorn (single process) | Cloudera AI Application (horizontally scalable) |
+| Nessie (if Docker path) | Cloudera Unified Metastore |
