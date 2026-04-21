@@ -24,19 +24,11 @@ def get_embeddings():
 
     if settings.embeddings_provider == "local":
         logger.info("Loading local embeddings model: %s", settings.embeddings_model)
-        from langchain_community.embeddings import HuggingFaceEmbeddings
+        from langchain_huggingface import HuggingFaceEmbeddings
 
         _embeddings_instance = HuggingFaceEmbeddings(
             model_name=settings.embeddings_model,
-            model_kwargs={
-                "device": "cpu",
-                # Prevent transformers from using meta tensors (accelerate device_map).
-                # Without this, newer transformers versions initialise weights as meta
-                # tensors and then fail with "Cannot copy out of meta tensor" when the
-                # model is moved to CPU.
-                "device_map": None,
-                "low_cpu_mem_usage": False,
-            },
+            model_kwargs={"device": "cpu"},
             encode_kwargs={"normalize_embeddings": True},
         )
     elif settings.embeddings_provider == "openai":
