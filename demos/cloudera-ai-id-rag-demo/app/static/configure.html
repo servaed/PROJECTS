@@ -814,53 +814,14 @@ document.getElementById('configForm').onsubmit = function(e) {
     note.textContent = 'Last saved: ' + new Date().toLocaleTimeString();
     loadConfig();
 
-    // ── First-run: skip restart, show launch button ──────────────────
-    if (isSetupMode) {
-      showBanner('✓ Konfigurasi LLM berhasil disimpan.' + skipMsg, 'ok');
-      var launchBtn = document.getElementById('launchBtn');
-      launchBtn.style.display = 'inline-flex';
-      btn.disabled = false;
-      btn.textContent = 'Save Configuration';
-      return;
-    }
-
-    // ── Auto-restart sequence ────────────────────────────────────────
-    var countdown = 5;
-    function tick() {
-      showBanner(
-        '✓ Configuration saved.' + skipMsg +
-        '  Restarting application in ' + countdown + 's…',
-        'ok'
-      );
-      if (countdown <= 0) {
-        fetch('/api/restart', { method: 'POST' })
-          .then(function() {
-            showBanner('↻ Restarting… page will reload automatically.', 'warn');
-            // Wait 7 s before polling — PowerShell sleeps 3 s, then uvicorn needs ~2–4 s to start
-            var pollStart = Date.now();
-            function poll() {
-              if (Date.now() - pollStart > 60000) {
-                showBanner('Restart is taking longer than expected. Please reload manually.', 'warn');
-                return;
-              }
-              setTimeout(function() {
-                fetch('/api/status', { cache: 'no-store' })
-                  .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
-                  .then(function() { window.location.href = '/'; })
-                  .catch(function() { poll(); });
-              }, 1500);
-            }
-            setTimeout(poll, 7000);
-          })
-          .catch(function() {
-            showBanner('✓ Configuration saved.' + skipMsg + '  Please restart the application manually.', 'warn');
-          });
-        return;
-      }
-      countdown--;
-      setTimeout(tick, 1000);
-    }
-    tick();
+    // POST /api/configure updates os.environ immediately — no restart needed.
+    // /api/restart spawns a detached background process that conflicts with CML's
+    // own kernel restart, causing Errno 98 (two uvicorn instances fighting for the port).
+    showBanner('✓ Configuration saved.' + skipMsg + ' Settings are now active.', 'ok');
+    var launchBtn = document.getElementById('launchBtn');
+    launchBtn.style.display = 'inline-flex';
+    btn.disabled = false;
+    btn.textContent = 'Save Configuration';
 
   }).catch(function(err) {
     btn.disabled = false;

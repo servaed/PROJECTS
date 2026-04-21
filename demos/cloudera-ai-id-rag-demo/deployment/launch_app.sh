@@ -116,12 +116,14 @@ else
 fi
 
 # ── Step 5: Start FastAPI + React UI ─────────────────────────────────────
-# Kill any orphaned uvicorn from a previous run (CML restart leaves the child
-# alive when it kills the Python parent). Try pkill first (no external deps),
-# then fuser as backup. lsof is not available in all CML container images.
+# Kill any orphaned uvicorn. Two patterns to cover:
+#   - "uvicorn app.api:app"   — direct exec from launch_app.sh
+#   - "python.*-m uvicorn"    — spawned by /api/restart background script
+# The /api/restart endpoint uses start_new_session=True (detached), so it
+# survives CML kernel restarts and causes Errno 98 on the next start.
 echo "[5/5] Clearing port $PORT of any previous process..."
-pkill -9 -f "uvicorn app.api:app" 2>/dev/null || true
-fuser -k "${PORT}/tcp"            2>/dev/null || true
+pkill -9 -f "uvicorn" 2>/dev/null || true
+fuser -k "${PORT}/tcp" 2>/dev/null || true
 sleep 2
 
 echo "[5/5] Starting FastAPI server (React UI) on port $PORT..."
