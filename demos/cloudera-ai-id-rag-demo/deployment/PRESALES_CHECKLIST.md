@@ -7,8 +7,9 @@ Complete all pre-demo steps before the call. Estimated run time: **25–35 minut
 
 ## Pre-Demo (Day Before)
 
-- [ ] Docker image built and pushed (or Git repo accessible from the Cloudera AI cluster)
-- [ ] Cloudera AI Application created with correct resource profile (4 vCPU / 8 GB minimum)
+- [ ] Git repo accessible from the Cloudera AI workspace (HTTPS with PAT, or SSH if no HTTP proxy)
+- [ ] CML project created from Git repo; `run_app.py` set as the Application Script
+- [ ] Cloudera AI Application created with correct resource profile (4 vCPU / 8 GiB minimum)
 - [ ] LLM provider configured via `/configure` wizard — test with `/api/test/llm`
 - [ ] All status indicators green at `/setup`
 - [ ] Auto-play tested end-to-end in the correct domain (Banking / Telco / Government)

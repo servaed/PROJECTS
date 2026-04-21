@@ -2,17 +2,18 @@
 # ──────────────────────────────────────────────────────────────────────────
 # launch_app.sh — Cloudera AI Application startup script
 #
-# Set "Launch Command" in the CML Application config to:
-#   bash deployment/launch_app.sh
+# CML Applications execute a Python file as the Script, not bash directly.
+# Point the CML Application Script field to run_app.py, which calls this file:
+#   Script: demos/cloudera-ai-id-rag-demo/run_app.py
 #
 # Startup sequence:
 #   1. Install Python dependencies (skipped after first run)
 #   2. Install optional provider SDK if needed (bedrock / anthropic)
 #   3. Seed the demo SQLite database (idempotent — skips if already seeded)
 #   4. Ingest documents into FAISS vector store (skips if index exists)
-#   5. Start FastAPI + React UI on port 8080 via uvicorn
+#   5. Start FastAPI + React UI via uvicorn on $CDSW_APP_PORT (default 8080)
 #
-# Required environment variables (set in CML Application config):
+# Required environment variables (set in CML Application env vars panel):
 #   LLM_PROVIDER, and the credentials for your chosen provider.
 # ──────────────────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ else
     echo "[0/5] No override file found at $OVERRIDE_FILE (use /configure to create one)."
 fi
 
-PORT="${APP_PORT:-8080}"
+PORT="${CDSW_APP_PORT:-${APP_PORT:-8080}}"
 LOG_LEVEL="${LOG_LEVEL:-INFO}"
 VECTOR_STORE_PATH="${VECTOR_STORE_PATH:-./data/vector_store}"
 LLM_PROVIDER="${LLM_PROVIDER:-cloudera}"

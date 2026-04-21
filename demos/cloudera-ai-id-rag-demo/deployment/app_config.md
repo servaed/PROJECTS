@@ -148,6 +148,6 @@ For CDP production, set `MINIO_ENDPOINT` to your Ozone S3 Gateway URL
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `APP_PORT` | No | `8080` | **Must be 8080** for Cloudera AI Applications |
+| `APP_PORT` | No | `8080` | Fallback port. CML injects `CDSW_APP_PORT` (default 8080); `launch_app.sh` uses `CDSW_APP_PORT` first. |
 | `APP_TITLE` | No | `Asisten Enterprise Cloudera AI` | Window title |
 | `LOG_LEVEL` | No | `INFO` | `DEBUG` / `INFO` / `WARNING` / `ERROR` |

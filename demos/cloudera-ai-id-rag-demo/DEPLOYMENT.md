@@ -8,14 +8,18 @@ on Cloudera AI Workbench (CML).
 
 ## Choose a deployment path
 
-| | **Path A — Docker Image** | **Path B — Git Source** |
+| | **Path A — Docker (local/CI only)** | **Path B — Git Source (CML standard)** |
 |---|---|---|
-| **Entry point** | `deployment/entrypoint.sh` | `deployment/launch_app.sh` |
+| **CML Script** | N/A — Docker image source not in CML UI | `run_app.py` (Python launcher → `launch_app.sh`) |
 | **SQL engine** | Trino + Iceberg (mirrors CDW) | SQLite |
 | **Document store** | MinIO (mirrors Ozone S3) | Local filesystem |
 | **First boot** | ~3–5 min (Trino cold start) | ~3–5 min (embedding model download) |
 | **Warm restart** | ~30 s (MinIO data persists on CML) | ~30 s |
-| **Best for** | Full Cloudera presales demo | Quick iteration, no Docker registry |
+| **Best for** | Local docker compose testing | CML deployment (only supported path in UI) |
+
+> **CML Applications UI fact:** The Script field runs Python files only — not bash.
+> CML does not offer a Docker image source field in the New Application UI; it uses
+> Source-to-Image (S2I) internally. Use `run_app.py` as the Script for all CML deployments.
 
 ---
 
@@ -236,13 +240,17 @@ python deployment/deploy_cml_app.py \
 
 | Field | Value |
 |---|---|
-| **Source** | **Git Repository** |
-| **Git URL** | `https://github.com/servaed/PROJECTS` |
-| **Branch** | `master` |
-| **Subdirectory** | `demos/cloudera-ai-id-rag-demo` *(if supported by your CML version)* |
-| **Launch Command** | `bash deployment/launch_app.sh` |
-| **Runtime** | Python 3.10 or 3.11 (Standard Runtime) |
-| **Resource Profile** | 4 vCPU / 8 GB RAM |
+| **Script** | `demos/cloudera-ai-id-rag-demo/run_app.py` |
+| **Editor** | `Workbench` |
+| **Kernel** | `Python 3.10` |
+| **Edition** | `Standard` |
+| **Resource Profile** | 4 vCPU / 8 GiB |
+
+> **Git repo cloning:** First create a CML *project* from Git, then create the Application within it.
+> - HTTPS (recommended): `https://github.com/servaed/PROJECTS.git`
+> - HTTPS with PAT (private repo): `https://servaed:<PAT>@github.com/servaed/PROJECTS.git`
+> - SSH: `git@github.com:servaed/PROJECTS.git` — requires CML SSH key added to GitHub.
+>   Note: SSH through HTTP proxy is not supported; use HTTPS in such environments.
 
 Add LLM environment variables (see [Section 4](#4-configure-llm-provider)), then **Deploy**.
 
@@ -254,7 +262,7 @@ Add LLM environment variables (see [Section 4](#4-configure-llm-provider)), then
 [2/5] Install provider-specific SDK if needed (boto3 for Bedrock, anthropic package)
 [3/5] Seed SQLite demo.db — 9 tables, 148+ rows (idempotent)
 [4/5] Build FAISS vector store (skipped if data/vector_store/index.faiss exists)
-[5/5] exec uvicorn app.api:app --host 0.0.0.0 --port 8080
+[5/5] exec uvicorn app.api:app --host 0.0.0.0 --port $CDSW_APP_PORT
 ```
 
 ---
@@ -874,10 +882,10 @@ SQL_APPROVED_TABLES=kredit_umkm,nasabah,cabang,your_new_table
 
 ### Before go-live
 
-- [ ] Set `LLM_PROVIDER` and credentials via **CML platform env vars** (not `/configure`) — so they are locked and cannot be changed from the browser
+- [ ] Set `LLM_PROVIDER` and credentials via **Application-level env vars** (Applications UI) — application-level vars override project-level vars and appear locked in `/configure`
 - [ ] `SQL_APPROVED_TABLES` lists only the tables you intend to expose to LLM queries
 - [ ] `LOG_LEVEL=WARNING` — avoids logging query content and user messages
-- [ ] SSO authentication enabled on the Application (never `Unauthenticated` with real data)
+- [ ] SSO authentication enabled (default). Public/unauthenticated access requires admin to enable it in Site Administration — never use with real data
 - [ ] Verify `GET /health` returns `{"status":"ok"}` — use as the liveness probe URL
 
 ### Data

@@ -385,22 +385,26 @@ pytest tests/ -v
 
 See the full guide in [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
-**Quick summary (Docker image path — recommended):**
-1. Build and push the Docker image:
-   ```bash
-   make docker REGISTRY=<your-registry>
-   make docker-push REGISTRY=<your-registry>
-   # OR: GitHub Actions pushes automatically to GHCR on merge to main
-   ```
-2. **Applications → New Application** → Source: Docker Image → enter image URL
-3. Set `LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL_ID`
-   — or set them after deployment via **http://\<app-url\>/configure**
-4. Deploy → wait for **Running** (~5–15 min first boot for service startup + seeding)
-5. Verify at `/setup` — all status cards should be green; startup banner fades when ready
+**Deploying to Cloudera AI Workbench (CML Applications):**
+1. Clone or sync this repo into a CML project via Git (HTTPS recommended)
+2. **Applications → New Application**
 
-**Git source path (local dev mode, no Docker):**
-1. Push repo to Git; Launch Command: `bash deployment/launch_app.sh`
-2. Uses SQLite + local filesystem — no Trino/MinIO/Nessie required
+   | Field | Value |
+   |---|---|
+   | Script | `demos/cloudera-ai-id-rag-demo/run_app.py` |
+   | Editor | Workbench |
+   | Kernel | Python 3.10 |
+   | Edition | Standard |
+   | vCPU / Memory | 4 vCPU / 8 GiB |
+
+3. Add env vars: `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL_ID`
+   — or configure after deploy via **http://\<app-url\>/configure**
+4. Click **Create Application** → wait ~3–5 min for first boot
+5. Verify at `/setup` — all status cards green
+
+> **Note:** CML Applications execute the Script field as Python. `run_app.py` is a
+> Python launcher that calls `deployment/launch_app.sh` via subprocess.
+> Uses SQLite + local filesystem — no Trino/MinIO/Nessie required.
 
 ---
 

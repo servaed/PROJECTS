@@ -115,14 +115,21 @@ python eval_all.py
 ```
 
 ## Deployment Assumptions (Cloudera AI Applications)
-- App **must** listen on **port 8080** — required by Cloudera AI Applications runtime
-- Deploy via Git repo URL or Docker image in the Cloudera AI Applications UI
-- All configuration via environment variables (see `.env.example`) **or** via `GET /configure` wizard
-- Authentication handled by Cloudera AI platform (SSO / LDAP) — app does not implement its own auth
-- `deployment/launch_app.sh` sources `data/.env.local` at step 0 before uvicorn starts
-- Platform env vars always override `data/.env.local` values
-- See `DEPLOYMENT.md` and `deployment/cloudera_ai_application.md` for full guides
-- **Minimum resource profile**: 4 vCPU / 8 GB RAM (for `multilingual-e5-large` local embeddings)
+- **Script field runs Python only** — CML executes the Script as a Python file, not bash.
+  Use `run_app.py` as the Script; it calls `deployment/launch_app.sh` via subprocess.
+- **Port**: bind to `CDSW_APP_PORT` (CML injects this, defaults to 8080). `launch_app.sh`
+  uses `PORT="${CDSW_APP_PORT:-${APP_PORT:-8080}}"`.
+- **No Docker image source in CML UI** — CML uses Source-to-Image (S2I) internally.
+  Git source path (SQLite + local filesystem) is the standard deployment path.
+- All configuration via environment variables set in the Applications UI **or** via `/configure` wizard.
+- **Application-level env vars override project-level env vars** — set LLM credentials at
+  Application level so they appear locked ("From environment") in `/configure`.
+- **Auth**: CML handles SSO/LDAP and injects `Remote-user` + `Remote-user-perm` headers.
+  App must not implement its own auth. Public access requires admin to enable it in Site Administration.
+- `deployment/launch_app.sh` sources `data/.env.local` at step 0 before uvicorn starts.
+- **SSH through HTTP proxy not supported** — use HTTPS for Git operations in CML.
+- See `DEPLOYMENT.md` and `deployment/cloudera_ai_application.md` for full guides.
+- **Minimum resource profile**: 4 vCPU / 8 GiB RAM (for `multilingual-e5-large` local embeddings).
 
 ## Configure Wizard (`/configure`)
 - `GET /api/configure` returns current config state: value (masked for secrets) + source (`env` / `file` / `null`)
