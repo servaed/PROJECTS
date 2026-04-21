@@ -58,7 +58,36 @@ echo "========================================================"
 DEPS_MARKER=".deps_installed"
 if [ ! -f "$DEPS_MARKER" ]; then
     echo "[1/5] Installing Python dependencies..."
-    pip install --quiet -r requirements.txt
+    python3 - <<'PYEOF'
+import subprocess, sys
+from pathlib import Path
+
+listed = [l for l in Path("requirements.txt").read_text().splitlines()
+          if l.strip() and not l.startswith("#")]
+total = len(listed)
+print(f"  {total} packages listed in requirements.txt", flush=True)
+
+proc = subprocess.Popen(
+    [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"],
+    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,
+)
+count = 0
+for line in proc.stdout:
+    line = line.rstrip()
+    if line.startswith("Collecting "):
+        count += 1
+        pkg = line[11:].split()[0] if len(line) > 11 else "?"
+        pct  = min(count * 100 // max(total, 1), 99)
+        bar  = "█" * (pct // 5) + "░" * (20 - pct // 5)
+        print(f"  [{bar}] {pct:3d}%  {pkg}", flush=True)
+    elif line.startswith("ERROR") or "error:" in line.lower():
+        print(f"  {line}", flush=True)
+
+proc.wait()
+if proc.returncode != 0:
+    sys.exit(proc.returncode)
+print(f"  [{'█' * 20}] 100%  {count} packages processed", flush=True)
+PYEOF
     touch "$DEPS_MARKER"
     echo "[1/5] Dependencies installed."
 else
