@@ -471,7 +471,7 @@ async def api_setup():
             "fix": f"Check DATABASE_URL. Error: {exc}",
         }
 
-    # ── LLM — live ping with 5 s timeout ─────────────────────────────
+    # ── LLM — live ping with 15 s timeout ────────────────────────────
     if settings.llm_base_url or settings._live_provider in ("bedrock", "anthropic"):
         t0 = time.monotonic()
         try:
@@ -479,7 +479,7 @@ async def api_setup():
             client = get_llm_client()
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
                 future = ex.submit(client.is_available)
-                reachable = future.result(timeout=5.0)
+                reachable = future.result(timeout=15.0)
             latency_ms = round((time.monotonic() - t0) * 1000)
             result["llm"] = {
                 "ok": reachable,
