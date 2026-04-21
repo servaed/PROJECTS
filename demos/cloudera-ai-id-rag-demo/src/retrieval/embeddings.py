@@ -28,7 +28,15 @@ def get_embeddings():
 
         _embeddings_instance = HuggingFaceEmbeddings(
             model_name=settings.embeddings_model,
-            model_kwargs={"device": "cpu"},
+            model_kwargs={
+                "device": "cpu",
+                # Prevent transformers from using meta tensors (accelerate device_map).
+                # Without this, newer transformers versions initialise weights as meta
+                # tensors and then fail with "Cannot copy out of meta tensor" when the
+                # model is moved to CPU.
+                "device_map": None,
+                "low_cpu_mem_usage": False,
+            },
             encode_kwargs={"normalize_embeddings": True},
         )
     elif settings.embeddings_provider == "openai":
