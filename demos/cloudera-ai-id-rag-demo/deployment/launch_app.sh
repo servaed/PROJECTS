@@ -116,13 +116,13 @@ else
 fi
 
 # ── Step 5: Start FastAPI + React UI ─────────────────────────────────────
-# Kill any orphaned uvicorn from a previous run on this port (CML restart leaves
-# the child process alive when it kills the Python parent via subprocess.call).
-if lsof -ti :"$PORT" >/dev/null 2>&1; then
-    echo "[5/5] Port $PORT in use — killing orphaned process..."
-    lsof -ti :"$PORT" | xargs kill -9 2>/dev/null || true
-    sleep 1
-fi
+# Kill any orphaned uvicorn from a previous run (CML restart leaves the child
+# alive when it kills the Python parent). Try pkill first (no external deps),
+# then fuser as backup. lsof is not available in all CML container images.
+echo "[5/5] Clearing port $PORT of any previous process..."
+pkill -9 -f "uvicorn app.api:app" 2>/dev/null || true
+fuser -k "${PORT}/tcp"            2>/dev/null || true
+sleep 2
 
 echo "[5/5] Starting FastAPI server (React UI) on port $PORT..."
 echo "========================================================"
