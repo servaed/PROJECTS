@@ -2,52 +2,53 @@
 
 For the full deployment guide see [`DEPLOYMENT.md`](../DEPLOYMENT.md).
 
-Two deployment paths are available:
-
-| Path | Launch method | Storage | Query engine |
-|------|---------------|---------|--------------|
-| **Docker image** (recommended) | Docker Image source | MinIO / Ozone | Trino + Iceberg |
-| **Git source** | `bash deployment/launch_app.sh` | Local filesystem | SQLite |
-
 ---
 
 ## Prerequisites
 
 - Cloudera AI workspace with Applications access enabled
-- An LLM model deployed in Cloudera AI Inference (or another OpenAI-compatible endpoint)
-- **Path A**: Docker registry accessible from the workspace; Docker build environment
-- **Path B**: Git repository accessible from the workspace
+- Git repository accessible (HTTPS recommended; SSH if no HTTP proxy)
+- An LLM endpoint (Cloudera AI Inference, OpenAI, Azure, Bedrock, Anthropic, or local)
 
 ---
 
-## Path A — Docker Image (Recommended)
-
-### 1. Build and Push
-
-```bash
-cd cloudera-ai-id-rag-demo
-docker build -t <registry>/cloudera-ai-id-rag-demo:latest .
-docker push <registry>/cloudera-ai-id-rag-demo:latest
-```
-
-Build time: ~5–10 min first time (downloads MinIO binary, Nessie JAR, Trino 455 tarball).
-
-### 2. Create the Application
-
-In your Cloudera AI workspace:
-- Click **Applications** → **+ New Application**
+## Step 1 — Create CML Project from Git
 
 | Field | Value |
-|-------|-------|
-| **Name** | `asisten-enterprise-id` |
+|---|---|
+| **Source** | Git |
+| **HTTPS URL** | `https://github.com/servaed/PROJECTS.git` |
+| **SSH URL** | `git@github.com:servaed/PROJECTS.git` |
+| **Branch** | `master` |
+
+> SSH through HTTP proxy is not supported — use HTTPS with a PAT for private repos.
+
+---
+
+## Step 2 — Create the Application
+
+Inside the project: **Applications → New Application**
+
+| Field | Value |
+|---|---|
+| **Name** | `Asisten Enterprise ID` |
 | **Subdomain** | `asisten-enterprise` |
-| **Source** | **Docker Image** |
-| **Image URL** | `<registry>/cloudera-ai-id-rag-demo:latest` |
-| **Resource Profile** | 4 vCPU / 8 GB RAM |
-| **Auth Type** | SSO (recommended) or Unauthenticated (demo only) |
+| **Script** | `demos/cloudera-ai-id-rag-demo/run_app.py` |
+| **Editor** | `Workbench` |
+| **Kernel** | `Python 3.10` |
+| **Edition** | `Standard` |
+| **Resource Profile** | 4 vCPU / 8 GiB |
 
-### 3. Set LLM Environment Variables
+> **CML fact:** The Script field executes Python only — not bash.
+> `run_app.py` is a Python launcher that calls `deployment/launch_app.sh` via subprocess.
 
+---
+
+## Step 3 — Set LLM Environment Variables
+
+Set in the Application form or via `http://<app-url>/configure` after deploy.
+
+**Cloudera AI Inference (recommended):**
 ```
 LLM_PROVIDER=cloudera
 LLM_BASE_URL=https://your-workspace/namespaces/serving/endpoints/your-model/v1
@@ -55,134 +56,79 @@ LLM_API_KEY=your-api-key
 LLM_MODEL_ID=meta-llama-3-8b-instruct
 ```
 
-Or leave blank and configure via `http://<app-url>/configure` after the app is running.
-
-### 4. Deploy
-
-- Click **Deploy Application**
-- Wait for status → **Running** (~5–15 min first boot)
-  - MinIO, Nessie, Trino start sequentially inside the container
-  - `seed_iceberg.py` creates buckets, uploads documents, creates Iceberg tables
-  - FAISS vector store is built from documents in MinIO
-
-### What `entrypoint.sh` does
-
+**OpenAI:**
 ```
-[1/6] Start MinIO on :9000       wait for health check
-[2/6] Start Nessie on :19120     wait for health check
-[3/6] Start Trino on :8085       wait for health check (up to 5 min)
-[4/6] Run seed_iceberg.py        create buckets + upload docs + seed 9 Iceberg tables
-[5/6] Build FAISS vector store   (skipped if index already exists)
-[6/6] exec uvicorn on port $PORT
+LLM_PROVIDER=openai
+LLM_API_KEY=sk-...
+LLM_MODEL_ID=gpt-4o
 ```
+
+See `DEPLOYMENT.md` Section 4 for all providers (Azure, Bedrock, Anthropic, Local).
 
 ---
 
-## Path B — Git Source (SQLite Mode)
-
-### 1. Push code to Git
-
-```bash
-git push origin main
-```
-
-### 2. Create the Application
-
-| Field | Value |
-|-------|-------|
-| **Name** | `asisten-enterprise-id` |
-| **Subdomain** | `asisten-enterprise` |
-| **Source** | Git Repository |
-| **Git URL** | Your repository URL |
-| **Branch** | `main` |
-| **Launch Command** | `bash deployment/launch_app.sh` |
-| **Resource Profile** | 4 vCPU / 8 GB RAM |
-| **Auth Type** | SSO (recommended) or Unauthenticated (demo only) |
-
-### What `launch_app.sh` does
+## What `launch_app.sh` Does on Startup
 
 ```
-[0/5] Source data/.env.local if it exists (written by /configure wizard)
-[1/5] pip install -r requirements.txt (skipped if marker file present)
+[0/5] Load data/.env.local (saved credentials from /configure wizard)
+[1/5] pip install -r requirements.txt (skipped after first run)
 [2/5] Install provider SDK if needed (boto3 / anthropic)
-[3/5] Seed SQLite demo database (idempotent)
-[4/5] Ingest documents into FAISS vector store (skipped if index exists)
-[5/5] Start uvicorn on port 8080
+[3/5] Seed SQLite demo database — 9 tables, 1485 rows (idempotent)
+[4/5] Build FAISS vector store (skipped if index.faiss exists)
+[5/5] exec uvicorn on $CDSW_APP_PORT
 ```
 
-Uses SQLite + local filesystem only — no MinIO, Nessie, or Trino.
-
----
-
-## Configure Credentials After Deployment
-
-**Option A — Configure wizard (no shell access needed):**
-
-1. Open `http://<app-url>/configure`
-2. Select provider, fill in credentials, click **Save Configuration**
-3. Restart the app from Cloudera AI Applications UI
-
-**Option B — Platform UI:**
-
-Set `LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL_ID` in the
-Application **Environment Variables** panel and restart.
+First boot: ~3–5 min. Warm restart: ~30 s.
 
 ---
 
 ## Verify
 
 | Check | URL |
-|-------|-----|
+|---|---|
 | Chat interface loads | `http://<app-url>/` |
 | All components green | `http://<app-url>/setup` |
 | Credentials set correctly | `http://<app-url>/configure` |
 
 ---
 
-## Important Notes
+## Key Notes
 
-### Port
-The app **must** run on port **8080**. Both `entrypoint.sh` and `launch_app.sh` start uvicorn
-on this port automatically. Do not change `APP_PORT`.
-
-### Credentials precedence
-Platform environment variables **always** take precedence over values saved via
-the `/configure` wizard. Wizard-saved values are stored in `data/.env.local` and
-loaded at step [0] of the startup script.
+### Credentials Precedence
+Application env vars > Project env vars > `data/.env.local` (/configure wizard) > code defaults.
+A variable set as an Application env var appears locked in `/configure`.
 
 ### Authentication
-- **SSO**: Recommended for production — Cloudera AI handles auth; the app has no auth logic.
-- **Unauthenticated**: For internal demos only. Never use with real customer data.
+- **SSO** (default): CML injects `Remote-user` / `Remote-user-perm` headers. App needs no auth logic.
+- **Public access**: Requires admin to enable in Site Administration. Never use with real data.
 
 ### Resource Profiles
+Admin pre-configures available profiles. Resources must be on a single node.
 
-| Scenario | CPU | RAM |
-|----------|-----|-----|
-| Docker image (full stack) | 4 vCPU | 8 GB |
-| Git source (local embeddings) | 4 vCPU | 8 GB |
-| Git source (OpenAI embeddings) | 1 vCPU | 2 GB |
+| Mode | CPU | RAM |
+|---|---|---|
+| Local embeddings | 4 vCPU | 8 GiB |
+| OpenAI embeddings | 1 vCPU | 2 GiB |
 
-### Mapping to Cloudera CDP services
+### Demo vs Production Data Layer
 
-| Docker component | CDP equivalent |
+| Demo (this deployment) | CDP Production equivalent |
 |---|---|
-| MinIO (embedded) | Apache Ozone (set `MINIO_ENDPOINT` to Ozone S3GW URL) |
-| Nessie (embedded) | Cloudera Unified Metastore |
-| Trino (embedded) | Cloudera Data Warehouse (CDW) |
-| Iceberg tables (Parquet) | Apache Iceberg on Ozone |
+| SQLite (local file) | Cloudera Data Warehouse — Trino + Iceberg |
+| Local filesystem docs | Apache Ozone (S3-compatible gateway) |
+| FAISS (local) | Enterprise vector store |
+
+To connect to real CDP: set `QUERY_ENGINE=trino` + `TRINO_HOST` and
+`DOCS_STORAGE_TYPE=s3` + `MINIO_ENDPOINT=http://ozone-s3gw:9878`.
 
 ---
 
 ## Troubleshooting
 
-| Symptom | Solution |
-|---------|----------|
-| App does not start | Check logs in the Cloudera AI Application console |
-| LLM indicator red | Open `/configure`, check provider credentials, save and restart |
-| Vector store missing | Check logs for ingestion errors; verify documents were uploaded |
-| `integrity check FAILED` | Delete `data/vector_store/` and restart to force re-ingestion |
-| Trino not ready at startup | Trino takes 2–4 min on first boot; `entrypoint.sh` waits up to 5 min |
-| MinIO bucket missing | `seed_iceberg.py` failed — check startup logs for boto3 errors |
-| SQL errors | Verify `QUERY_ENGINE` and `TRINO_*` / `DATABASE_URL` settings |
-| Port error | Ensure `APP_PORT=8080` — do not modify |
-| `/configure` shows "From environment" | Update via Cloudera AI platform UI instead |
+| Symptom | Fix |
+|---|---|
+| `NameError: __file__` | Script must be `run_app.py`, not `launch_app.sh` |
+| App stuck starting | First boot takes 3–5 min; check `/setup → Logs` |
+| LLM indicator red | Open `/configure` → ⚡ Test LLM → fix credentials |
+| `integrity check FAILED` | Delete `data/vector_store/` in Session → restart |
+| SSH clone fails | Use HTTPS — SSH through HTTP proxy not supported |

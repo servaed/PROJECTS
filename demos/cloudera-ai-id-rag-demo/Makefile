@@ -1,13 +1,9 @@
 # Makefile — cloudera-ai-id-rag-demo
-# Common development, testing, and deployment commands.
-# Usage: make <target>
+# Common development and testing commands.
 
-.PHONY: help dev seed test docker docker-push clean reset-vector-store
+.PHONY: help dev seed test test-fast reset-vs clean
 
-REGISTRY   ?= ghcr.io/your-org
-IMAGE      ?= cloudera-rag-demo
-TAG        ?= latest
-PORT       ?= 8080
+PORT ?= 8080
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 help:
@@ -20,19 +16,8 @@ help:
 	@echo "    make reset-vs         Delete vector store (forces re-ingestion on next start)"
 	@echo ""
 	@echo "  Testing"
-	@echo "    make test             Run full pytest suite (66 tests)"
+	@echo "    make test             Run full pytest suite"
 	@echo "    make test-fast        Run tests, stop on first failure"
-	@echo ""
-	@echo "  Docker"
-	@echo "    make docker           Build Docker image ($(REGISTRY)/$(IMAGE):$(TAG))"
-	@echo "    make docker-run       Build + run locally on port $(PORT)"
-	@echo "    make docker-push      Push image to registry"
-	@echo ""
-	@echo "  Variables (override with make VAR=value)"
-	@echo "    REGISTRY  default: $(REGISTRY)"
-	@echo "    IMAGE     default: $(IMAGE)"
-	@echo "    TAG       default: $(TAG)"
-	@echo "    PORT      default: $(PORT)"
 	@echo ""
 
 # ── Development ────────────────────────────────────────────────────────────────
@@ -58,20 +43,6 @@ test:
 
 test-fast:
 	pytest tests/ -v -x
-
-# ── Docker ─────────────────────────────────────────────────────────────────────
-docker:
-	docker build -t $(REGISTRY)/$(IMAGE):$(TAG) .
-
-docker-run: docker
-	docker run --rm -p $(PORT):8080 \
-	  --env-file .env \
-	  -v "$$(pwd)/data/vector_store:/app/data/vector_store" \
-	  -v "rag-minio:/data/minio" \
-	  $(REGISTRY)/$(IMAGE):$(TAG)
-
-docker-push: docker
-	docker push $(REGISTRY)/$(IMAGE):$(TAG)
 
 # ── Cleanup ────────────────────────────────────────────────────────────────────
 clean:

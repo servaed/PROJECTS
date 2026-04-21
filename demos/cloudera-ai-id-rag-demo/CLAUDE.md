@@ -37,19 +37,20 @@ User (Bahasa Indonesia or English)
   → Answer Builder (prepare_answer → stream_synthesis → finalize_answer)
        └─ Bilingual synthesis + citations + query trace
 
-Container services (started by deployment/entrypoint.sh):
-  MinIO  :9000  — S3-compatible object store (docs bucket + Iceberg warehouse bucket)
-  Nessie :19120 — Iceberg REST catalog (table registry)
-  Trino  :8085  — Query engine (Iceberg connector → Nessie → MinIO)
-  uvicorn:8080  — FastAPI + React SPA (the CML Application endpoint)
+Demo deployment (SQLite + local filesystem):
+  uvicorn on $CDSW_APP_PORT — FastAPI + React SPA (the CML Application endpoint)
+
+Production CDP equivalent (swap connectors via env vars):
+  Trino  (CDW)  — set QUERY_ENGINE=trino, TRINO_HOST=<cdw-endpoint>
+  Ozone  (S3GW) — set DOCS_STORAGE_TYPE=s3, MINIO_ENDPOINT=http://ozone-s3gw:9878
 ```
 
 **Backend: FastAPI + uvicorn.** Serves the React SPA from `app/static/` and streams
 LLM tokens via Server-Sent Events on `POST /api/chat`.
 
 **Entry points:**
-- Docker / CML: `deployment/entrypoint.sh` — starts MinIO, Nessie, Trino, seeds data, then uvicorn
-- Local dev (no Docker): `deployment/launch_app.sh` — SQLite + local filesystem + uvicorn
+- CML Application: `run_app.py` (Python launcher) → `deployment/launch_app.sh` → uvicorn
+- Local dev: `make dev` or `uvicorn app.api:app --host 0.0.0.0 --port 8080 --reload`
 - Streamlit fallback (`app/main.py`) retained for notebook/dev use only
 
 ## Key Directories
@@ -61,9 +62,7 @@ LLM tokens via Server-Sent Events on `POST /api/chat`.
 | `app/static/setup.html` | Health dashboard — auto-refreshes every 30 s; QR popup; startup banner; log viewer |
 | `app/static/configure.html` | Env-var wizard — saves to `data/.env.local`; Test LLM; .env download; model datalists |
 | `app/static/vendor/` | Self-hosted JS: React, htm, DOMPurify, QRCode.js |
-| `Makefile` | Dev shortcuts: `make dev`, `make docker`, `make test`, `make docker-push` |
-| `docker-compose.yml` | One-command local startup with named volumes + healthcheck |
-| `.github/workflows/docker-build.yml` | GitHub Actions CI/CD → GHCR push on main/semver tags |
+| `Makefile` | Dev shortcuts: `make dev`, `make seed`, `make test`, `make reset-vs` |
 | `src/config/` | Settings (pydantic-settings), logging config |
 | `src/llm/` | LLM abstraction base (`chat` + `stream_chat`), OpenAI-compatible client, bilingual prompts |
 | `src/retrieval/` | Document loaders, chunking, embeddings (e5-large), FAISS + BM25 hybrid retriever |
@@ -76,7 +75,7 @@ LLM tokens via Server-Sent Events on `POST /api/chat`.
 | `data/vector_store/` | FAISS index + SHA-256 integrity hash (gitignored) |
 | `deployment/` | `launch_app.sh` (step 0–5 startup), env var reference, deployment guide |
 | `tests/` | Pytest unit tests (66 total across 4 suites) |
-| `Dockerfile` / `.dockerignore` | Container image for Docker-based deployment path |
+| `run_app.py` | Python launcher for CML Application Script field → calls `launch_app.sh` |
 | `.claude/skills/` | Reusable Claude Code project skills |
 | `.claude/history/` | Session logs, decisions, changelogs, prompts |
 
@@ -98,14 +97,6 @@ uvicorn app.api:app --host 0.0.0.0 --port 8080 --reload
 pytest tests/ -v
 make test          # same via Makefile
 make test-fast     # pytest -x (stop on first failure)
-
-# Docker workflow
-make docker                          # build image
-make docker-run                      # run with env from shell
-make docker-push REGISTRY=ghcr.io/X  # tag and push
-
-# One-command Docker Compose startup
-docker compose up
 
 # Force re-ingestion (after adding new documents)
 make reset-vs   # deletes data/vector_store/, next uvicorn start re-ingests
