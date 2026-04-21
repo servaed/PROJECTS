@@ -40,7 +40,7 @@ else
     echo "[0/5] No override file found at $OVERRIDE_FILE (use /configure to create one)."
 fi
 
-PORT="${APP_PORT:-${CDSW_APP_PORT:-8080}}"
+PORT="${CDSW_APP_PORT:-${APP_PORT:-8080}}"
 LOG_LEVEL="${LOG_LEVEL:-INFO}"
 VECTOR_STORE_PATH="${VECTOR_STORE_PATH:-./data/vector_store}"
 LLM_PROVIDER="${LLM_PROVIDER:-cloudera}"
@@ -130,6 +130,6 @@ echo "[5/5] Starting FastAPI server (React UI) on port $PORT..."
 echo "========================================================"
 
 exec uvicorn app.api:app \
-    --host "0.0.0.0" \
+    --host "127.0.0.1" \
     --port "$PORT" \
     --log-level "$(echo "$LOG_LEVEL" | tr '[:upper:]' '[:lower:]')"
