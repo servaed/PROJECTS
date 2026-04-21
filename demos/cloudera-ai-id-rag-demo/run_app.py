@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 try:
     # Standard Python script execution
@@ -10,7 +11,8 @@ except NameError:
 
 os.chdir(script_dir)
 
-# Replace this Python process entirely with bash → launch_app.sh → exec uvicorn.
-# This creates a clean single-process chain: CML kills one PID and uvicorn exits.
-# subprocess.call() leaves Python alive as a parent, causing orphan uvicorn on restart.
-os.execvp("bash", ["bash", "deployment/launch_app.sh"])
+# os.execvp() kills the IPython kernel in CML context — do not use it.
+# Use subprocess.call() + os._exit(): sys.exit() raises SystemExit which
+# IPython catches and treats as an error; os._exit() bypasses that.
+exit_code = subprocess.call(["bash", "deployment/launch_app.sh"])
+os._exit(exit_code)
