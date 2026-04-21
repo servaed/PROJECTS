@@ -231,12 +231,22 @@
 <div class="topbar">
   <a href="/"><img src="/static/cloudera-logo.png" alt="Cloudera"/></a>
   <div class="topbar-div"></div>
-  <div class="topbar-title">Enterprise <span>Assistant</span> — Configure</div>
+  <div class="topbar-title" id="topbarTitle">Enterprise <span>Assistant</span> — Configure</div>
   <div class="topbar-right">
-    <a href="/" class="icon-btn">← App</a>
+    <a href="/" class="icon-btn" id="backBtn">← App</a>
     <a href="/setup" class="icon-btn">⊕ Status</a>
     <button class="icon-btn theme-btn" id="themeBtn" title="Toggle theme"></button>
   </div>
+</div>
+
+<!-- ── First-run banner (shown only when ?setup=1) ──────────────────────── -->
+<div id="setupBanner" style="display:none;background:linear-gradient(135deg,#F96702 0%,#e55a00 100%);color:#fff;padding:20px 32px;align-items:center;gap:16px;flex-wrap:wrap;">
+  <div style="font-size:1.5rem;">⚙</div>
+  <div style="flex:1;min-width:200px;">
+    <div style="font-weight:700;font-size:1rem;margin-bottom:2px;">Selamat datang! Configure your LLM to get started</div>
+    <div style="font-size:0.83rem;opacity:0.9;">Select your provider, enter credentials, then click <strong>Save Configuration</strong>. The assistant will be ready immediately.</div>
+  </div>
+  <a href="/" style="padding:8px 20px;border-radius:8px;background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.4);color:#fff;font-weight:600;font-size:0.85rem;text-decoration:none;white-space:nowrap;">Skip for now →</a>
 </div>
 
 <!-- ── Page ──────────────────────────────────────────────────────────────── -->
@@ -612,6 +622,10 @@
       <button type="button" class="btn-secondary" id="testBtn" onclick="testLlm()">⚡ Test LLM</button>
       <button type="button" class="btn-secondary" id="exportBtn" onclick="exportEnv()">⬇ Download .env</button>
       <a href="/setup" class="btn-secondary">⊕ Full Status</a>
+      <a href="/" class="btn-primary" id="launchBtn"
+         style="display:none;background:var(--ok);box-shadow:0 2px 8px rgba(52,168,83,0.35);">
+        ✓ Launch Assistant →
+      </a>
       <span class="action-note" id="actionNote"></span>
     </div>
 
@@ -800,6 +814,16 @@ document.getElementById('configForm').onsubmit = function(e) {
     note.textContent = 'Last saved: ' + new Date().toLocaleTimeString();
     loadConfig();
 
+    // ── First-run: skip restart, show launch button ──────────────────
+    if (isSetupMode) {
+      showBanner('✓ Konfigurasi LLM berhasil disimpan.' + skipMsg, 'ok');
+      var launchBtn = document.getElementById('launchBtn');
+      launchBtn.style.display = 'inline-flex';
+      btn.disabled = false;
+      btn.textContent = 'Save Configuration';
+      return;
+    }
+
     // ── Auto-restart sequence ────────────────────────────────────────
     var countdown = 5;
     function tick() {
@@ -910,6 +934,15 @@ function exportEnv() {
     .catch(function(err) {
       showBanner('Export failed: ' + err.message, 'err');
     });
+}
+
+// ── First-run setup mode ──────────────────────────────────────────────────
+var isSetupMode = new URLSearchParams(window.location.search).get('setup') === '1';
+if (isSetupMode) {
+  document.getElementById('setupBanner').style.display = 'flex';
+  document.getElementById('backBtn').style.display = 'none';
+  var ttEl = document.getElementById('topbarTitle');
+  ttEl.innerHTML = 'Enterprise <span>Assistant</span> — Konfigurasi Awal';
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────

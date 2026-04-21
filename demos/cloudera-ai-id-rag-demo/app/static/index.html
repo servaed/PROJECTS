@@ -1518,16 +1518,23 @@
     useEffect(function() { domainRef.current = domain; }, [domain]);
     useEffect(function() { languageRef.current = language; }, [language]);
 
-    // Fetch status once, and available domains; show setup overlay on first load if LLM not configured
+    // On first load: redirect to /configure?setup=1 if LLM is not configured
     useEffect(function() {
-      var overlayDismissed = sessionStorage.getItem('cld-overlay-dismissed') === '1';
+      fetch('/health', { cache: 'no-store' })
+        .then(function(r) { return r.json(); })
+        .then(function(h) {
+          if (h.checks && !h.checks.llm_configured) {
+            window.location.href = '/configure?setup=1';
+          }
+        })
+        .catch(function() {}); // silently ignore during startup
+    }, []);
+
+    // Fetch status and available domains; poll every 30s for sidebar indicators
+    useEffect(function() {
       function ls() {
         fetch('/api/status').then(function(r){return r.json();}).then(function(s) {
           setStatus(s);
-          // Show overlay on first load only if LLM not configured and user hasn't dismissed it
-          if (!overlayDismissed && s.checks && !s.checks.llm_configured) {
-            setShowSetupOverlay(true);
-          }
         }).catch(console.error);
       }
       fetch('/api/domains').then(function(r){return r.json();}).then(setDomains).catch(console.error);
