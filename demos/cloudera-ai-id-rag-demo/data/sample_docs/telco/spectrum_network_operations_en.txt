@@ -1,0 +1,126 @@
+NETWORK OPERATIONS GUIDE AND SPECTRUM FREQUENCY REGULATION
+Reference: TLC/NET/OPS/002/2026-EN | Revision: 2.1 | Effective: 1 January 2026
+Issued by: Technology Director, PT Nusantara Telekomunikasi Tbk
+
+CHAPTER I — SPECTRUM ALLOCATION AND LICENCES
+
+Article 1 — Held Spectrum Allocation
+
+PT Nusantara Telekomunikasi Tbk manages the following spectrum frequencies under
+licences issued by the Ministry of Communication and Information Technology (Kominfo):
+
+4G LTE Frequencies:
+- 1800 MHz (Band 3)  : 20 MHz FDD, nationwide coverage
+- 2100 MHz (Band 1)  : 15 MHz FDD, 32 major cities
+- 2300 MHz (Band 40) : 30 MHz TDD, metropolitan areas
+
+5G Frequencies:
+- 3500 MHz (Band n78): 100 MHz TDD, Phase 1: 10 cities (2024–2026)
+- 26 GHz (mmWave)    : 400 MHz, pilot hotspots in Jakarta and Surabaya
+
+Legacy Frequencies:
+- 900 MHz (Band 8)   : 10 MHz FDD, rural and remote coverage
+- 2100 MHz (3G/UMTS) : 5 MHz FDD, scheduled sunset in 2027
+
+Article 2 — Coverage Obligations
+
+Pursuant to Kominfo licences and the Universal Service Obligation (USO) agreement:
+- 4G coverage across all district/city capitals: 100% by end-2025 (ACHIEVED)
+- 4G coverage in sub-districts with populations above 10,000: 95% by end-2026
+- 3G coverage across all land territory: 98% (achieved as of 2023)
+- 5G coverage in 50 major cities: 60% by end-2028
+
+CHAPTER II — TECHNICAL NETWORK STANDARDS
+
+Article 3 — BTS Capacity and Utilisation
+
+Established network capacity standards:
+- 4G/LTE standard BTS capacity: 50–150 Mbps (downlink) depending on configuration
+- 5G NR BTS capacity: 500–2,000 Mbps (downlink) depending on carrier aggregation
+- Maximum simultaneous active users per BTS: 200 (to maintain QoS)
+
+Utilisation thresholds requiring action:
+- Utilisation 70–80% : Accelerate capacity planning, coordinate with regional team
+- Utilisation 80–85% : Mandatory frequency and network parameter optimisation
+- Utilisation 85–90% : Escalate to central NOC, procure additional BTS units
+- Utilisation above 90%: Critical status, restrict new SIM activations in affected area
+
+Current network utilisation as of March 2026 (priority monitoring areas):
+- Bali (Denpasar and surroundings)   : 90.1% — CRITICAL STATUS, active escalation
+- East Java (Greater Surabaya)       : 85.6% — Critical, BTS expansion planned
+- West Java (Greater Bandung)        : 71.2% — Caution, intensive monitoring
+- Jakarta                             : 78.3% — Caution, carrier aggregation active
+- Central Java (Semarang)            : 68.9% — Normal
+- North Sumatra (Medan)              : 55.0% — Normal, adequate capacity
+- South Sulawesi (Makassar)          : 48.2% — Normal
+- East Kalimantan (Balikpapan)       : 42.7% — Normal
+
+Article 4 — Network Fault Management
+
+Fault classification and handling procedures:
+- Level 1 (Minor): fewer than 10% of BTS in one area affected
+  Handling: local team, target resolution 4 hours
+- Level 2 (Major): 10–30% of BTS affected or critical area impacted
+  Handling: regional team + central NOC, target resolution 8 hours
+- Level 3 (Catastrophic): more than 30% of BTS affected or backbone down
+  Handling: crisis team + Board of Directors, target resolution 24 hours + report to Kominfo
+
+Article 5 — Planned Network Maintenance
+
+Scheduled maintenance windows:
+- Routine BTS maintenance: maximum 2 hours per month per BTS, between 02:00–05:00 WIB
+- Network software upgrade: scheduled on weekends, maximum 4 hours
+- Customer notification: at least 72 hours before any service-affecting maintenance
+
+CHAPTER III — 5G EXPANSION ROADMAP
+
+Article 6 — 5G Roadmap 2024–2028
+
+Phase 1 (2024–2025) — COMPLETED:
+- 5G deployment in Jakarta, Surabaya, Bandung, Medan, Makassar
+- 1,250 active 5G base stations with total capacity of 450 Gbps
+- Population coverage: 28% of the national population
+
+Phase 2 (2026–2027) — IN PROGRESS:
+- Expansion to 30 tier-2 cities: Semarang, Yogyakarta, Palembang, Balikpapan, etc.
+- Target: 3,000 additional 5G base stations
+- Investment target: IDR 8.5 trillion
+
+Phase 3 (2028) — PLANNED:
+- Expansion to 50+ cities and priority industrial zones
+- Integration with LEO satellite networks for remote areas
+- Target 5G population coverage: 60% of the national population
+
+Article 7 — 5G Quality of Service Requirements
+
+Minimum 5G service standards to be maintained:
+- Peak download speed        : minimum 1 Gbps in urban areas
+- Peak upload speed          : minimum 100 Mbps
+- End-to-end latency         : maximum 10 ms (ultra-low latency slice)
+- Connection density         : minimum 1 million devices per square kilometre
+- 5G network availability    : minimum 99.7% monthly uptime
+
+CHAPTER IV — NETWORK SECURITY AND COMPLIANCE
+
+Article 8 — Infrastructure Security
+
+Mandatory security standards for all network infrastructure:
+- End-to-end encryption for all voice and data communications (3GPP standard)
+- 24/7 cyber-security monitoring by the Security Operations Center (SOC)
+- Network core penetration testing: minimum twice per year by an independent third party
+- Backup power systems: minimum 8-hour UPS plus generator at every critical site
+
+Article 9 — Regulatory Compliance
+
+Mandatory reports to Kominfo and BRTI:
+- Monthly Quality of Service (QoS) report: no later than the 15th of the following month
+- Significant network fault report: within 2 hours of the incident
+- Annual spectrum usage report: by 31 January each year
+
+Penalties for spectrum regulation violations:
+- Unlicensed frequency use: IDR 500 million – IDR 2 billion per case
+- Late QoS report: IDR 100 million per delayed report
+- Coverage obligation non-compliance: IDR 1 billion per quarter per region
+
+Issued in Jakarta, 1 January 2026
+Technology Director: Hendra Kusuma Wijaya

@@ -42,11 +42,11 @@ _bm25_lock = threading.Lock()
 _bm25_cache: dict[str, tuple] = {}   # domain_key → (BM25Okapi, [Document])
 
 
-def _build_bm25_index(store, domain: str | None) -> tuple:
+def _build_bm25_index(store, domain: str | None, language: str | None) -> tuple:
     """Build a BM25 index over the documents in the FAISS store.
 
-    Documents are filtered to the requested domain before indexing.
-    Results are cached per domain; call _invalidate_bm25_cache() after
+    Documents are filtered to the requested domain and language before indexing.
+    Results are cached per (domain, language); call _invalidate_bm25_cache() after
     re-ingestion to force a rebuild.
     """
     from rank_bm25 import BM25Okapi
@@ -54,28 +54,32 @@ def _build_bm25_index(store, domain: str | None) -> tuple:
     # LangChain FAISS uses InMemoryDocstore — access via private _dict.
     all_docs = list(store.docstore._dict.values())
 
+    docs = all_docs
     if domain:
-        docs = [d for d in all_docs if d.metadata.get("domain") == domain]
-    else:
-        docs = all_docs
+        docs = [d for d in docs if d.metadata.get("domain") == domain]
+    if language:
+        docs = [d for d in docs if d.metadata.get("language", "id") == language]
 
     if not docs:
-        logger.warning("BM25: no documents found for domain=%s", domain)
+        logger.warning("BM25: no documents found for domain=%s language=%s", domain, language)
         return None, []
 
     # Simple whitespace tokenisation works well for both Indonesian and English.
     corpus = [d.page_content.lower().split() for d in docs]
     bm25   = BM25Okapi(corpus)
-    logger.debug("BM25 index built: %d docs (domain=%s)", len(docs), domain or "all")
+    logger.debug(
+        "BM25 index built: %d docs (domain=%s, language=%s)",
+        len(docs), domain or "all", language or "any",
+    )
     return bm25, docs
 
 
-def _get_bm25(store, domain: str | None) -> tuple:
-    """Return cached BM25 index, building it on first call per domain."""
-    key = domain or "__all__"
+def _get_bm25(store, domain: str | None, language: str | None) -> tuple:
+    """Return cached BM25 index, building it on first call per (domain, language)."""
+    key = f"{domain or '__all__'}:{language or '__any__'}"
     with _bm25_lock:
         if key not in _bm25_cache:
-            _bm25_cache[key] = _build_bm25_index(store, domain)
+            _bm25_cache[key] = _build_bm25_index(store, domain, language)
         return _bm25_cache[key]
 
 
@@ -105,6 +109,7 @@ def _rrf_fuse(
     bm25_scores: list[float],     # BM25 score per doc in bm25_docs
     domain: str | None,
     max_score: float,
+    language: str | None = None,
 ) -> list[tuple]:
     """Combine FAISS and BM25 results with Reciprocal Rank Fusion.
 
@@ -118,6 +123,8 @@ def _rrf_fuse(
         if score > max_score:
             continue
         if domain and doc.metadata.get("domain") != domain:
+            continue
+        if language and doc.metadata.get("language", "id") != language:
             continue
         key = doc.page_content[:120]   # stable identity key
         faiss_rank[key] = rank
@@ -155,6 +162,7 @@ def retrieve(
     question: str,
     top_k: int = 5,
     domain: str | None = None,
+    language: str | None = None,
     max_score: float = _MAX_SCORE,
     use_hybrid: bool = True,
 ) -> list[RetrievedChunk]:
@@ -164,6 +172,7 @@ def retrieve(
     where BM25 tokenisation is unreliable).
 
     domain     — restricts results to chunks tagged with that domain.
+    language   — restricts results to "id" (Bahasa Indonesia) or "en" (English).
     max_score  — L2 distance ceiling for FAISS results; set to float('inf') to
                  disable filtering.
     use_hybrid — enable BM25 keyword re-ranking alongside FAISS (default True).
@@ -178,15 +187,17 @@ def retrieve(
         return []
 
     # Fetch more candidates so filtering + fusion have enough material to work with
-    fetch_k = max(top_k * 6, 30) if domain else max(top_k * 3, 15)
+    fetch_k = max(top_k * 6, 30) if (domain or language) else max(top_k * 3, 15)
     faiss_results = store.similarity_search_with_score(question, k=fetch_k)
 
     if use_hybrid and len(question.split()) >= 2:
         try:
-            bm25, bm25_docs = _get_bm25(store, domain)
+            bm25, bm25_docs = _get_bm25(store, domain, language)
             if bm25 is not None:
                 bm25_scores = bm25.get_scores(question.lower().split())
-                fused = _rrf_fuse(faiss_results, bm25_docs, bm25_scores, domain, max_score)
+                fused = _rrf_fuse(
+                    faiss_results, bm25_docs, bm25_scores, domain, max_score, language
+                )
                 # fused is sorted by rrf_score desc; extract Document objects
                 chunks = []
                 for doc, _rrf_score in fused:
@@ -194,7 +205,7 @@ def retrieve(
                     chunks.append(
                         RetrievedChunk(
                             text=doc.page_content,
-                            title=meta.get("title", "Dokumen Tanpa Judul"),
+                            title=meta.get("title", "Untitled Document"),
                             source_path=meta.get("source_path", ""),
                             chunk_index=meta.get("chunk_index", 0),
                             score=_rrf_score,
@@ -204,8 +215,8 @@ def retrieve(
                     if len(chunks) >= top_k:
                         break
                 logger.debug(
-                    "Hybrid retrieved %d chunks (domain=%s) for: %.60s",
-                    len(chunks), domain or "any", question,
+                    "Hybrid retrieved %d chunks (domain=%s, language=%s) for: %.60s",
+                    len(chunks), domain or "any", language or "any", question,
                 )
                 return chunks
         except Exception as exc:
@@ -219,10 +230,12 @@ def retrieve(
         meta = doc.metadata
         if domain and meta.get("domain") != domain:
             continue
+        if language and meta.get("language", "id") != language:
+            continue
         chunks.append(
             RetrievedChunk(
                 text=doc.page_content,
-                title=meta.get("title", "Dokumen Tanpa Judul"),
+                title=meta.get("title", "Untitled Document"),
                 source_path=meta.get("source_path", ""),
                 chunk_index=meta.get("chunk_index", 0),
                 score=float(score),
@@ -233,7 +246,7 @@ def retrieve(
             break
 
     logger.debug(
-        "FAISS retrieved %d chunks (domain=%s, max_score=%.2f) for: %.60s",
-        len(chunks), domain or "any", max_score, question,
+        "FAISS retrieved %d chunks (domain=%s, language=%s, max_score=%.2f) for: %.60s",
+        len(chunks), domain or "any", language or "any", max_score, question,
     )
     return chunks

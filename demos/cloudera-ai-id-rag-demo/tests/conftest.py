@@ -60,8 +60,8 @@ def mock_vector_store_with_doc(monkeypatch):
 def mock_db(monkeypatch):
     """Mock database adapter that returns an empty table list."""
     import src.connectors.db_adapter as db_module
-    monkeypatch.setattr(db_module, "get_table_names", lambda: ["kredit_umkm", "nasabah"])
-    return ["kredit_umkm", "nasabah"]
+    monkeypatch.setattr(db_module, "get_table_names", lambda: ["msme_credit", "customer"])
+    return ["msme_credit", "customer"]
 
 
 @pytest.fixture
@@ -77,6 +77,6 @@ def fast_settings(monkeypatch):
     mock_settings.embeddings_model = "intfloat/multilingual-e5-large"
     mock_settings.docs_source_path = "/tmp/test_docs"
     mock_settings.sql_max_rows = 500
-    mock_settings.approved_tables = ["kredit_umkm", "nasabah", "cabang"]
+    mock_settings.approved_tables = ["msme_credit", "customer", "branch"]
     monkeypatch.setattr(settings_module, "settings", mock_settings)
     return mock_settings

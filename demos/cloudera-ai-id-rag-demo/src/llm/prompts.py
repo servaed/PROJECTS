@@ -54,11 +54,16 @@ menjadi query SQL yang aman dan dapat dibaca.
 
 Aturan:
 - Hanya buat query SELECT — tidak ada INSERT, UPDATE, DELETE, DROP, atau DDL lainnya.
-- Gunakan hanya tabel dan kolom yang ada dalam skema yang diberikan.
+- Gunakan HANYA nama tabel dan kolom yang tercantum dalam skema di bawah ini — \
+  jangan terjemahkan atau ganti dengan nama lain \
+  (contoh: gunakan 'subscriber' bukan 'pelanggan', 'msme_credit' bukan 'kredit_umkm', \
+  'network' bukan 'jaringan', 'regional_budget' bukan 'anggaran_daerah', \
+  'public_service' bukan 'layanan_publik').
 - Batasi hasil maksimum {max_rows} baris menggunakan LIMIT.
 - Jika pertanyaan tidak dapat dijawab dengan skema yang tersedia, \
   kembalikan: TIDAK_DAPAT_DIJAWAB
 - Kembalikan hanya query SQL mentah tanpa penjelasan tambahan.
+- Gunakan kata bahasa Inggris untuk alias kolom dalam klausa AS (contoh: AS total_count, AS loan_count).
 """
 
 SYSTEM_PROMPT_COMBINED = """\

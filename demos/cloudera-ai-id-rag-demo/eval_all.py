@@ -12,8 +12,8 @@ def get_samples(domain, lang):
     with urllib.request.urlopen(url) as r:
         return json.load(r)
 
-def ask(question, domain):
-    payload = json.dumps({"question": question, "domain": domain, "history": []}).encode()
+def ask(question, domain, language="id"):
+    payload = json.dumps({"question": question, "domain": domain, "language": language, "history": []}).encode()
     req = urllib.request.Request(
         f"{BASE}/api/chat",
         data=payload,
@@ -82,12 +82,12 @@ for domain in DOMAINS:
             expected_mode = s["mode"]
             print(f"\n[{total:02d}] [{domain}/{lang}] [{expected_mode}]", flush=True)
             print(f"     Q: {q}", flush=True)
-            r = ask(q, domain)
+            r = ask(q, domain, language=lang)
             mode_ok = r["mode"] == expected_mode
             has_answer = len((r["answer"] or "").strip()) > 20
             fallback = any(kw in (r["answer"] or "").lower() for kw in [
-                "tidak ditemukan", "tidak dapat dijawab", "query data tidak",
-                "not found", "cannot be answered",
+                "not found", "cannot be answered", "no relevant documents",
+                "no data", "sql query failed",
             ])
             issues = []
             if not mode_ok:

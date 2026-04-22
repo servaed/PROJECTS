@@ -1,0 +1,152 @@
+MUNICIPAL REVENUE AND EXPENDITURE BUDGET (APBD) MANAGEMENT REGULATION
+Reference: PEMDA/KEU/REG/001/2026-EN | Effective: 1 January 2026
+Issued by: Head of the Regional Finance Management Agency (BPKD), City of Nusantara
+
+CHAPTER I — LEGAL BASIS AND GENERAL PROVISIONS
+
+Article 1 — Legal Basis
+
+a. Law No. 17 of 2003 on State Finance
+b. Law No. 1 of 2004 on State Treasury
+c. Law No. 23 of 2014 on Regional Government
+d. Government Regulation No. 12 of 2019 on Regional Finance Management
+e. Minister of Home Affairs Regulation No. 77 of 2020 on Technical Guidelines for
+   Regional Finance Management
+f. Nusantara City Regional Regulation No. 1 of 2026 on the FY2026 Budget (APBD)
+
+Article 2 — Definitions
+
+2.1 APBD is the annual financial plan of the regional government established by
+    regional regulation (Peraturan Daerah).
+2.2 Budget Ceiling (Pagu) is the maximum approved budget allocation for a programme
+    or activity within a single fiscal year.
+2.3 Budget Realisation is the amount of spending that has actually been incurred and
+    accounted for in a given period.
+2.4 Budget Absorption Rate is the percentage of realised expenditure against the
+    approved budget ceiling.
+2.5 Regional Work Unit (SKPD) is a unit of the regional government organisation
+    responsible for executing specific programmes and activities.
+
+CHAPTER II — NUSANTARA CITY FY2026 BUDGET STRUCTURE
+
+Article 3 — Total Budget and Distribution
+
+Total Nusantara City Budget (APBD) for Fiscal Year 2026:
+- Total Regional Revenue  : IDR 4.82 trillion
+- Total Regional Expenditure: IDR 5.15 trillion
+- Net Financing           : IDR 330 billion (from FY2025 unspent balance / SILPA)
+
+Revenue Composition:
+- Own-Source Revenue / PAD (Local taxes, levies, etc.): IDR 1.95 trillion (40.5%)
+- Central Government Transfers (DAU, DAK, DBH)        : IDR 2.58 trillion (53.5%)
+- Other Legitimate Revenue                             : IDR 290 billion (6.0%)
+
+Article 4 — Expenditure Allocation by Sector
+
+| Sector / SKPD                    | FY2026 Budget      | FY2025 Budget      | Change     |
+|----------------------------------|--------------------|--------------------|------------|
+| Education                         | IDR 1,250 billion  | IDR 1,150 billion  | +8.7%      |
+| Health                            | IDR 820 billion    | IDR 760 billion    | +7.9%      |
+| Public Works and Spatial Planning | IDR 680 billion    | IDR 720 billion    | -5.6%      |
+| Transportation                    | IDR 540 billion    | IDR 500 billion    | +8.0%      |
+| Social Welfare                    | IDR 310 billion    | IDR 290 billion    | +6.9%      |
+| Environmental Services (DLHK)     | IDR 275 billion    | IDR 250 billion    | +10.0%     |
+| Disaster Management (BPBD)        | IDR 185 billion    | IDR 160 billion    | +15.6%     |
+| Licensing Office (DPTSP)          | IDR 95 billion     | IDR 85 billion     | +11.8%     |
+| Government Administration         | IDR 620 billion    | IDR 590 billion    | +5.1%      |
+| Other                             | IDR 375 billion    | IDR 340 billion    | +10.3%     |
+
+CHAPTER III — BUDGET CYCLE AND EXECUTION
+
+Article 5 — Budget Cycle Schedule
+
+Standard schedule for FY2026 budget execution:
+
+Planning and Adoption:
+- Village-level Musrenbang       : January–February (completed)
+- District-level Musrenbang      : February (completed)
+- City-level Musrenbang          : March (completed)
+- RKPD (Work Plan) adoption      : May 2025 (completed)
+- FY2026 APBD adoption           : December 2025 (completed)
+
+Execution:
+- Preparation of SKPD Budget Documents (DPA): January 2026 (completed)
+- Q1 budget execution            : January–March 2026
+- Q1 evaluation                  : April 2026
+- Q2 budget execution            : April–June 2026
+- Q2 evaluation + Budget revision: July–August 2026
+- Q3 execution                   : July–September 2026
+- Q4 execution                   : October–December 2026
+
+Accountability:
+- Financial statement preparation : January–February 2027
+- BPK (Supreme Audit Agency) audit: March–May 2027
+- Adoption of LKPD Regional Regulation: July 2027
+
+Article 6 — Quarterly Budget Absorption Targets
+
+Cumulative budget absorption targets set by the Mayor:
+
+| Quarter | Cumulative Absorption Target | Minimum Threshold |
+|---------|------------------------------|-------------------|
+| Q1      | 20% of ceiling               | 15%               |
+| Q2      | 45% of ceiling               | 38%               |
+| Q3      | 70% of ceiling               | 60%               |
+| Q4      | 95% of ceiling               | 85%               |
+
+Note: The minimum threshold is the floor that must not be breached below.
+SKPDs that fail to meet the minimum threshold must submit a report and
+acceleration plan to the Budget Team (TAPD) within 5 business days.
+
+CHAPTER IV — CONTROL REQUIREMENTS AND SANCTIONS
+
+Article 7 — Monitoring Mechanism
+
+Budget realisation monitoring is carried out by:
+a. SKPD internal review: every 2 weeks by the SKPD Head
+b. BPKD: monthly, with report to the Regional Secretary
+c. Regional Inspectorate: quarterly budget performance audit
+d. Budget Team (TAPD): comprehensive evaluation per quarter
+
+Article 8 — Sanctions for Low Absorption
+
+SKPDs with low budget realisation face progressive sanctions:
+
+Absorption below the Q3 minimum threshold (below 60% of ceiling):
+- SKPD Head summoned by the Regional Secretary
+- Obligation to submit a budget acceleration plan within 5 business days
+- Restriction on submitting supplementary budget requests for the following year
+
+End-of-year absorption below 75% of ceiling (penalty threshold exceeded):
+- Mandatory return of remaining budget to the regional treasury
+- Budget ceiling for the following year reduced by 2x the shortfall from the minimum
+  Example: absorption 65% (10% below the 75% floor) → next year's ceiling cut by 20%
+- SKPD Head performance evaluation by the Mayor
+- Inspectorate recommendation for further review if irregularities are suspected
+
+End-of-year absorption below 60% of ceiling (very low absorption):
+- All of the above sanctions apply
+- Special audit by the Inspectorate within 30 days after fiscal year close
+- Report to the Supreme Audit Agency (BPK) and Regional House of Representatives (DPRD)
+- SKPD institutional review (potential merger or restructuring)
+
+Article 9 — Efficiency and Savings Recognition
+
+SKPDs that execute programmes with 90–100% absorption and achieve performance
+targets (outputs and outcomes) receive:
+- Priority consideration in the following year's budget planning
+- Additional civil servant performance incentive as permitted by regulations
+- Mayor's award for the best-performing budget unit
+
+Article 10 — Financial Reporting Requirements
+
+Mandatory financial reports produced by each SKPD:
+- Budget Realisation Report (LRA): monthly, no later than the 10th of the following month
+- Operations Report (LO): quarterly
+- Cash Flow Statement (LAK): monthly for SKPDs managing collection/disbursement accounts
+- Balance Sheet: semi-annual
+- Notes to Financial Statements (CaLK): annual
+
+Issued in Nusantara City, 1 January 2026
+Head of BPKD     : Dra. Sri Wahyuni, M.M., Ak., CA
+Regional Secretary: Dr. Andi Prasetyo, M.Si.

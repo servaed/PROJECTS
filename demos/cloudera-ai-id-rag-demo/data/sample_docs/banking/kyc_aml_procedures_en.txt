@@ -1,0 +1,170 @@
+KNOW YOUR CUSTOMER (KYC) AND ANTI-MONEY LAUNDERING (AML) PROCEDURES
+Reference: KYC/PROC/002/2026-EN | Revision: 5.1 | Effective: 1 January 2026
+Issued by: Compliance Director, PT Bank Nusantara Tbk
+
+CHAPTER I — LEGAL BASIS AND GENERAL PROVISIONS
+
+Article 1 — Legal Basis
+
+1.1 Law No. 8 of 2010 on Prevention and Eradication of Money Laundering (TPPU)
+1.2 POJK No. 12/POJK.01/2017 on Implementation of AML and Counter-Terrorism Financing
+    Programmes in the Financial Services Sector
+1.3 Bank Indonesia Regulation No. 19/10/PBI/2017 on Anti-Money Laundering Implementation
+1.4 FATF Recommendations 2012 (40 international AML standards)
+
+Article 2 — Definitions
+
+2.1 Customer Due Diligence (CDD): the process of identifying, verifying, and monitoring customers.
+2.2 Enhanced Due Diligence (EDD): strengthened CDD procedures for high-risk customers.
+2.3 Simplified Due Diligence (SDD): simplified CDD procedures for low-risk customers.
+2.4 Politically Exposed Person (PEP): an individual who holds or has held a prominent public
+    position at the national or international level, including immediate family and close associates.
+2.5 Beneficial Owner (BO): a natural person who directly or indirectly owns or controls the
+    customer, and/or who is the ultimate beneficiary of a transaction.
+2.6 Suspicious Transaction Report (STR): a report of suspicious financial transactions submitted
+    to the Financial Intelligence Unit (PPATK).
+
+CHAPTER II — CUSTOMER RISK CLASSIFICATION
+
+Article 3 — Risk Tiers
+
+The bank classifies customer risk into three tiers:
+
+Low Risk:
+- Civil servants (non-officials) with regular salary
+- Retirees with fixed income from a pension fund
+- Students with verified parental funding
+- Micro/small businesses with annual turnover below IDR 300 million
+- Applicable procedure: SDD (Simplified Due Diligence)
+
+Medium Risk:
+- Self-employed individuals with annual turnover IDR 300 million – IDR 10 billion
+- Independent professionals (doctors, lawyers, accountants, consultants)
+- Domestic corporations not classified as high-risk
+- Applicable procedure: standard CDD
+
+High Risk — EDD mandatory:
+- Politically Exposed Persons (PEPs) and their family members/close associates
+- Customers from countries on the FATF non-cooperative countries list
+- Money service businesses (money changers, remittance operators)
+- Dealers in luxury goods (gold, gems, premium vehicles)
+- Non-profit organisations with significant cross-border transactions
+- Customers who refuse to provide information requested by the bank
+
+CHAPTER III — STANDARD CDD PROCEDURES
+
+Article 4 — Individual Customer Identification
+
+Mandatory identification documents:
+a. National ID card (KTP Elektronik) — original and photocopy, required for all Indonesian citizens
+b. Valid passport for foreign nationals
+c. KITAS/KITAP for foreign nationals residing in Indonesia
+d. Tax ID (NPWP) — mandatory for transactions above IDR 100 million or business account opening
+
+Information that must be obtained and verified:
+- Full name as shown on official identification
+- Place and date of birth
+- Nationality and residential status
+- Home address and mailing address
+- Tax identification number (NPWP)
+- Occupation and employer name and address
+- Purpose of account opening and expected source of funds
+- Estimated monthly transaction frequency and value
+- Confirmation of whether the customer is a PEP
+
+Article 5 — Corporate Customer Identification
+
+For corporate customers, the bank must obtain:
+
+Corporate documents:
+- Articles of incorporation and all amendments ratified by the Ministry of Law (for PT)
+- Business license (SIUP/TDP) or Business Identification Number (NIB)
+- Corporate Tax ID (NPWP Badan)
+- Domicile certificate or evidence of business premises
+- Latest financial statements (audited for companies with turnover above IDR 50 billion)
+
+Beneficial ownership information:
+- Identity of all shareholders/cooperative members holding more than 25% (KTP/Passport copy)
+- Confirmation of whether any beneficial owner is a PEP
+- Ownership structure chart down to the ultimate beneficial owner (UBO)
+
+Article 6 — Document Verification
+
+Accepted verification methods:
+a. In-person verification at a branch office — standard for all segments
+b. Video call with a trained bank officer — for customers beyond branch reach
+c. e-KYC via BankNusa Mobile app — for low-risk customers, limits up to IDR 200 million
+d. OJK-accredited third party — with cooperation agreement and bank oversight
+
+Article 7 — Enhanced Due Diligence (EDD)
+
+For high-risk customers, the bank must carry out:
+a. Mandatory in-person verification by a bank official (at least section head level)
+b. Comprehensive source of wealth identification
+c. Senior management approval before the business relationship commences
+d. Enhanced transaction monitoring: monthly report to the Compliance Officer
+e. Customer profile review every 6 months (standard CDD customers: every 12 months)
+
+CHAPTER IV — ONGOING TRANSACTION MONITORING
+
+Article 8 — Reporting Thresholds
+
+Transactions that must be reported to PPATK:
+
+Cash Transaction Reports (CTR):
+- Cash transactions of IDR 500 million or more in a single day
+- Multiple cash transactions that appear related with a cumulative total exceeding IDR 500 million/day
+
+Suspicious Transaction Reports (STR):
+- Transactions inconsistent with the customer's profile without a reasonable explanation
+- Transactions suspected to be proceeds of a criminal offence
+- Customers who refuse to provide requested information or provide false information
+- Transfers to/from countries on the FATF non-cooperative countries list
+
+Cross-Border Wire Transfer Reports:
+- Any outward wire transfer of IDR 1 billion or more
+
+Article 9 — Account Freezing and Closure
+
+The bank has the right to freeze accounts and refuse transactions when:
+a. The customer is on a list of suspected terrorists or terrorism financiers
+b. The customer is subject to international sanctions (OFAC, UN Security Council)
+c. There is a freeze order from PPATK or a competent law enforcement authority
+d. The customer is proven to have provided false information during KYC
+
+CHAPTER V — DATA REFRESH AND PERIODIC REVIEW
+
+Article 10 — KYC Review Schedule
+
+| Risk Category | Review Frequency | Additional Review Trigger         |
+|--------------|-----------------|----------------------------------|
+| Low          | Every 24 months | Transaction profile change >50%  |
+| Medium       | Every 12 months | Transaction profile change >30%  |
+| High         | Every 6 months  | Any anomalous transaction        |
+
+Article 11 — Consequences of Non-Compliance
+
+The bank may apply the following measures for uncooperative customers:
+a. Partial transaction restriction (partial freeze) until data is updated
+b. Account closure with 30 days' written notice
+c. Report to PPATK as a suspicious transaction
+d. Denial of all bank products and services
+
+CHAPTER VI — TRAINING AND INTERNAL COMPLIANCE
+
+Article 12 — Employee Training Requirements
+
+All bank employees who interact with customers must complete:
+- Mandatory AML/CFT training: minimum 8 hours per year
+- Internal KYC certification: mandatory before front-office assignment
+- Regulatory comprehension test: every 2 years or after significant regulatory changes
+
+Article 13 — Internal Reporting
+
+The Compliance Officer must submit reports to the Compliance Director:
+- Monthly CTR and STR summary
+- Semi-annual KYC implementation progress report
+- Annual KYC audit results report
+
+Issued in Jakarta, 1 January 2026
+Compliance Director: Irma Suryani, S.H., M.H.

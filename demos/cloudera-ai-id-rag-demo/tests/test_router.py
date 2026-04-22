@@ -38,18 +38,18 @@ def _mock_llm(content: str) -> MagicMock:
 ])
 def test_classify_known_responses(llm_reply, expected_mode):
     with patch("src.orchestration.router.get_llm_client", return_value=_mock_llm(llm_reply)):
-        assert classify_question("pertanyaan apapun") == expected_mode
+        assert classify_question("any question") == expected_mode
 
 
 def test_classify_unknown_response_defaults_to_dokumen():
     """Unknown LLM replies must fall back to 'dokumen' — safer than SQL."""
     with patch("src.orchestration.router.get_llm_client", return_value=_mock_llm("UNKNOWN_LABEL")):
-        assert classify_question("apa itu?") == "dokumen"
+        assert classify_question("what is this?") == "dokumen"
 
 
 def test_classify_empty_response_defaults_to_dokumen():
     with patch("src.orchestration.router.get_llm_client", return_value=_mock_llm("")):
-        assert classify_question("apa itu?") == "dokumen"
+        assert classify_question("what is this?") == "dokumen"
 
 
 def test_classify_llm_error_defaults_to_dokumen():
@@ -57,7 +57,7 @@ def test_classify_llm_error_defaults_to_dokumen():
     client = MagicMock()
     client.chat.side_effect = RuntimeError("connection refused")
     with patch("src.orchestration.router.get_llm_client", return_value=client):
-        assert classify_question("apa itu?") == "dokumen"
+        assert classify_question("what is this?") == "dokumen"
 
 
 # ── Sample question routing ───────────────────────────────────────────────
@@ -65,21 +65,21 @@ def test_classify_llm_error_defaults_to_dokumen():
 def test_document_question_routed(monkeypatch):
     """Questions about policies should route to 'dokumen'."""
     with patch("src.orchestration.router.get_llm_client", return_value=_mock_llm("dokumen")):
-        mode = classify_question("Jelaskan ketentuan restrukturisasi kredit.")
+        mode = classify_question("Explain the credit restructuring conditions.")
     assert mode == "dokumen"
 
 
 def test_data_question_routed(monkeypatch):
     """Questions asking for numbers/aggregates should route to 'data'."""
     with patch("src.orchestration.router.get_llm_client", return_value=_mock_llm("data")):
-        mode = classify_question("Berapa total outstanding UMKM Jakarta Maret 2026?")
+        mode = classify_question("What is the total MSME outstanding in Jakarta March 2026?")
     assert mode == "data"
 
 
 def test_combined_question_routed(monkeypatch):
     """Questions needing both documents and data should route to 'gabungan'."""
     with patch("src.orchestration.router.get_llm_client", return_value=_mock_llm("gabungan")):
-        mode = classify_question("Apakah tren outstanding sesuai kebijakan ekspansi UMKM?")
+        mode = classify_question("Does the outstanding trend align with the MSME expansion policy?")
     assert mode == "gabungan"
 
 

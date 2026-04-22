@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cloudera AI — Explorer</title>
+  <script>
+    (function(){
+      var t = localStorage.getItem('cld-theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F9FA; --surface: #FFFFFF; --s2: #F1F3F4; --s3: #E8EAED;
+      --border: #DADCE0;
+      --orange: #F96702; --o-dim: rgba(249,103,2,0.08); --o-text: #C94F00;
+      --teal: #00796B; --t-dim: rgba(0,121,107,0.08);
+      --indigo: #5C6BC0; --i-dim: rgba(92,107,192,0.08);
+      --green: #34A853; --g-dim: rgba(52,168,83,0.08);
+      --red: #EA4335; --r-dim: rgba(234,67,53,0.08);
+      --t1: #202124; --t2: #5F6368; --t3: #9AA0A6;
+      --font: 'Google Sans', system-ui, sans-serif;
+      --display: 'Google Sans Display', 'Google Sans', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --logo-filter: brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%);
+      --radius: 12px; --radius-sm: 8px;
+    }
+    [data-theme="dark"] {
+      --bg: #0D1117; --surface: #161C27; --s2: #1C2538; --s3: #232E44;
+      --border: rgba(255,255,255,0.08);
+      --o-text: #F96702; --teal: #00A591; --indigo: #818CF8;
+      --t1: #E8EDF5; --t2: #8E9BB5; --t3: #4A5470;
+    }
+    html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--t1); }
+
+    /* ── Top bar ── */
+    .topbar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 24px; height: 64px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .topbar img { height: 20px; filter: var(--logo-filter); }
+    .topbar-title {
+      font-family: var(--display); font-size: 0.95rem; font-weight: 700;
+      color: var(--t1); letter-spacing: -0.01em;
+    }
+    .topbar-title span { color: var(--orange); }
+    .topbar-sep { width: 1px; height: 20px; background: var(--border); }
+    .topbar-links { display: flex; gap: 4px; margin-left: auto; }
+    .topbar-link {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 500;
+      color: var(--t2); text-decoration: none; border: 1px solid var(--border);
+      background: var(--s2); cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .topbar-link:hover { background: var(--s3); color: var(--t1); }
+    .topbar-link.active { background: var(--o-dim); color: var(--o-text); border-color: rgba(249,103,2,0.3); }
+    .theme-btn { border: 1px solid var(--border); font-size: 14px; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; gap: 0; padding: 0 24px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      padding: 12px 20px; font-size: 14px; font-weight: 500; cursor: pointer;
+      border: none; background: none; color: var(--t2);
+      border-bottom: 2px solid transparent; transition: color 0.15s;
+    }
+    .tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
+    .tab-btn:hover:not(.active) { color: var(--t1); }
+
+    /* ── Layout ── */
+    .content { display: none; height: calc(100vh - 121px); }
+    .content.active { display: flex; }
+
+    /* ── SQL Editor panel ── */
+    .sql-sidebar {
+      width: 260px; min-width: 200px; max-width: 320px;
+      background: var(--surface); border-right: 1px solid var(--border);
+      overflow-y: auto; flex-shrink: 0;
+    }
+    .sidebar-header {
+      padding: 14px 16px 8px; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--t3);
+    }
+    .table-item {
+      border-bottom: 1px solid var(--border);
+    }
+    .table-item-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px; cursor: pointer; user-select: none;
+      transition: background 0.12s;
+    }
+    .table-item-header:hover { background: var(--s2); }
+    .table-name { font-size: 13px; font-weight: 600; color: var(--t1); flex: 1; font-family: var(--mono); }
+    .table-badge {
+      font-size: 11px; padding: 1px 6px; border-radius: 10px;
+      background: var(--o-dim); color: var(--o-text); font-weight: 500;
+    }
+    .chevron { font-size: 10px; color: var(--t3); transition: transform 0.2s; }
+    .table-item.open .chevron { transform: rotate(90deg); }
+    .col-list { display: none; padding: 4px 0 8px 16px; }
+    .table-item.open .col-list { display: block; }
+    .col-item { display: flex; gap: 8px; padding: 2px 0; align-items: baseline; }
+    .col-name { font-size: 12px; font-family: var(--mono); color: var(--t1); }
+    .col-type { font-size: 11px; color: var(--t3); }
+    .quick-btn {
+      margin: 4px 16px 8px; display: block; width: calc(100% - 32px);
+      padding: 4px 8px; font-size: 11px; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--s2); color: var(--t2);
+      cursor: pointer; text-align: left; font-family: var(--mono);
+      transition: background 0.12s;
+    }
+    .quick-btn:hover { background: var(--s3); color: var(--t1); }
+
+    .sql-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .editor-area {
+      padding: 16px; border-bottom: 1px solid var(--border); background: var(--surface);
+    }
+    .editor-top { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .editor-label { font-size: 12px; font-weight: 600; color: var(--t2); }
+    .run-btn {
+      margin-left: auto; padding: 7px 18px; border-radius: 20px; border: none;
+      background: var(--orange); color: #fff; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .run-btn:hover { opacity: 0.88; }
+    .run-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .sql-textarea {
+      width: 100%; height: 110px; padding: 10px 12px;
+      font-family: var(--mono); font-size: 13px; line-height: 1.5;
+      background: var(--s2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--t1); resize: vertical; outline: none;
+      transition: border-color 0.15s;
+    }
+    .sql-textarea:focus { border-color: var(--orange); }
+
+    .results-area { flex: 1; overflow: auto; padding: 16px; }
+    .results-meta {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 12px; font-size: 12px; color: var(--t2);
+    }
+    .results-count { font-weight: 600; color: var(--t1); }
+    .error-box {
+      padding: 12px 16px; border-radius: var(--radius-sm);
+      background: var(--r-dim); border: 1px solid rgba(234,67,53,0.2);
+      color: var(--red); font-size: 13px; font-family: var(--mono);
+    }
+    .results-table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      background: var(--s2); padding: 8px 12px; text-align: left;
+      font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--t2); border-bottom: 2px solid var(--border);
+      position: sticky; top: 0; white-space: nowrap;
+    }
+    td { padding: 7px 12px; border-bottom: 1px solid var(--border); color: var(--t1); }
+    tr:hover td { background: var(--s2); }
+    td.num { text-align: right; font-family: var(--mono); }
+    td.null { color: var(--t3); font-style: italic; }
+
+    /* ── Docs panel ── */
+    .docs-content { padding: 20px 24px; overflow-y: auto; width: 100%; }
+    .docs-toolbar {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .docs-title { font-size: 16px; font-weight: 600; }
+    .docs-count { font-size: 13px; color: var(--t2); }
+    .filter-group { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+      background: none; font-size: 12px; font-weight: 500; color: var(--t2);
+      cursor: pointer; transition: all 0.12s;
+    }
+    .filter-btn:hover, .filter-btn.active { border-color: var(--orange); background: var(--o-dim); color: var(--orange); }
+
+    .docs-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px;
+    }
+    .doc-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .doc-card:hover { border-color: var(--orange); box-shadow: 0 2px 8px rgba(249,103,2,0.1); }
+    .doc-card-top { display: flex; align-items: flex-start; gap: 10px; }
+    .doc-icon { font-size: 24px; flex-shrink: 0; }
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-name {
+      font-size: 13px; font-weight: 600; color: var(--t1);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .doc-path { font-size: 11px; color: var(--t3); margin-top: 1px; font-family: var(--mono); }
+    .doc-meta { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+    .badge {
+      font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 10px;
+    }
+    .badge-banking  { background: var(--o-dim); color: var(--o-text); }
+    .badge-telco    { background: var(--i-dim); color: var(--indigo); }
+    .badge-government { background: var(--t-dim); color: var(--teal); }
+    .badge-general  { background: var(--s3); color: var(--t2); }
+    .badge-id       { background: #fff3e0; color: #e65100; }
+    .badge-en       { background: #e8f5e9; color: #2e7d32; }
+    [data-theme="dark"] .badge-id  { background: rgba(230,81,0,0.15); color: #ff8f00; }
+    [data-theme="dark"] .badge-en  { background: rgba(46,125,50,0.15); color: #66bb6a; }
+    .doc-size { font-size: 11px; color: var(--t3); margin-left: auto; }
+
+    /* ── Empty / loading states ── */
+    .state-box {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 60px 20px; color: var(--t3); gap: 10px;
+    }
+    .state-icon { font-size: 36px; }
+    .state-text { font-size: 14px; }
+    .spinner {
+      width: 20px; height: 20px; border: 2px solid var(--border);
+      border-top-color: var(--orange); border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <!-- Top bar -->
+  <div class="topbar">
+    <a href="/"><img src="/static/cloudera-logo.png" alt="Cloudera"/></a>
+    <div class="topbar-sep"></div>
+    <div class="topbar-title">Enterprise <span>Assistant</span> — Explorer</div>
+    <nav class="topbar-links">
+      <a class="topbar-link" href="/">💬 Chat</a>
+      <a class="topbar-link active" href="/explorer">🗄 SQL Explorer</a>
+      <a class="topbar-link" href="/upload">↑ Upload</a>
+      <a class="topbar-link" href="/setup">◎ Setup</a>
+      <a class="topbar-link" href="/configure">⚙ Configure</a>
+      <button class="topbar-link theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
+    </nav>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('sql', this)">SQL Query Editor</button>
+    <button class="tab-btn" onclick="switchTab('docs', this)">Documents Browser</button>
+  </div>
+
+  <!-- SQL Tab -->
+  <div id="tab-sql" class="content active">
+    <div class="sql-sidebar" id="sidebar">
+      <div class="sidebar-header">Tables</div>
+      <div id="table-list"><div class="state-box"><div class="spinner"></div></div></div>
+    </div>
+    <div class="sql-main">
+      <div class="editor-area">
+        <div class="editor-top">
+          <span class="editor-label">SQL Query</span>
+          <button class="run-btn" id="run-btn" onclick="runQuery()">&#9654; Run</button>
+        </div>
+        <textarea class="sql-textarea" id="sql-input"
+          placeholder="SELECT * FROM msme_credit LIMIT 10"
+          onkeydown="handleKey(event)"></textarea>
+      </div>
+      <div class="results-area" id="results-area">
+        <div class="state-box">
+          <div class="state-icon">⌨</div>
+          <div class="state-text">Write a query and click Run (or Ctrl+Enter)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Docs Tab -->
+  <div id="tab-docs" class="content">
+    <div class="docs-content">
+      <div class="docs-toolbar">
+        <span class="docs-title">Knowledge Base Documents</span>
+        <span class="docs-count" id="docs-count"></span>
+        <div class="filter-group" id="domain-filters">
+          <button class="filter-btn active" data-domain="all" onclick="filterDomain(this)">All</button>
+          <button class="filter-btn" data-domain="banking" onclick="filterDomain(this)">Banking</button>
+          <button class="filter-btn" data-domain="telco" onclick="filterDomain(this)">Telco</button>
+          <button class="filter-btn" data-domain="government" onclick="filterDomain(this)">Government</button>
+        </div>
+        <div class="filter-group">
+          <button class="filter-btn active" data-lang="all" onclick="filterLang(this)">All Languages</button>
+          <button class="filter-btn" data-lang="id" onclick="filterLang(this)">Bahasa Indonesia</button>
+          <button class="filter-btn" data-lang="en" onclick="filterLang(this)">English</button>
+        </div>
+        <a href="/upload" style="text-decoration:none;">
+          <button class="run-btn" style="margin:0">+ Upload Doc</button>
+        </a>
+      </div>
+      <div class="docs-grid" id="docs-grid">
+        <div class="state-box"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ── Theme ──────────────────────────────────────────────────────────────────
+  function toggleTheme() {
+    var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('cld-theme', t);
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────────────────────
+  function switchTab(id, btn) {
+    document.querySelectorAll('.content').forEach(function(el) { el.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+    if (id === 'docs' && !_docsLoaded) loadDocs();
+  }
+
+  // ── SQL Editor ─────────────────────────────────────────────────────────────
+  var _tables = [];
+
+  function handleKey(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runQuery(); }
+  }
+
+  function loadTables() {
+    fetch('/api/sql/tables').then(function(r) { return r.json(); }).then(function(data) {
+      _tables = data.tables || [];
+      renderSidebar();
+    }).catch(function() {
+      document.getElementById('table-list').innerHTML =
+        '<div class="state-box"><div class="state-text">Failed to load tables</div></div>';
+    });
+  }
+
+  function renderSidebar() {
+    var html = '';
+    _tables.forEach(function(t) {
+      html += '<div class="table-item" id="tbl-' + t.name + '">';
+      html += '<div class="table-item-header" onclick="toggleTable(\'' + t.name + '\')">';
+      html += '<span class="table-name">' + t.name + '</span>';
+      html += '<span class="table-badge">' + t.columns.length + ' cols</span>';
+      html += '<span class="chevron">&#9656;</span>';
+      html += '</div>';
+      html += '<div class="col-list">';
+      t.columns.forEach(function(c) {
+        html += '<div class="col-item"><span class="col-name">' + c.name + '</span>';
+        html += '<span class="col-type">' + c.type + '</span></div>';
+      });
+      html += '<button class="quick-btn" onclick="quickQuery(\'' + t.name + '\')">SELECT * FROM ' + t.name + ' LIMIT 10</button>';
+      html += '</div></div>';
+    });
+    document.getElementById('table-list').innerHTML = html || '<div class="state-box"><div class="state-text">No tables found</div></div>';
+  }
+
+  function toggleTable(name) {
+    var el = document.getElementById('tbl-' + name);
+    el.classList.toggle('open');
+  }
+
+  function quickQuery(name) {
+    document.getElementById('sql-input').value = 'SELECT * FROM ' + name + ' LIMIT 10';
+    runQuery();
+  }
+
+  function runQuery() {
+    var sql = document.getElementById('sql-input').value.trim();
+    if (!sql) return;
+    var btn = document.getElementById('run-btn');
+    btn.disabled = true;
+    btn.textContent = 'Running…';
+    document.getElementById('results-area').innerHTML = '<div class="state-box"><div class="spinner"></div><div class="state-text">Executing…</div></div>';
+
+    fetch('/api/sql/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sql: sql })
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      btn.disabled = false;
+      btn.innerHTML = '&#9654; Run';
+      renderResults(data);
+    }).catch(function(err) {
+      btn.disabled = false;
+      btn.innerHTML = '&#9654; Run';
+      document.getElementById('results-area').innerHTML =
+        '<div class="error-box">Network error: ' + err.message + '</div>';
+    });
+  }
+
+  function renderResults(data) {
+    var area = document.getElementById('results-area');
+    if (!data.ok) {
+      area.innerHTML = '<div class="error-box">' + escHtml(data.error) + '</div>';
+      return;
+    }
+    if (!data.rows || data.rows.length === 0) {
+      area.innerHTML = '<div class="state-box"><div class="state-icon">🔍</div><div class="state-text">Query returned 0 rows</div></div>';
+      return;
+    }
+    var cols = Object.keys(data.rows[0]);
+    var html = '<div class="results-meta"><span class="results-count">' + data.count + ' rows</span><span>· ' + escHtml(data.sql) + '</span></div>';
+    html += '<div class="results-table-wrap"><table><thead><tr>';
+    cols.forEach(function(c) { html += '<th>' + escHtml(c) + '</th>'; });
+    html += '</tr></thead><tbody>';
+    data.rows.forEach(function(row) {
+      html += '<tr>';
+      cols.forEach(function(c) {
+        var v = row[c];
+        if (v === null || v === undefined) {
+          html += '<td class="null">NULL</td>';
+        } else if (typeof v === 'number') {
+          html += '<td class="num">' + escHtml(String(v)) + '</td>';
+        } else {
+          html += '<td>' + escHtml(String(v)) + '</td>';
+        }
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    area.innerHTML = html;
+  }
+
+  // ── Docs Browser ───────────────────────────────────────────────────────────
+  var _docsLoaded = false;
+  var _allDocs = [];
+  var _domainFilter = 'all';
+  var _langFilter = 'all';
+
+  function loadDocs() {
+    _docsLoaded = true;
+    fetch('/api/docs/list').then(function(r) { return r.json(); }).then(function(data) {
+      _allDocs = data.docs || [];
+      renderDocs();
+    }).catch(function() {
+      document.getElementById('docs-grid').innerHTML =
+        '<div class="state-box"><div class="state-text">Failed to load documents</div></div>';
+    });
+  }
+
+  function filterDomain(btn) {
+    document.querySelectorAll('[data-domain]').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    _domainFilter = btn.getAttribute('data-domain');
+    renderDocs();
+  }
+
+  function filterLang(btn) {
+    document.querySelectorAll('[data-lang]').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    _langFilter = btn.getAttribute('data-lang');
+    renderDocs();
+  }
+
+  function renderDocs() {
+    var filtered = _allDocs.filter(function(d) {
+      return (_domainFilter === 'all' || d.domain === _domainFilter) &&
+             (_langFilter === 'all' || d.language === _langFilter);
+    });
+    document.getElementById('docs-count').textContent = filtered.length + ' of ' + _allDocs.length + ' documents';
+
+    if (filtered.length === 0) {
+      document.getElementById('docs-grid').innerHTML =
+        '<div class="state-box"><div class="state-icon">📭</div><div class="state-text">No documents match the selected filters</div></div>';
+      return;
+    }
+
+    var icons = { PDF: '📄', DOCX: '📝', TXT: '📃', MD: '📋' };
+    var html = '';
+    filtered.forEach(function(d) {
+      var icon = icons[d.file_type] || '📄';
+      var domainClass = 'badge-' + d.domain;
+      var langLabel = d.language === 'en' ? 'EN' : 'ID';
+      var size = d.size_bytes < 1024 ? d.size_bytes + ' B'
+               : d.size_bytes < 1048576 ? Math.round(d.size_bytes / 1024) + ' KB'
+               : (d.size_bytes / 1048576).toFixed(1) + ' MB';
+      html += '<div class="doc-card">';
+      html += '<div class="doc-card-top">';
+      html += '<div class="doc-icon">' + icon + '</div>';
+      html += '<div class="doc-info">';
+      html += '<div class="doc-name" title="' + escHtml(d.path) + '">' + escHtml(d.name) + '</div>';
+      html += '<div class="doc-path">' + escHtml(d.path) + '</div>';
+      html += '</div></div>';
+      html += '<div class="doc-meta">';
+      html += '<span class="badge ' + domainClass + '">' + d.domain + '</span>';
+      html += '<span class="badge badge-' + d.language + '">' + langLabel + '</span>';
+      html += '<span class="badge" style="background:var(--s3);color:var(--t2)">' + d.file_type + '</span>';
+      html += '<span class="doc-size">' + size + '</span>';
+      html += '</div></div>';
+    });
+    document.getElementById('docs-grid').innerHTML = html;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  loadTables();
+</script>
+</body>
+</html>

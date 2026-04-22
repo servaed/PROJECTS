@@ -111,25 +111,16 @@ else
     echo "[2/5] Provider SDK: not required for '$LLM_PROVIDER'."
 fi
 
-# ── Step 3: Seed demo database ────────────────────────────────────────────
-DB_PATH="./data/sample_tables/demo.db"
-if [ ! -f "$DB_PATH" ]; then
-    echo "[3/5] Seeding demo database..."
-    python data/sample_tables/seed_database.py
-    echo "[3/5] Database seeded at $DB_PATH."
+# ── Step 3: Seed Parquet files for DuckDB ────────────────────────────────
+PARQUET_DIR="${DUCKDB_PARQUET_DIR:-./data/parquet}"
+PARQUET_CHECK="$PARQUET_DIR/msme_credit.parquet"
+if [ ! -f "$PARQUET_CHECK" ]; then
+    echo "[3/5] Seeding Parquet files at $PARQUET_DIR ..."
+    python data/sample_tables/seed_parquet.py --dir "$PARQUET_DIR"
+    echo "[3/5] Parquet files written."
 else
-    # Verify it has the expected tables
-    TABLE_COUNT=$(python -c "
-import sqlite3; conn = sqlite3.connect('$DB_PATH')
-count = len(conn.execute(\"SELECT name FROM sqlite_master WHERE type='table'\").fetchall())
-print(count)
-conn.close()
-" 2>/dev/null || echo "0")
-    echo "[3/5] Database: found ($TABLE_COUNT tables)."
-    if [ "$TABLE_COUNT" = "0" ]; then
-        echo "[3/5] Database appears empty — re-seeding..."
-        python data/sample_tables/seed_database.py
-    fi
+    PARQUET_COUNT=$(ls "$PARQUET_DIR"/*.parquet 2>/dev/null | wc -l)
+    echo "[3/5] Parquet: found $PARQUET_COUNT files in $PARQUET_DIR."
 fi
 
 # ── Step 4: Ingest documents into vector store ────────────────────────────

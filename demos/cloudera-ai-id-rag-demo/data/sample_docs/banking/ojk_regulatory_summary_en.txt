@@ -1,0 +1,128 @@
+OJK REGULATORY SUMMARY — SME CREDIT OPERATIONS
+Reference: REG/OJK/003/2026-EN | Effective: 1 January 2026
+Prepared by: Legal and Compliance Division, PT Bank Nusantara Tbk
+
+PART I — CORE BANKING CREDIT REGULATIONS
+
+1. POJK No. 40/POJK.03/2019 — Assessment of Commercial Bank Asset Quality
+
+Key provisions summary:
+
+1.1 Credit quality classifications and minimum provisions:
+    - Performing (Lancar)          : minimum 1% provision of outstanding
+    - Special Mention (DPK)        : minimum 5% provision of outstanding
+    - Substandard (Kurang Lancar)  : minimum 15% provision of outstanding
+    - Doubtful (Diragukan)         : minimum 50% provision of outstanding
+    - Loss (Macet)                 : minimum 100% provision of outstanding
+
+1.2 Write-off of non-performing loans:
+    Banks must write off loans classified as Loss that have been in arrears for more
+    than 270 days with no realistic prospect of recovery. Write-off does not extinguish
+    the bank's right to pursue collection from the borrower.
+
+1.3 Loan restructuring:
+    A restructured loan may be reclassified as Performing (Lancar) if the borrower
+    makes three consecutive on-time payments after restructuring.
+
+2. POJK No. 11/POJK.03/2020 — National Economic Stimulus (Extended through 2025)
+
+2.1 Simplified restructuring for pandemic-affected borrowers:
+    - Credit quality may be immediately reclassified as Performing after restructuring
+    - No new collectibility analysis required for limits up to IDR 10 billion
+
+2.2 Current status: normalisation provisions came into full effect on 1 January 2026.
+    All credits previously under stimulus are again subject to POJK 40/2019.
+
+3. POJK No. 6/POJK.03/2022 — Legal Lending Limit (LLL / BMPK)
+
+3.1 LLL for related parties: maximum 10% of bank capital
+3.2 LLL for non-related parties: maximum 25% of bank capital
+3.3 LLL for state-owned and regional enterprises: maximum 30% of bank capital
+
+PART II — LIQUIDITY AND CAPITAL REGULATIONS
+
+4. POJK No. 12/POJK.03/2021 — Minimum Capital Adequacy Requirements
+
+4.1 Capital Adequacy Ratio (CAR) minimums:
+    - Bank category 1 (KBMI 1): minimum CAR 8%
+    - Bank category 2 (KBMI 2): minimum CAR 9%
+    - Bank category 3 (KBMI 3): minimum CAR 10%
+    - Bank category 4 (KBMI 4): minimum CAR 14%
+
+4.2 PT Bank Nusantara Tbk is in KBMI 3 with a minimum CAR requirement of 10%.
+    CAR position as of December 2025: 18.4% (above regulatory threshold).
+
+5. POJK No. 50/POJK.03/2017 — Liquidity Coverage Ratio (LCR)
+
+5.1 Minimum LCR for banks with assets above IDR 200 trillion: 100%
+5.2 Minimum Net Stable Funding Ratio (NSFR): 100%
+5.3 Bank Nusantara LCR position as of December 2025: 142% (above minimum)
+
+PART III — SME-SPECIFIC CREDIT REGULATIONS
+
+6. Government Regulation No. 7 of 2021 — MSME Facilitation, Protection, and Empowerment
+
+6.1 State-owned banks and regional development banks must allocate at least 30% of their
+    credit portfolio to the SME segment (progressive obligation through 2024).
+6.2 Private national commercial banks: recommended minimum 20% for SME credit.
+6.3 PT Bank Nusantara Tbk: current SME credit share is 24.3% of total portfolio,
+    with a target of 27% by end-2026.
+
+7. KUR People's Business Credit Programme 2026
+
+7.1 KUR disbursement quota for Bank Nusantara 2026: IDR 12.5 trillion
+7.2 Allocation by segment:
+    - Micro KUR (up to IDR 100 million): IDR 7.5 trillion
+    - Small KUR (IDR 100 million – IDR 500 million): IDR 4.0 trillion
+    - Special KUR (agriculture, fisheries, etc.): IDR 1.0 trillion
+7.3 KUR interest rate: 6% per annum (effective), with government interest subsidy
+7.4 Collateral for Micro KUR up to IDR 100 million: not required
+
+8. NPL Requirements and SLIK Reporting
+
+8.1 Banks must report borrower data to OJK's Financial Information Services System (SLIK):
+    - Every borrower with a credit limit above IDR 50 million
+    - Frequency: monthly, no later than the 14th of the following month
+
+8.2 NPL thresholds monitored by OJK:
+    - Warning level: Gross NPL > 2.5%
+    - Intensive supervision: Gross NPL > 4.0%
+    - Special measures (pengawasan khusus): Gross NPL > 5.0%
+
+8.3 Bank Nusantara is required to maintain total gross NPL below 2.5% in line with its
+    internal target and OJK's warning level threshold.
+
+PART IV — CONSUMER PROTECTION AND TRANSPARENCY
+
+9. POJK No. 6/POJK.07/2022 — Consumer and Public Protection in the Financial Services Sector
+
+9.1 Bank obligations regarding SME borrower protection:
+    - Fee transparency: all costs must be stated in the credit agreement
+    - Hidden charges not disclosed to prospective borrowers are prohibited
+    - Borrowers have the right to receive a copy of the credit agreement at no extra cost
+    - Unethical debt collection practices (intimidation, threats, etc.) are prohibited
+
+9.2 Borrower complaint mechanism:
+    - Banks must maintain an active consumer complaint unit
+    - Resolution deadline: 20 business days for written complaints
+    - Escalation to OJK if not resolved within the deadline
+
+10. Reference Interest Rate Requirements
+
+10.1 Since 2021, banks are not required to use a specific reference rate for loan pricing,
+     but must disclose:
+     - Prime lending rate (SBDK) per segment
+     - Components making up the SBDK (cost of funds, overhead, profit margin)
+
+10.2 Bank Nusantara prime lending rates in effect (January 2026):
+     - Corporate Credit   : 9.25% per annum
+     - Retail Credit      : 10.75% per annum
+     - SME Credit         : 11.50% per annum (non-KUR)
+     - Consumer Credit    : 12.00% per annum
+
+Note: This document is a summary for internal operational purposes.
+For the full text of regulations, refer to the official OJK website (www.ojk.go.id).
+
+Prepared by: Legal and Compliance Division
+Approved by: Compliance Director
+Date: 5 January 2026

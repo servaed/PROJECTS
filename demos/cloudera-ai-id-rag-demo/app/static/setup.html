@@ -55,7 +55,7 @@
     /* ── Top bar ─── */
     .topbar {
       display: flex; align-items: center; gap: 12px;
-      padding: 0 28px; height: 60px;
+      padding: 0 24px; height: 64px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       position: sticky; top: 0; z-index: 10;
@@ -67,7 +67,7 @@
       color: var(--t1); letter-spacing: -0.01em;
     }
     .topbar-title span { color: var(--orange); }
-    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
     .back-btn {
       padding: 6px 16px; border-radius: 6px;
       border: 1px solid var(--border);
@@ -313,23 +313,6 @@
       color: var(--err);
     }
 
-    /* ── QR code popup ─── */
-    .qr-wrap {
-      position: relative; display: inline-flex; align-items: center;
-    }
-    .qr-popup {
-      display: none;
-      position: absolute; top: calc(100% + 10px); right: 0;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 16px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.16);
-      z-index: 200; width: 200px; text-align: center;
-    }
-    .qr-popup.open { display: block; }
-    .qr-popup p {
-      font-size: 0.7rem; color: var(--t2); margin-top: 10px; word-break: break-all;
-      line-height: 1.4;
-    }
 
     /* ── Startup progress banner ─── */
     .startup-banner {
@@ -354,19 +337,16 @@
   <div class="topbar-sep"></div>
   <div class="topbar-title">Enterprise <span>Assistant</span> — Setup Check</div>
   <div class="topbar-right">
-    <button class="refresh-btn" id="refreshBtn" onclick="load()">↻ Refresh</button>
-    <button class="refresh-btn" id="ingestBtn" onclick="triggerIngest()" title="Rebuild vector store from source documents">⟳ Re-ingest</button>
-    <button class="log-btn" id="logBtn" onclick="toggleLogs()">⬛ Logs</button>
-    <!-- QR code button -->
-    <div class="qr-wrap" id="qrWrap">
-      <button class="back-btn" onclick="toggleQr()" title="Show QR code for this app URL">⬛ QR</button>
-      <div class="qr-popup" id="qrPopup">
-        <div id="qrCanvas"></div>
-        <p id="qrUrl"></p>
-      </div>
-    </div>
-    <a class="back-btn" href="/configure" style="background:var(--o-dim);border-color:rgba(249,103,2,0.25);color:var(--o-text)">⚙ Configure</a>
-    <a class="back-btn" href="/">← Back to App</a>
+    <button class="back-btn" id="refreshBtn" onclick="load()">↻ Refresh</button>
+    <button class="back-btn" id="ingestBtn" onclick="triggerIngest()" title="Rebuild vector store from source documents">⟳ Re-ingest</button>
+    <button class="back-btn" id="logBtn" onclick="toggleLogs()">≡ Logs</button>
+    <div style="width:1px;height:20px;background:var(--border);margin:0 2px;flex-shrink:0;"></div>
+    <a class="back-btn" href="/">💬 Chat</a>
+    <a class="back-btn" href="/explorer">🗄 SQL Explorer</a>
+    <a class="back-btn" href="/upload">↑ Upload</a>
+    <a class="back-btn" href="/setup" style="background:var(--o-dim);border-color:rgba(249,103,2,0.3);color:var(--o-text)">◎ Setup</a>
+    <a class="back-btn" href="/configure">⚙ Configure</a>
+    <button class="back-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☀</button>
   </div>
 </div>
 
@@ -849,49 +829,6 @@
       .catch(function(){});
   };
 
-  // ── QR code ──────────────────────────────────────────────────────────
-  var qrOpen = false;
-  var qrGenerated = false;
-
-  window.toggleQr = function() {
-    qrOpen = !qrOpen;
-    var popup = document.getElementById('qrPopup');
-    popup.classList.toggle('open', qrOpen);
-    if (qrOpen && !qrGenerated) {
-      var url = window.location.origin + '/';
-      document.getElementById('qrUrl').textContent = url;
-      var canvas = document.getElementById('qrCanvas');
-      canvas.innerHTML = '';
-      if (typeof QRCode !== 'undefined') {
-        new QRCode(canvas, {
-          text: url,
-          width: 168,
-          height: 168,
-          colorDark: getComputedStyle(document.documentElement).getPropertyValue('--t1').trim() || '#202124',
-          colorLight: getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#ffffff',
-          correctLevel: QRCode.CorrectLevel.M,
-        });
-        qrGenerated = true;
-      } else {
-        canvas.textContent = url;
-      }
-    }
-    // Close when clicking outside
-    if (qrOpen) {
-      setTimeout(function() {
-        document.addEventListener('click', closeQrOutside, { once: true });
-      }, 0);
-    }
-  };
-
-  function closeQrOutside(e) {
-    var wrap = document.getElementById('qrWrap');
-    if (wrap && !wrap.contains(e.target)) {
-      qrOpen = false;
-      document.getElementById('qrPopup').classList.remove('open');
-    }
-  }
-
   // ── Re-ingest handler ────────────────────────────────────────────────
   var _ingestPollTimer = null;
 
@@ -978,6 +915,12 @@
 
   load();
 })();
+
+function toggleTheme() {
+  var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('cld-theme', t);
+}
 </script>
 </body>
 </html>

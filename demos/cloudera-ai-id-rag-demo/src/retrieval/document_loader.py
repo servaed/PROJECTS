@@ -27,6 +27,7 @@ class RawDocument:
     text: str
     file_type: str
     domain: str                # e.g. "banking" | "telco" | "government" | "general"
+    language: str = "id"      # "id" = Bahasa Indonesia, "en" = English
     ingest_timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
@@ -76,6 +77,11 @@ _LOADERS = {
 _KNOWN_DOMAINS = {"banking", "telco", "government"}
 
 
+def _infer_language(path: Path) -> str:
+    """Return 'en' if the filename stem ends with '_en', otherwise 'id'."""
+    return "en" if path.stem.endswith("_en") else "id"
+
+
 def _infer_domain(path: Path, base_path: Path) -> str:
     """Infer domain from the immediate subdirectory under base_path.
 
@@ -122,6 +128,7 @@ def load_documents() -> list[RawDocument]:
             data = adapter.read_bytes(path)
             text = loader(data, path)
             domain = _infer_domain(path, base_path)
+            language = _infer_language(path)
             documents.append(
                 RawDocument(
                     doc_id=new_id(),
@@ -130,9 +137,13 @@ def load_documents() -> list[RawDocument]:
                     text=text,
                     file_type=ext.lstrip("."),
                     domain=domain,
+                    language=language,
                 )
             )
-            logger.info("Loaded: %s (domain=%s, %d chars)", path.name, domain, len(text))
+            logger.info(
+                "Loaded: %s (domain=%s, language=%s, %d chars)",
+                path.name, domain, language, len(text),
+            )
         except Exception as exc:
             logger.error("Failed to load %s: %s", path.name, exc)
 

@@ -17,8 +17,15 @@ data/vector_store/
 *.faiss
 *.pkl
 
-# SQLite demo database (generated at runtime)
+# SQLite demo database (generated at runtime — kept for backwards compat)
 data/sample_tables/*.db
+
+# DuckDB Parquet files (generated at runtime by seed_parquet.py)
+data/parquet/
+
+# uvicorn stdout/stderr captured by launch_app.sh
+data/uvicorn.out
+data/uvicorn.err
 
 # Logs
 *.log

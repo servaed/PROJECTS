@@ -31,12 +31,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import datetime
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
-from sqlalchemy import text as sa_text
 
 from src.config.logging import setup_logging
 from src.config.settings import settings
@@ -47,9 +46,6 @@ logger = logging.getLogger(__name__)
 
 _STATIC = Path(__file__).parent / "static"
 
-# Cache index.html content at startup — avoids a disk read on every GET /
-_INDEX_HTML: str = ""
-
 # Server start time — used by /api/status to expose uptime for fast-poll logic
 _STARTUP_TIME: float = time.monotonic()
 
@@ -59,7 +55,7 @@ _OVERRIDE_PATH = Path("data/.env.local")
 
 # Services-ready sentinel written by entrypoint.sh after MinIO/Nessie/Trino/seed
 # complete.  Only enforced in Docker/CML mode (QUERY_ENGINE=trino).
-# In SQLite mode this file is never written and the gate is bypassed.
+# In DuckDB mode this file is never written and the gate is bypassed.
 _SERVICES_READY_FLAG = Path("/tmp/.cml_services_ready")
 
 # ── Rate limiter (sliding window, no external dependency) ──────────────────
@@ -111,16 +107,6 @@ _CONFIGURE_ALLOWED_KEYS = frozenset({
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Validate required resources at startup and log a clear status summary."""
-    global _INDEX_HTML
-
-    # Cache SPA entry point
-    index_path = _STATIC / "index.html"
-    if index_path.exists():
-        _INDEX_HTML = index_path.read_text(encoding="utf-8")
-        logger.info("SPA index.html cached (%d bytes)", len(_INDEX_HTML))
-    else:
-        logger.error("app/static/index.html not found — GET / will return 404")
-
     # Check vector store + verify SHA-256 integrity hash
     vs_path   = Path(settings.vector_store_path) / "index.faiss"
     hash_path = Path(settings.vector_store_path) / "index.sha256"
@@ -220,10 +206,11 @@ app.add_middleware(
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    """Serve the React single-page application from the startup cache."""
-    if not _INDEX_HTML:
+    """Serve the React single-page application, read fresh from disk each request."""
+    index_path = _STATIC / "index.html"
+    if not index_path.exists():
         return HTMLResponse("<h1>SPA not found</h1>", status_code=404)
-    return HTMLResponse(_INDEX_HTML)
+    return HTMLResponse(index_path.read_text(encoding="utf-8"))
 
 
 @app.get("/setup", response_class=HTMLResponse)
@@ -244,6 +231,24 @@ async def configure_page():
     return HTMLResponse(cfg_path.read_text(encoding="utf-8"))
 
 
+@app.get("/explorer", response_class=HTMLResponse)
+async def explorer_page():
+    """Serve the SQL query editor and documents browser."""
+    p = _STATIC / "explorer.html"
+    if not p.exists():
+        return HTMLResponse("<h1>explorer.html not found</h1>", status_code=404)
+    return HTMLResponse(p.read_text(encoding="utf-8"))
+
+
+@app.get("/upload", response_class=HTMLResponse)
+async def upload_page():
+    """Serve the document upload page."""
+    p = _STATIC / "upload.html"
+    if not p.exists():
+        return HTMLResponse("<h1>upload.html not found</h1>", status_code=404)
+    return HTMLResponse(p.read_text(encoding="utf-8"))
+
+
 app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 
 
@@ -254,15 +259,15 @@ app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 DOMAIN_CONFIG: dict[str, dict] = {
     "banking": {
         "label": "Banking",
-        "tables": ["kredit_umkm", "nasabah", "cabang"],
+        "tables": ["msme_credit", "customer", "branch"],
     },
     "telco": {
         "label": "Telco",
-        "tables": ["pelanggan", "penggunaan_data", "jaringan"],
+        "tables": ["subscriber", "data_usage", "network"],
     },
     "government": {
         "label": "Government",
-        "tables": ["penduduk", "anggaran_daerah", "layanan_publik"],
+        "tables": ["resident", "regional_budget", "public_service"],
     },
 }
 
@@ -453,22 +458,20 @@ async def api_setup():
 
     # ── Database ──────────────────────────────────────────────────────
     try:
-        from src.connectors.db_adapter import get_engine, get_table_names
-        engine = get_engine()
+        from src.connectors.db_adapter import get_table_names, get_table_row_count, get_engine_label
         table_names = get_table_names()
-        tables_info = []
-        with engine.connect() as conn:
-            for tname in table_names:
-                try:
-                    row_count = conn.execute(sa_text(f"SELECT COUNT(*) FROM {tname}")).scalar()
-                except Exception:
-                    row_count = None
-                tables_info.append({"name": tname, "rows": row_count})
-        result["database"] = {"ok": True, "tables": tables_info, "fix": None}
+        tables_info = [
+            {"name": tname, "rows": get_table_row_count(tname)}
+            for tname in table_names
+        ]
+        result["database"] = {
+            "ok": True, "tables": tables_info,
+            "engine": get_engine_label(), "fix": None,
+        }
     except Exception as exc:
         result["database"] = {
             "ok": False, "tables": [],
-            "fix": f"Check DATABASE_URL. Error: {exc}",
+            "fix": f"Check query engine config. Error: {exc}",
         }
 
     # ── LLM — live ping with 15 s timeout ────────────────────────────
@@ -512,10 +515,10 @@ async def api_setup():
     docs_path = _Path(settings.docs_source_path)
     if docs_path.exists():
         extensions = {".pdf", ".docx", ".txt", ".md", ".html"}
-        files = [f.name for f in docs_path.iterdir() if f.suffix.lower() in extensions]
+        files = sorted(f.name for f in docs_path.rglob("*") if f.suffix.lower() in extensions)
         result["documents"] = {
             "ok": len(files) > 0, "path": str(docs_path),
-            "files": sorted(files), "count": len(files),
+            "files": files, "count": len(files),
             "fix": None if files else "Add at least one .txt/.pdf/.docx file to DOCS_SOURCE_PATH.",
         }
     else:
@@ -571,22 +574,20 @@ async def api_test_component(component: str):
     if component == "database":
         t0 = _time.monotonic()
         try:
-            from src.connectors.db_adapter import get_engine, get_table_names
-            engine = get_engine()
+            from src.connectors.db_adapter import get_table_names, get_table_row_count, get_engine_label
             table_names = get_table_names()
-            tables_info = []
-            with engine.connect() as conn:
-                for tname in table_names:
-                    try:
-                        row_count = conn.execute(sa_text(f"SELECT COUNT(*) FROM {tname}")).scalar()
-                    except Exception:
-                        row_count = None
-                    tables_info.append({"name": tname, "rows": row_count})
+            tables_info = [
+                {"name": tname, "rows": get_table_row_count(tname)}
+                for tname in table_names
+            ]
             latency_ms = round((_time.monotonic() - t0) * 1000)
-            return {"ok": True, "tables": tables_info, "latency_ms": latency_ms, "fix": None}
+            return {
+                "ok": True, "tables": tables_info,
+                "engine": get_engine_label(), "latency_ms": latency_ms, "fix": None,
+            }
         except Exception as exc:
             return {"ok": False, "tables": [], "latency_ms": None,
-                    "fix": f"Check DATABASE_URL. Error: {exc}"}
+                    "fix": f"Check query engine config. Error: {exc}"}
 
     # ── LLM ────────────────────────────────────────────────────────────
     if component == "llm":
@@ -816,6 +817,160 @@ _ingest_state: dict = {
 _ingest_lock = threading.Lock()
 
 
+# ── SQL Explorer ───────────────────────────────────────────────────────────
+
+@app.get("/api/sql/tables")
+async def api_sql_tables():
+    """Return all queryable tables with their column schemas."""
+    from src.connectors.db_adapter import get_table_names, get_table_schema
+    tables = []
+    for name in get_table_names():
+        schema = get_table_schema(name)
+        tables.append({"name": name, "columns": schema})
+    return {"tables": tables, "engine": settings.query_engine}
+
+
+class SQLQueryRequest(BaseModel):
+    sql: str
+
+
+@app.post("/api/sql/query")
+async def api_sql_query(body: SQLQueryRequest):
+    """Execute a read-only SQL query and return rows as JSON.
+
+    Passes through the same guardrails used by the chat pipeline but
+    without the approved-table restriction — the explorer is an admin tool.
+    """
+    from src.sql.guardrails import validate_sql, ensure_limit, SqlGuardrailError
+    from src.connectors.db_adapter import execute_read_query
+
+    try:
+        sql = validate_sql(body.sql)
+        sql = ensure_limit(sql, 500)
+        rows = execute_read_query(sql)
+        return {"ok": True, "rows": rows, "count": len(rows), "sql": sql}
+    except SqlGuardrailError as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    except Exception as exc:
+        logger.warning("SQL Explorer query failed: %s", exc)
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+
+
+# ── Documents API ──────────────────────────────────────────────────────────
+
+@app.get("/api/docs/list")
+async def api_docs_list():
+    """List all documents in the knowledge-base source directory."""
+    from src.connectors.files_adapter import FilesAdapter
+
+    adapter = FilesAdapter(settings.docs_source_path)
+    base = Path(settings.docs_source_path)
+    docs = []
+    for path in sorted(adapter.list_documents(), key=lambda p: str(p)):
+        try:
+            rel = path.relative_to(base)
+        except ValueError:
+            rel = path
+        parts = rel.parts
+        domain = parts[0] if len(parts) >= 2 and parts[0] in {"banking", "telco", "government"} else "general"
+        language = "en" if path.stem.endswith("_en") else "id"
+        size = path.stat().st_size
+        docs.append({
+            "name": path.name,
+            "path": str(rel).replace("\\", "/"),
+            "domain": domain,
+            "language": language,
+            "file_type": path.suffix.lstrip(".").upper(),
+            "size_bytes": size,
+        })
+    return {"docs": docs, "count": len(docs)}
+
+
+_ALLOWED_UPLOAD_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
+_ALLOWED_DOMAINS = {"banking", "telco", "government"}
+
+
+@app.post("/api/docs/upload")
+async def api_docs_upload(
+    file: UploadFile = File(...),
+    domain: str = Form(...),
+    language: str = Form("id"),
+    auto_ingest: bool = Form(True),
+):
+    """Upload a document to the knowledge base.
+
+    Saves to data/sample_docs/{domain}/{filename} and optionally triggers
+    a full vector store rebuild.  English files get an _en suffix injected
+    if not already present so language detection works correctly.
+    """
+    if domain not in _ALLOWED_DOMAINS:
+        raise HTTPException(400, f"domain must be one of: {', '.join(sorted(_ALLOWED_DOMAINS))}")
+
+    original_name = Path(file.filename or "upload.txt")
+    ext = original_name.suffix.lower()
+    if ext not in _ALLOWED_UPLOAD_EXTENSIONS:
+        raise HTTPException(400, f"File type '{ext}' is not supported. Use: {', '.join(sorted(_ALLOWED_UPLOAD_EXTENSIONS))}")
+
+    stem = original_name.stem
+    if language == "en" and not stem.endswith("_en"):
+        stem = stem + "_en"
+    filename = stem + ext
+
+    dest_dir = Path(settings.docs_source_path) / domain
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / filename
+
+    data = await file.read()
+    dest.write_bytes(data)
+    logger.info("Document uploaded: %s (%d bytes)", dest, len(data))
+
+    ingest_triggered = False
+    if auto_ingest:
+        with _ingest_lock:
+            already_running = _ingest_state["running"]
+        if not already_running:
+            with _ingest_lock:
+                _ingest_state["running"] = True
+                _ingest_state["started_at"] = time.time()
+                _ingest_state["finished_at"] = None
+                _ingest_state["last_result"] = None
+
+            def _run():
+                result: dict = {}
+                try:
+                    from src.retrieval.document_loader import load_documents
+                    from src.retrieval.chunking import chunk_documents
+                    from src.retrieval.embeddings import get_embeddings
+                    from src.retrieval.vector_store import build_vector_store
+                    docs = load_documents()
+                    chunks = chunk_documents(docs)
+                    embeddings = get_embeddings()
+                    build_vector_store(chunks, embeddings)
+                    result = {"ok": True, "docs": len(docs), "chunks": len(chunks)}
+                except Exception as exc:
+                    logger.exception("Upload ingest failed")
+                    result = {"ok": False, "error": str(exc)}
+                finally:
+                    with _ingest_lock:
+                        _ingest_state["running"] = False
+                        _ingest_state["finished_at"] = time.time()
+                        _ingest_state["last_result"] = result
+
+            threading.Thread(target=_run, daemon=True, name="upload-ingest-worker").start()
+            ingest_triggered = True
+
+    return {
+        "ok": True,
+        "saved_as": filename,
+        "domain": domain,
+        "language": language,
+        "size_bytes": len(data),
+        "ingest_triggered": ingest_triggered,
+    }
+
+
+# ── Ingest ─────────────────────────────────────────────────────────────────
+
 class IngestRequest(BaseModel):
     reseed_db: bool = False
 
@@ -825,8 +980,8 @@ async def api_ingest(body: IngestRequest = IngestRequest()):
     """Rebuild the FAISS vector store from source documents in the background.
 
     Source documents (in MinIO or local filesystem) are NOT deleted — only the
-    FAISS index files are overwritten.  Optionally also re-seeds the SQLite
-    database when reseed_db=true and QUERY_ENGINE != trino.
+    FAISS index files are overwritten.  Optionally also re-seeds the Parquet
+    files when reseed_db=true and QUERY_ENGINE == duckdb.
 
     Returns immediately with status=started.  Poll GET /api/ingest/status.
     """
@@ -858,15 +1013,15 @@ async def api_ingest(body: IngestRequest = IngestRequest()):
             build_vector_store(chunks, embeddings)
             logger.info("Ingest API: vector store rebuilt — %d chunks indexed.", len(chunks))
 
-            if body.reseed_db and settings.query_engine != "trino":
-                logger.info("Ingest API: re-seeding SQLite database...")
+            if body.reseed_db and settings.query_engine == "duckdb":
+                logger.info("Ingest API: re-seeding Parquet files...")
                 import importlib.util as _ilu
-                _seed_path = Path(__file__).parent.parent / "data/sample_tables/seed_database.py"
-                _spec = _ilu.spec_from_file_location("_seed_db", _seed_path)
+                _seed_path = Path(__file__).parent.parent / "data/sample_tables/seed_parquet.py"
+                _spec = _ilu.spec_from_file_location("_seed_parquet", _seed_path)
                 _mod = _ilu.module_from_spec(_spec)
                 _spec.loader.exec_module(_mod)
-                _mod.seed()
-                logger.info("Ingest API: database re-seeded.")
+                _mod.seed_parquet()
+                logger.info("Ingest API: Parquet files re-seeded.")
 
             result = {"ok": True, "docs": len(docs), "chunks": len(chunks)}
         except Exception as exc:
@@ -923,7 +1078,7 @@ async def api_chat(body: ChatRequest, request: Request):
     if not _check_rate_limit(client_ip):
         raise HTTPException(
             status_code=429,
-            detail="Terlalu banyak permintaan. Tunggu sebentar sebelum mengirim pertanyaan berikutnya.",
+            detail="Too many requests. Please wait a moment before sending another question.",
         )
 
     # Gate: in Docker/CML mode, block chat until MinIO/Nessie/Trino are ready.
@@ -931,9 +1086,9 @@ async def api_chat(body: ChatRequest, request: Request):
     if _services_starting_up():
         uptime = round(time.monotonic() - _STARTUP_TIME)
         msg = (
-            f"Layanan data sedang disiapkan ({uptime}s sejak mulai). "
-            "Trino, MinIO, dan Nessie memerlukan 3–5 menit untuk startup pertama. "
-            "Buka /setup untuk melihat status komponen secara langsung."
+            f"Data services are starting up ({uptime}s since launch). "
+            "Trino, MinIO, and Nessie require 3-5 minutes on first startup. "
+            "Open /setup to view live component status."
         )
         async def _starting_up_sse():
             yield _sse("error", {"message": msg})

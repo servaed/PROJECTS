@@ -15,87 +15,95 @@ logger = get_logger(__name__)
 
 # ── Column-level descriptions ──────────────────────────────────────────────
 # Maps "table.column" → human-readable description injected into the schema
-# context.  This helps the SQL model generate semantically correct queries
-# (e.g. knowing that kualitas is a 1-5 bucket, not a free-text field).
+# context so the LLM generates semantically correct queries.
 
 _COLUMN_DESCRIPTIONS: dict[str, str] = {
-    # ── Banking: kredit_umkm ──────────────────────────────────────────────
-    "kredit_umkm.id":          "primary key",
-    "kredit_umkm.nasabah_id":  "foreign key → nasabah.id",
-    "kredit_umkm.wilayah":     "region/province (e.g. Jakarta, Jawa Barat, Bali)",
-    "kredit_umkm.segmen":      "MSME segment: mikro | kecil | menengah",
-    "kredit_umkm.outstanding": "outstanding loan balance in IDR (rupiah)",
-    "kredit_umkm.kualitas":    "credit quality per OJK: Lancar | Dalam Perhatian Khusus | Kurang Lancar | Diragukan | Macet",
-    "kredit_umkm.bulan":       "reporting month (YYYY-MM, e.g. 2026-03)",
+    # ── Banking: msme_credit ──────────────────────────────────────────────
+    "msme_credit.id":             "primary key",
+    "msme_credit.customer_id":    "foreign key -> customer.id",
+    "msme_credit.region":         "city or region (e.g. Jakarta, Bandung, Bali)",
+    "msme_credit.segment":        "MSME segment: Micro | Small | Medium",
+    "msme_credit.outstanding":    "outstanding loan balance in IDR (rupiah)",
+    "msme_credit.credit_quality": "OJK credit quality: Lancar | DPK | Kurang Lancar | Macet",
+    "msme_credit.month":          "reporting month (YYYY-MM, e.g. 2026-03)",
 
-    # ── Banking: nasabah ──────────────────────────────────────────────────
-    "nasabah.id":              "primary key",
-    "nasabah.nama":            "customer full name",
-    "nasabah.segmen":          "customer segment: mikro | kecil | menengah",
-    "nasabah.wilayah":         "home region/province",
-    "nasabah.total_eksposur":  "total credit exposure across all products in IDR",
+    # ── Banking: customer ─────────────────────────────────────────────────
+    "customer.id":              "primary key",
+    "customer.name":            "customer full name",
+    "customer.segment":         "customer segment: Corporate | MSME",
+    "customer.region":          "home region/city",
+    "customer.total_exposure":  "total credit exposure across all products in IDR",
+    "customer.internal_rating": "internal credit rating: AA | A | B | etc.",
+    "customer.onboard_date":    "date the customer was onboarded (YYYY-MM-DD)",
 
-    # ── Banking: cabang ───────────────────────────────────────────────────
-    "cabang.id":               "primary key",
-    "cabang.nama":             "branch office name",
-    "cabang.wilayah":          "region/province",
-    "cabang.kota":             "city",
-    "cabang.aktif":            "branch status: 1 = active, 0 = inactive",
+    # ── Banking: branch ───────────────────────────────────────────────────
+    "branch.id":                 "primary key",
+    "branch.name":               "branch office name",
+    "branch.region":             "region/province",
+    "branch.city":               "city",
+    "branch.is_active":          "branch status: 1 = active, 0 = inactive",
+    "branch.customer_count":     "number of active customers at this branch",
+    "branch.credit_target":      "annual credit disbursement target in IDR",
+    "branch.credit_realization": "actual credit disbursed to date in IDR",
 
-    # ── Telco: pelanggan ──────────────────────────────────────────────────
-    "pelanggan.id":                "primary key",
-    "pelanggan.nama":              "subscriber name",
-    "pelanggan.tipe":              "subscription type: prepaid | postpaid",
-    "pelanggan.paket":             "active plan/package name",
-    "pelanggan.wilayah":           "subscriber region/province",
-    "pelanggan.status":            "account status: aktif | suspend | churn",
-    "pelanggan.tanggal_aktivasi":  "activation date (YYYY-MM-DD)",
-    "pelanggan.churn_risk_score":  "predicted churn risk 0–100; ≥70 = high risk",
+    # ── Telco: subscriber ─────────────────────────────────────────────────
+    "subscriber.id":                "primary key",
+    "subscriber.name":              "subscriber name",
+    "subscriber.subscription_type": "subscription type: Prepaid | Postpaid | Corporate",
+    "subscriber.plan":              "active plan name (Starter | Basic | Standard | Premium | Unlimited | Business | Enterprise)",
+    "subscriber.region":            "subscriber region/city",
+    "subscriber.status":            "account status: Active | Inactive",
+    "subscriber.activation_date":   "activation date (YYYY-MM-DD)",
+    "subscriber.churn_risk_score":  "predicted churn risk 0-100; >= 70 = high risk",
+    "subscriber.arpu_monthly":      "average revenue per user per month in IDR",
 
-    # ── Telco: jaringan ───────────────────────────────────────────────────
-    "jaringan.id":              "primary key",
-    "jaringan.wilayah":         "region/province",
-    "jaringan.kota":            "city",
-    "jaringan.tipe_jaringan":   "network generation: 4G | 5G | 3G",
-    "jaringan.jumlah_bts":      "number of base transceiver stations",
-    "jaringan.kapasitas_mbps":  "total network capacity in Mbps",
-    "jaringan.utilisasi_pct":   "current utilization as percentage of capacity (0–100)",
-    "jaringan.status":          "operational status: normal | kritis | gangguan",
+    # ── Telco: network ────────────────────────────────────────────────────
+    "network.id":              "primary key",
+    "network.region":          "region/province",
+    "network.city":            "city",
+    "network.network_type":    "network generation: 4G LTE | 4.5G | 5G",
+    "network.bts_count":       "number of base transceiver stations",
+    "network.capacity_mbps":   "total network capacity in Mbps",
+    "network.utilization_pct": "current utilization as percentage of capacity (0-100)",
+    "network.status":          "operational status: Optimal | High | Critical",
 
-    # ── Telco: penggunaan_data ────────────────────────────────────────────
-    "penggunaan_data.id":               "primary key",
-    "penggunaan_data.pelanggan_id":     "foreign key → pelanggan.id",
-    "penggunaan_data.bulan":            "billing month (YYYY-MM)",
-    "penggunaan_data.kuota_gb":         "subscribed data quota in GB",
-    "penggunaan_data.penggunaan_gb":    "actual data usage in GB",
-    "penggunaan_data.kecepatan_mbps":   "average experienced speed in Mbps",
-    "penggunaan_data.biaya_tambahan":   "overage charges in IDR",
+    # ── Telco: data_usage ─────────────────────────────────────────────────
+    "data_usage.id":             "primary key",
+    "data_usage.subscriber_id":  "foreign key -> subscriber.id",
+    "data_usage.month":          "billing month (YYYY-MM)",
+    "data_usage.quota_gb":       "subscribed data quota in GB",
+    "data_usage.usage_gb":       "actual data usage in GB",
+    "data_usage.speed_mbps":     "average experienced speed in Mbps",
+    "data_usage.overage_charge": "overage charges in IDR",
 
-    # ── Government: anggaran_daerah ───────────────────────────────────────
-    "anggaran_daerah.id":           "primary key",
-    "anggaran_daerah.satuan_kerja": "work unit / government agency (SKPD)",
-    "anggaran_daerah.program":      "budget program name",
-    "anggaran_daerah.pagu":         "allocated budget in IDR",
-    "anggaran_daerah.realisasi":    "actual spending to date in IDR",
-    "anggaran_daerah.triwulan":     "quarter: Q1 | Q2 | Q3 | Q4",
-    "anggaran_daerah.tahun":        "fiscal year (e.g. 2026)",
+    # ── Government: regional_budget ───────────────────────────────────────
+    "regional_budget.id":             "primary key",
+    "regional_budget.work_unit":      "government work unit / agency (SKPD) name",
+    "regional_budget.program":        "budget program name",
+    "regional_budget.budget_ceiling": "approved budget ceiling in IDR",
+    "regional_budget.realization":    "actual spending to date in IDR",
+    "regional_budget.quarter":        "fiscal quarter: Q1 | Q2 | Q3 | Q4",
+    "regional_budget.year":           "fiscal year (e.g. 2025)",
 
-    # ── Government: layanan_publik ────────────────────────────────────────
-    "layanan_publik.id":                    "primary key",
-    "layanan_publik.jenis_layanan":         "service type (e.g. KTP, IMB, Akta Kelahiran)",
-    "layanan_publik.satuan_kerja":          "responsible government agency",
-    "layanan_publik.jumlah_permohonan":     "total applications received",
-    "layanan_publik.selesai_tepat_waktu":   "applications completed on time",
-    "layanan_publik.kepuasan_pct":          "citizen satisfaction rate 0–100 (%)",
-    "layanan_publik.rata_waktu_hari":       "average processing time in working days",
-    "layanan_publik.bulan":                 "reporting month (YYYY-MM)",
+    # ── Government: public_service ────────────────────────────────────────
+    "public_service.id":                  "primary key",
+    "public_service.service_type":        "service type (e.g. KTP Elektronik, IMB/PBG, Paspor)",
+    "public_service.agency":              "responsible government agency",
+    "public_service.application_count":   "total applications received",
+    "public_service.on_time_count":       "applications completed on time",
+    "public_service.satisfaction_pct":    "citizen satisfaction rate 0-100 (%)",
+    "public_service.avg_processing_days": "average processing time in working days",
+    "public_service.month":               "reporting month (YYYY-MM)",
 
-    # ── Government: penduduk ──────────────────────────────────────────────
-    "penduduk.id":          "primary key",
-    "penduduk.wilayah":     "region/kelurahan",
-    "penduduk.kota":        "city/kabupaten",
-    "penduduk.jumlah":      "registered resident count",
-    "penduduk.tahun":       "census year",
+    # ── Government: resident ──────────────────────────────────────────────
+    "resident.id":       "primary key",
+    "resident.district": "sub-district name (kecamatan)",
+    "resident.city":     "city or kabupaten",
+    "resident.province": "province name",
+    "resident.total":    "total registered resident count",
+    "resident.male":     "male resident count",
+    "resident.female":   "female resident count",
+    "resident.year":     "census year",
 }
 
 
@@ -118,16 +126,17 @@ def build_schema_context(tables: list[str] | None = None) -> str:
     """Build an enriched text schema description for SQL generation.
 
     Includes column types AND semantic descriptions so the LLM generates
-    semantically correct queries (e.g. filters kualitas by the correct values,
-    uses churn_risk_score ≥ 70 for high-risk, etc.).
+    semantically correct queries.
     """
     if tables is None:
         tables = get_approved_tables()
 
     if not tables:
-        return "Tidak ada tabel yang tersedia."
+        return "No tables available."
 
-    lines = []
+    # Prepend an explicit reminder so the LLM uses exact table names, not Indonesian equivalents.
+    header = "IMPORTANT: Use ONLY the exact table names listed below. Do not substitute with any other names.\n"
+    lines = [header]
     for table in tables:
         try:
             columns = get_table_schema(table)
@@ -136,7 +145,7 @@ def build_schema_context(tables: list[str] | None = None) -> str:
                 desc = _COLUMN_DESCRIPTIONS.get(f"{table}.{c['name']}", "")
                 desc_str = f"  -- {desc}" if desc else ""
                 col_lines.append(f"  {c['name']} ({c['type']}){desc_str}")
-            lines.append(f"Tabel: {table}\nKolom:\n" + "\n".join(col_lines))
+            lines.append(f"Table: {table}\nColumns:\n" + "\n".join(col_lines))
         except Exception as exc:
             logger.error("Failed to get schema for table '%s': %s", table, exc)
 

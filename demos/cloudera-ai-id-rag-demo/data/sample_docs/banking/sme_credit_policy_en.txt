@@ -1,0 +1,180 @@
+SME CREDIT POLICY — MICRO, SMALL, AND MEDIUM ENTERPRISES
+Reference: KRD/POL/001/2026-EN | Revision: 4.0 | Effective: 1 January 2026
+Issued by: Board of Directors, PT Bank Nusantara Tbk
+
+CHAPTER I — GENERAL PROVISIONS
+
+Article 1 — Definitions
+
+1.1 SME Credit refers to financing facilities extended to micro, small, and medium enterprise
+    operators in accordance with Law No. 20 of 2008 on MSMEs:
+    - Micro Enterprise: maximum assets IDR 50 million, annual turnover up to IDR 300 million
+    - Small Enterprise: assets IDR 50 million to IDR 500 million, turnover IDR 300 million to IDR 2.5 billion
+    - Medium Enterprise: assets IDR 500 million to IDR 10 billion, turnover IDR 2.5 billion to IDR 50 billion
+
+1.2 Credit Quality refers to the OJK classification under POJK No. 40/POJK.03/2019:
+    - Performing (Lancar): on-time payment, no arrears
+    - Special Mention (Dalam Perhatian Khusus/DPK): arrears 1–90 days
+    - Substandard (Kurang Lancar): arrears 91–120 days
+    - Doubtful (Diragukan): arrears 121–180 days
+    - Loss (Macet): arrears more than 180 days
+
+1.3 Non-Performing Loan (NPL) means credits classified as Substandard, Doubtful, or Loss.
+1.4 Debt Service Coverage Ratio (DSCR): ratio of operating cash flow to total debt obligations.
+
+Article 2 — Objectives
+
+a. Expand financial inclusion for SME operators across Indonesia
+b. Support economic growth through measured and prudent credit expansion
+c. Maintain portfolio quality in line with OJK standards
+d. Achieve a 15% YoY growth target for SME credit in 2026
+e. Keep the gross NPL ratio for SME credit below 3.0% on a consolidated basis
+
+CHAPTER II — ELIGIBILITY AND DOCUMENTATION
+
+Article 3 — Borrower Requirements
+
+Applicants must satisfy all of the following requirements:
+1. Indonesian citizen (WNI) aged at least 21 or legally married
+2. Active business operating continuously for at least 2 years
+3. Not listed on Bank Indonesia's Blacklist (DHBI)
+4. No loan default at any financial institution in the past 24 months
+5. Internal credit score of at least 600 on a 300–900 scale
+6. DSCR of at least 1.2x
+
+Article 4 — Restricted Sectors
+
+The bank does not finance: gambling, high-alcohol beverages without a permit, illegal weapons
+trading, environmentally destructive businesses, or businesses violating applicable laws.
+
+Article 5 — Required Documentation
+
+Identity Documents: National ID (KTP), Tax ID (NPWP — mandatory for limits above IDR 50 million),
+Family Registration Card (KK), Marriage Certificate.
+
+Business Documents:
+- Business Identification Number (NIB) or valid business license (SIUP)
+- Articles of incorporation and all amendments (for PT/CV/Firma entities)
+- Business domicile certificate from the local kelurahan
+- Photographs of business premises from at least 3 angles
+
+Financial Documents:
+- Two years of financial statements (income statement and balance sheet)
+- Six months of bank statements from all active accounts
+- Annual income tax returns for the past two years (mandatory for limits above IDR 200 million)
+
+Collateral Documents (mandatory for small and medium segments):
+- Land certificate (SHM or HGB) with building permit (IMB)
+- Vehicle ownership certificate (BPKB) and registration (STNK)
+- OJK-accredited independent appraisal report (for limits above IDR 1 billion)
+
+CHAPTER III — CREDIT LIMITS, TENOR, AND INTEREST RATES
+
+Article 6 — Credit Limit Tiers
+
+| Segment | Minimum Limit    | Maximum Limit    | Collateral Requirement     |
+|---------|-----------------|-----------------|----------------------------|
+| Micro   | IDR 5 million   | IDR 500 million | Not required (up to 50M)   |
+| Small   | IDR 500 million | IDR 5 billion   | Required                   |
+| Medium  | IDR 5 billion   | IDR 50 billion  | Required + Appraisal       |
+
+Article 7 — Loan Tenor
+
+| Segment | Working Capital  | Investment       |
+|---------|-----------------|-----------------|
+| Micro   | Max. 12 months  | Max. 36 months  |
+| Small   | Max. 24 months  | Max. 60 months  |
+| Medium  | Max. 36 months  | Max. 84 months  |
+
+Article 8 — Interest Rates
+
+- Micro KUR (government-subsidised): 6% per annum effective
+- Micro non-KUR: 12–15% per annum effective
+- Small segment: 9–13% per annum effective
+- Medium segment: 8–11% per annum effective
+
+CHAPTER IV — APPROVAL PROCESS AND EXPANSION TARGETS
+
+Article 9 — Approval Authority
+
+- Up to IDR 500 million: Branch Head
+- IDR 500 million – IDR 5 billion: Regional Credit Committee
+- Above IDR 5 billion: Central Credit Committee
+
+Standard processing times:
+- Micro segment (automated scoring): 1 business day
+- Small segment: 7 business days from complete documentation
+- Medium segment: 14 business days from complete documentation
+
+Article 10 — 2026 Portfolio Expansion Targets
+
+The bank sets a national SME credit growth target of 15% YoY against the
+end-December 2025 outstanding position (national total: IDR 485 trillion).
+
+Regional growth targets:
+- DKI Jakarta         : +18% YoY (end-2025 outstanding: IDR 92.4 trillion)
+- West Java           : +16% YoY (end-2025 outstanding: IDR 68.1 trillion)
+- East Java           : +15% YoY (end-2025 outstanding: IDR 71.3 trillion)
+- Central Java        : +12% YoY (end-2025 outstanding: IDR 54.8 trillion)
+- North Sumatra       : +20% YoY (end-2025 outstanding: IDR 28.5 trillion)
+- South Sulawesi      : +25% YoY (end-2025 outstanding: IDR 15.2 trillion)
+- Bali & Nusa Tenggara: +22% YoY (end-2025 outstanding: IDR 12.1 trillion)
+
+End-2026 outstanding targets by segment:
+- Micro  : IDR 167 trillion (from IDR 145 trillion)
+- Small  : IDR 251 trillion (from IDR 218 trillion)
+- Medium : IDR 140 trillion (from IDR 122 trillion)
+
+CHAPTER V — QUALITY MONITORING AND RESTRUCTURING
+
+Article 11 — Portfolio Quality Standards
+
+Board-approved tolerances for 2026:
+- Gross NPL         : maximum 3.0% of total SME outstanding
+- Net NPL           : maximum 1.5% (after loan-loss provisions)
+- Special Mention ratio: maximum 8.0% of total SME outstanding
+- Provision coverage: minimum 100% for all NPL credits
+
+Article 12 — Region Classification by Credit Quality
+
+Regions are classified quarterly based on gross NPL:
+- Green  (NPL < 1.5%)  : full expansion with no restrictions
+- Yellow (NPL 1.5%–3.0%): controlled expansion under intensive oversight
+- Red    (NPL > 3.0%)  : moratorium on new credit, focus on recovery
+
+Status as of December 2025:
+- DKI Jakarta  : NPL 1.8% — Yellow (controlled expansion)
+- Surabaya     : NPL 1.2% — Green (full expansion permitted)
+- Bandung      : NPL 2.4% — Yellow (controlled expansion)
+- Medan        : NPL 1.0% — Green (full expansion permitted)
+- Makassar     : NPL 0.9% — Green (full expansion permitted)
+
+Article 13 — Restructuring Eligibility Conditions
+
+A loan may be restructured if at least one of the following conditions is met:
+a. Credit quality is Special Mention or worse (arrears of at least 30 days)
+b. Borrower is affected by force majeure: natural disaster, pandemic, or government policy
+   directly impacting the business
+c. Turnover has declined more than 30% due to documented external economic conditions
+d. Loss of a key customer accounting for more than 40% of revenue
+e. Supply chain disruption affecting business continuity for at least 3 months
+
+Restructuring schemes by credit quality:
+- Special Mention : term extension or temporary interest rate reduction
+- Substandard     : installment rescheduling or grace period of 3–6 months
+- Doubtful        : combination of rescheduling and interest rate reduction
+- Loss            : transferred directly to Recovery Management Unit; not eligible for restructuring
+
+Article 14 — Reporting
+
+SME portfolio quality reports are submitted to:
+- Risk Management Committee: monthly
+- Board of Commissioners: quarterly
+- OJK: as required under SLIK and LKPBU regulations
+
+This policy is reviewed at least annually or whenever a significant OJK regulatory change occurs.
+
+Issued in Jakarta, 1 January 2026
+Credit Director          : Ahmad Zulkifli
+Risk Management Director : Sari Dewi Kusuma
+President Director       : Budi Hartono

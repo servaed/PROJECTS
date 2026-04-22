@@ -95,18 +95,21 @@ class Settings(BaseSettings):
 
     # ── Document storage ──────────────────────────────────────────────────
     docs_source_path: str = "./data/sample_docs"
-    docs_storage_type: Literal["local", "hdfs", "s3"] = "local"
-    hdfs_url: str = "http://namenode:9870"
-    hdfs_user: str = "hdfs"
+    docs_storage_type: Literal["local", "s3"] = "local"
     s3_endpoint_url: str = ""
     s3_bucket: str = ""
     s3_access_key: str = ""
     s3_secret_key: str = ""
 
     # ── Query engine ──────────────────────────────────────────────────────
-    # "sqlite" : embedded SQLite (local dev, backwards-compatible default)
-    # "trino"  : Trino coordinator (Docker image / CDP CDW)
-    query_engine: Literal["sqlite", "trino"] = "sqlite"
+    # "duckdb" : DuckDB reading local Parquet files (Iceberg-style, no server needed)
+    # "trino"  : Trino coordinator (CDP CDW — production)
+    query_engine: Literal["duckdb", "trino"] = "duckdb"
+
+    # ── DuckDB ────────────────────────────────────────────────────────────
+    # Directory containing one .parquet file per table.
+    # Seed with: python data/sample_tables/seed_parquet.py
+    duckdb_parquet_dir: str = "./data/parquet"
 
     # ── Trino ─────────────────────────────────────────────────────────────
     trino_host: str = "localhost"
@@ -125,8 +128,7 @@ class Settings(BaseSettings):
     minio_warehouse_bucket: str = "rag-warehouse"
 
     # ── SQL ───────────────────────────────────────────────────────────────
-    database_url: str = "sqlite:///./data/sample_tables/demo.db"
-    sql_approved_tables: str = "kredit_umkm,nasabah,cabang"
+    sql_approved_tables: str = "msme_credit,customer,branch"
     sql_max_rows: int = Field(default=500, ge=1, le=1000)
 
     # ── Application ───────────────────────────────────────────────────────

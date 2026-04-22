@@ -133,10 +133,10 @@ def prepare_answer(
         # This ensures both the "target" side (policy) and the "actual" side
         # (data-flavoured text) are represented in the context.
         doc_top_k = top_k + 2 if mode == "gabungan" else top_k
-        doc_chunks = retrieve(question, top_k=doc_top_k, domain=domain)
+        doc_chunks = retrieve(question, top_k=doc_top_k, domain=domain, language=language)
 
         if mode == "gabungan" and sql_question != question:
-            extra = retrieve(sql_question, top_k=top_k, domain=domain)
+            extra = retrieve(sql_question, top_k=top_k, domain=domain, language=language)
             # Deduplicate by (source_path, chunk_index) — keep first occurrence
             seen: set[tuple] = {(c.source_path, c.chunk_index) for c in doc_chunks}
             for chunk in extra:
@@ -267,12 +267,12 @@ def _build_messages(prep: AnswerPrep) -> list[dict]:
     doc_context = (
         _format_doc_context(prep.doc_chunks)
         if prep.doc_chunks
-        else "_Tidak ada dokumen relevan._"
+        else "_No relevant documents found._"
     )
     sql_summary = (
         _format_sql_summary(prep.query_result)
         if prep.query_result and prep.query_result.succeeded
-        else "_Data tidak tersedia._"
+        else "_No data available._"
     )
     return build_combined_prompt(
         doc_context, sql_summary, prep.question, history=prep.history, language=lang
@@ -288,5 +288,6 @@ def _format_doc_context(chunks: list[RetrievedChunk]) -> str:
 
 def _format_sql_summary(result: QueryResult | None) -> str:
     if result is None or result.error or result.is_empty:
-        return "Tidak ada data yang cocok dengan permintaan."
-    return result.to_markdown_table(max_rows=20)
+        return "No data matching the request."
+    header = f"SQL: {result.sql}\n\nResult ({result.row_count} rows):\n"
+    return header + result.to_markdown_table(max_rows=20)

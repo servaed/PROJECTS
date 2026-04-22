@@ -69,33 +69,33 @@ def validate_sql(sql: str, approved_tables: list[str] | None = None) -> str:
     Raises SqlGuardrailError with a Bahasa Indonesia message if not.
     """
     if not sql or not sql.strip():
-        raise SqlGuardrailError("Query SQL kosong.")
+        raise SqlGuardrailError("SQL query is empty.")
 
     cleaned = sql.strip().rstrip(";")
 
     # Reject sentinel returned by LLM when it can't answer
     if cleaned.upper() == CANNOT_ANSWER_SENTINEL:
-        raise SqlGuardrailError("Model mengembalikan: pertanyaan tidak dapat dijawab dengan skema yang ada.")
+        raise SqlGuardrailError("Model returned: question cannot be answered with the available schema.")
 
     # Strip comments before safety checks so comment-wrapped payloads are caught
     comment_stripped = _strip_comments(cleaned)
 
     # Block multi-statement execution (checked on comment-stripped text)
     if MULTI_STATEMENT_PATTERN.search(comment_stripped):
-        raise SqlGuardrailError("Multi-statement SQL tidak diizinkan.")
+        raise SqlGuardrailError("Multi-statement SQL is not permitted.")
 
     upper = comment_stripped.upper()
 
     # Must start with SELECT or WITH (CTEs start with WITH ... SELECT ...)
     lstripped = upper.lstrip()
     if not (lstripped.startswith("SELECT") or lstripped.startswith("WITH")):
-        raise SqlGuardrailError("Hanya query SELECT yang diizinkan.")
+        raise SqlGuardrailError("Only SELECT queries are permitted.")
 
     # Block destructive keywords (checked on comment-stripped text)
     for pattern in BLOCKED_PATTERNS:
         if re.search(pattern, upper):
             keyword = pattern.strip(r"\b")
-            raise SqlGuardrailError(f"Keyword SQL '{keyword}' tidak diizinkan.")
+            raise SqlGuardrailError(f"SQL keyword '{keyword}' is not permitted.")
 
     # Block access to unapproved tables — including subqueries and CTEs
     if approved_tables:
@@ -119,8 +119,8 @@ def _check_table_access(sql: str, approved_tables: list[str]) -> None:
             continue  # CTE alias — derived from the query itself, not a real table
         if table not in approved_lower:
             raise SqlGuardrailError(
-                f"Akses ke tabel '{table}' tidak diizinkan. "
-                f"Tabel yang disetujui: {', '.join(approved_tables)}."
+                f"Access to table '{table}' is not permitted. "
+                f"Approved tables: {', '.join(approved_tables)}."
             )
 
 

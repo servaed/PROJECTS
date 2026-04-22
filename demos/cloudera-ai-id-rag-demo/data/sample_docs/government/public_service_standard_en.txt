@@ -1,0 +1,173 @@
+PUBLIC SERVICE STANDARD POLICY — LOCAL GOVERNMENT
+Reference: PEMDA/YAN/POL/001/2026-EN | Revision: 2.0 | Effective: 1 January 2026
+Issued by: Regional Secretary, City Government of Nusantara
+
+CHAPTER I — LEGAL BASIS AND GENERAL PROVISIONS
+
+Article 1 — Legal Basis
+
+a. Law No. 25 of 2009 on Public Services
+b. Law No. 23 of 2014 on Regional Government
+c. Government Regulation No. 96 of 2012 on Implementation of the Public Services Law
+d. Ministerial Regulation (Permenpan-RB) No. 15 of 2014 on Service Standards Guidelines
+e. Nusantara City Regional Regulation No. 4 of 2023 on Public Service Standards
+
+Article 2 — Definitions
+
+2.1 Service Standard is the benchmark used as a guideline for delivering public services
+    and as a reference for evaluating service quality.
+2.2 Community Satisfaction Index (IKM) is data and information on the level of community
+    satisfaction obtained by quantitatively and qualitatively measuring public opinion
+    on the services received.
+2.3 Service Pledge (Maklumat Pelayanan) is a written statement from the service provider
+    committing to deliver services in accordance with the established standards.
+2.4 Complaint is the expression of dissatisfaction arising from actual or anticipated harm
+    suffered by a service applicant.
+
+CHAPTER II — SERVICE TIME STANDARDS
+
+Article 3 — Civil Registration Service Time Standards
+
+Civil Registration Office (Disdukcapil) services:
+
+| Service Type                      | Completion Time    | Fee         |
+|----------------------------------|--------------------|-------------|
+| Electronic ID Card (new)          | 3 business days    | Free        |
+| Electronic ID Card (damaged/lost) | 1 business day     | Free        |
+| Family Registration Card (new)    | 1 business day     | Free        |
+| Family Registration Card (change) | 1 business day     | Free        |
+| Birth Certificate                 | 1 business day     | Free        |
+| Death Certificate                 | 1 business day     | Free        |
+| Marriage Certificate              | 3 business days    | IDR 50,000  |
+| Relocation Letter                 | 1 business day     | Free        |
+| Document Legalisation             | Same day           | Free        |
+
+Article 4 — Business Licensing Service Time Standards
+
+One-Stop Integrated Licensing Office (DPTSP) services:
+
+| Licence Type                             | Completion Time     | Fee              |
+|------------------------------------------|---------------------|------------------|
+| Business Identification Number (NIB)     | Automatic (online)  | Free             |
+| Business Standards Certificate           | 3 business days     | Per PNBP schedule|
+| Building Permit (IMB/PBG) — residential  | 10 business days    | Per PNBP schedule|
+| Building Permit (IMB/PBG) — non-residential| 14 business days  | Per PNBP schedule|
+| Environmental Permit (UKL-UPL)           | 21 business days    | Per PNBP schedule|
+| Certificate of Occupancy (SLF)           | 7 business days     | Per PNBP schedule|
+| Trading Business Licence (IUP)           | 3 business days     | Free             |
+| Public Event Permit (Izin Keramaian)     | 3 business days     | IDR 250,000      |
+
+Article 5 — Social and Community Service Time Standards
+
+| Service Type                              | Completion Time    | Fee     |
+|-------------------------------------------|--------------------|---------|
+| Certificate of Indigence (SKTM)           | 1 business day     | Free    |
+| Scholarship Recommendation Letter         | 3 business days    | Free    |
+| Domicile Certificate                      | Same day           | Free    |
+| Social Assistance (verification process)  | 14 business days   | Free    |
+
+Article 6 — Compensation for Service Delays
+
+If a service exceeds the established time standard, applicants are entitled to:
+a. Formal apology from the head of the service unit
+b. Priority queue on the next visit
+c. Document delivery to the applicant's address (for delays exceeding 2x the standard)
+d. Escalation report to the unit head's superior for systemic delays
+
+For IMB/PBG permits specifically:
+- Delay of 1–5 days   : 10% discount on PNBP fees
+- Delay of 6–14 days  : 25% discount on PNBP fees
+- Delay of more than 14 days: 50% discount on PNBP fees + internal investigation
+
+CHAPTER III — COMMUNITY SATISFACTION INDEX STANDARDS
+
+Article 7 — IKM Targets and Satisfaction Standards
+
+Community Satisfaction Index (IKM) targets for 2026 by service unit:
+
+| Service Unit                  | Minimum IKM Target | Minimum Quality Grade |
+|------------------------------|--------------------|-----------------------|
+| Civil Registration (Disdukcapil)| 82.0 (Good)     | B                     |
+| Licensing Office (DPTSP)      | 80.0 (Good)        | B                     |
+| Social Services               | 83.0 (Good)        | B                     |
+| Sub-district offices          | 81.0 (Good)        | B                     |
+| City General Hospital (RSUD)  | 80.0 (Good)        | B                     |
+| City average target           | 81.5 (Good)        | B                     |
+
+IKM score to quality grade conversion:
+- IKM 88.31 – 100.00 : Grade A (Very Good)
+- IKM 76.61 – 88.30  : Grade B (Good)
+- IKM 65.00 – 76.60  : Grade C (Poor)
+- IKM below 65.00    : Grade D (Very Poor) — mandatory improvement plan required
+
+Article 8 — IKM Measurement
+
+IKM is measured across 9 elements per Permenpan-RB No. 14 of 2017:
+1. Requirements   — ease and clarity of required documents
+2. Procedure      — ease and clarity of the service flow
+3. Time           — adherence to the established service time standard
+4. Cost           — compliance with the stipulated fee schedule
+5. Product        — whether the service received matched what was expected
+6. Competence     — ability of officers in service delivery
+7. Behaviour      — courtesy and friendliness of officers
+8. Complaint handling — ability to resolve complaints
+9. Facilities and infrastructure — comfort of the service environment
+
+CHAPTER IV — COMPLAINT CHANNELS AND HANDLING
+
+Article 9 — Official Complaint Channels
+
+Channels available for citizens to lodge complaints:
+a. NusantaraKu App (Android/iOS):
+   - First response: within 24 hours
+   - Available 24/7, directly integrated with relevant government agencies (SKPD)
+
+b. City Hotline 1500-XXX:
+   - Business hours service: Monday–Friday 08:00–16:00 WIB
+   - Infrastructure emergencies: 24/7
+
+c. Complaints Counter at City Hall:
+   - Operating hours: Monday–Friday 08:00–15:00 WIB
+   - Dedicated complaint handling officers
+
+d. Official email: pengaduan@nusantarakota.go.id
+   - Initial response: within 2 business days
+
+e. Written submission to the City Ombudsman office:
+   - For complaints not resolved at the SKPD level
+
+Article 10 — Complaint Handling Procedure
+
+Stages of complaint handling:
+1. Registration and verification : 1 business day
+2. Clarification with the relevant unit: 3 business days
+3. Investigation and analysis: 5–10 business days (depending on complexity)
+4. Response to complainant: no later than 14 business days from receipt
+5. Follow-up monitoring: 30 days after the response
+
+Complaint resolution deadlines by category:
+- Administrative complaints (documents, processing time): 7 business days
+- Officer behaviour complaints: 10 business days
+- Policy/regulatory complaints: 21 business days
+- Cross-agency complaints: 30 business days
+
+CHAPTER V — CONTROL AND EVALUATION MECHANISMS
+
+Article 11 — Routine Reporting
+
+Service units must submit reports to the Regional Secretary:
+- Monthly service performance report (IKM, application volume, on-time rate)
+- Monthly complaint report (count, type, resolution status)
+- Annual service standard evaluation report
+
+Article 12 — Sanctions for Service Units
+
+Service units that consistently fail to meet standards face:
+- First written warning: IKM below target for 2 consecutive months
+- Second written warning and 30-day improvement plan: IKM below target for 3 months
+- External service audit: IKM below target for 4 months or high complaint volume
+- Leadership review: IKM below target for 6 consecutive months
+
+Issued in Nusantara City, 1 January 2026
+Regional Secretary: Dr. Andi Prasetyo, M.Si.
+Mayor            : H. Bambang Triyono, S.H., M.H.

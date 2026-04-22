@@ -1,4 +1,4 @@
-"""Language utilities — detection and Bahasa Indonesia helpers."""
+"""Language utilities — language detection helpers."""
 
 from __future__ import annotations
 
@@ -20,9 +20,9 @@ def is_likely_bahasa(text: str) -> bool:
 def mode_label(mode: str) -> str:
     """Return a display label for an answer mode."""
     labels = {
-        "dokumen": "Dokumen",
-        "data": "Data Terstruktur",
-        "gabungan": "Gabungan",
+        "dokumen": "Documents",
+        "data": "Structured Data",
+        "gabungan": "Combined",
     }
     return labels.get(mode, mode.capitalize())
 

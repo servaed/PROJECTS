@@ -80,7 +80,7 @@ if question:
     with st.chat_message("assistant"):
         try:
             # Phase 1 — classify + retrieve (fast, shown under spinner)
-            with st.spinner("Mencari informasi yang relevan…"):
+            with st.spinner("Searching for relevant information…"):
                 prep = prepare_answer(question, history=history)
 
             # Show mode badge before streaming begins
@@ -98,7 +98,7 @@ if question:
             )
 
         except Exception as exc:
-            error_msg = f"Gagal memproses pertanyaan Anda: {exc}"
+            error_msg = f"Failed to process your question: {exc}"
             render_error(error_msg)
             st.session_state.messages.append(
                 {"role": "assistant", "content": error_msg}

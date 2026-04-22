@@ -214,7 +214,7 @@ def test_retrieve_top_k_respected():
 
     with patch("src.retrieval.retriever.load_vector_store", return_value=mock_store), \
          patch("src.retrieval.retriever.get_embeddings", return_value=MagicMock()):
-        results = retrieve("pertanyaan", top_k=3)
+        results = retrieve("question", top_k=3)
 
     assert len(results) == 3
     # Retriever fetches more candidates for hybrid BM25+FAISS reranking;

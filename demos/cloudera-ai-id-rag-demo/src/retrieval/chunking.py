@@ -32,6 +32,7 @@ class DocumentChunk:
     chunk_index: int
     text: str
     domain: str = "general"
+    language: str = "id"      # "id" = Bahasa Indonesia, "en" = English
 
     @property
     def metadata(self) -> dict:
@@ -44,6 +45,7 @@ class DocumentChunk:
             "ingest_timestamp": self.ingest_timestamp,
             "chunk_index": self.chunk_index,
             "domain": self.domain,
+            "language": self.language,
         }
 
 
@@ -89,6 +91,7 @@ def chunk_documents(
                     chunk_index=i,
                     text=text,
                     domain=doc.domain,
+                    language=doc.language,
                 )
             )
         logger.debug("Chunked '%s' into %d chunks", doc.title, len(texts))

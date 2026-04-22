@@ -15,7 +15,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,6 +35,7 @@
       --topbar-bg: #FFFFFF; --topbar-bd: #DADCE0;
       --logo-filter: brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%);
       --font: 'Google Sans', system-ui, sans-serif;
+      --display: 'Google Sans Display', 'Google Sans', system-ui, sans-serif;
       --mono: 'JetBrains Mono', monospace;
       --inp-bg: #FFFFFF; --inp-bd: #DADCE0;
       --inp-focus-bd: var(--orange); --inp-focus-shadow: rgba(249,103,2,0.15);
@@ -58,24 +59,28 @@
     /* ── Topbar ───────────────────────────────────────────────────────────── */
     .topbar {
       position: sticky; top: 0; z-index: 100;
-      height: 56px; display: flex; align-items: center; gap: 12px;
+      height: 64px; display: flex; align-items: center; gap: 12px;
       padding: 0 24px; background: var(--topbar-bg);
       border-bottom: 1px solid var(--topbar-bd);
     }
-    .topbar img { height: 18px; filter: var(--logo-filter); }
-    .topbar-div { width: 1px; height: 18px; background: var(--border); }
-    .topbar-title { font-size: 0.88rem; font-weight: 700; color: var(--t1); }
+    .topbar img { height: 20px; filter: var(--logo-filter); }
+    .topbar-div { width: 1px; height: 20px; background: var(--border); }
+    .topbar-title {
+      font-family: var(--display); font-size: 0.95rem; font-weight: 700;
+      color: var(--t1); letter-spacing: -0.01em;
+    }
     .topbar-title span { color: var(--orange); }
-    .topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .topbar-right { margin-left: auto; display: flex; gap: 6px; align-items: center; }
     .icon-btn {
-      height: 32px; padding: 0 12px; border-radius: 6px;
+      height: 32px; padding: 0 14px; border-radius: 8px;
       border: 1px solid var(--border); background: var(--s2);
-      color: var(--t2); font-size: 0.75rem; font-family: var(--font);
+      color: var(--t2); font-size: 0.8rem; font-weight: 500; font-family: var(--font);
       cursor: pointer; text-decoration: none; display: inline-flex;
       align-items: center; gap: 5px; transition: all 0.15s;
     }
     .icon-btn:hover { background: var(--s3); color: var(--t1); }
-    .theme-btn { width: 32px; height: 32px; padding: 0; justify-content: center; }
+    .icon-btn.active { background: var(--o-dim); color: var(--o-text); border-color: rgba(249,103,2,0.3); }
+    .theme-btn { width: 32px; padding: 0; justify-content: center; }
 
     /* ── Layout ──────────────────────────────────────────────────────────── */
     .page { max-width: 780px; margin: 0 auto; padding: 36px 24px 80px; }
@@ -233,8 +238,11 @@
   <div class="topbar-div"></div>
   <div class="topbar-title" id="topbarTitle">Enterprise <span>Assistant</span> — Configure</div>
   <div class="topbar-right">
-    <a href="/" class="icon-btn" id="backBtn">← App</a>
-    <a href="/setup" class="icon-btn">⊕ Status</a>
+    <a class="icon-btn" href="/">💬 Chat</a>
+    <a class="icon-btn" href="/explorer">🗄 SQL Explorer</a>
+    <a class="icon-btn" href="/upload">↑ Upload</a>
+    <a class="icon-btn" href="/setup">◎ Setup</a>
+    <a class="icon-btn active" href="/configure">⚙ Configure</a>
     <button class="icon-btn theme-btn" id="themeBtn" title="Toggle theme"></button>
   </div>
 </div>

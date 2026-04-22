@@ -35,7 +35,7 @@ class QueryResult:
 
     def to_markdown_table(self, max_rows: int = 20) -> str:
         if self.dataframe is None or self.dataframe.empty:
-            return "_Tidak ada data._"
+            return "_No data._"
         df = self.dataframe.head(max_rows).copy()
         # Format numeric columns: integers as plain integers, floats with 2 decimal places.
         # This prevents pandas from rendering large numbers in scientific notation (e.g. 2.368e+10).

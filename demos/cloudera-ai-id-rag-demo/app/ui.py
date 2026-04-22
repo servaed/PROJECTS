@@ -21,12 +21,12 @@ from src.utils.language import mode_label, mode_badge_color
 # ── Sample prompts shown in sidebar ───────────────────────────────────────
 
 SAMPLE_PROMPTS = [
-    "Jelaskan ketentuan restrukturisasi kredit berdasarkan dokumen kebijakan terbaru.",
-    "Berapa total outstanding pinjaman UMKM wilayah Jakarta pada Maret 2026?",
-    "Apakah tren outstanding tersebut sejalan dengan kebijakan ekspansi UMKM?",
-    "Apa syarat pengajuan KUR untuk usaha mikro berdasarkan regulasi terbaru?",
-    "Tunjukkan 10 nasabah dengan eksposur kredit tertinggi di segmen korporasi.",
-    "Jelaskan prosedur verifikasi identitas nasabah (KYC) sesuai ketentuan yang berlaku.",
+    "Explain the credit restructuring conditions based on the latest policy document.",
+    "What is the total outstanding MSME loan balance in Jakarta as of March 2026?",
+    "Does the outstanding trend align with the MSME expansion policy?",
+    "What are the KUR application requirements for micro businesses under the latest regulation?",
+    "Show the top 10 customers by credit exposure in the corporate segment.",
+    "Explain the customer identity verification (KYC) procedure per current regulations.",
 ]
 
 # ── Brand CSS ─────────────────────────────────────────────────────────────
@@ -308,8 +308,8 @@ _CLOUDERA_HEADER_HTML = """
         ">
             Powered by&nbsp;
             <strong style="color:#00A591;">Cloudera AI Inference</strong>
-            &nbsp;·&nbsp; RAG Dokumen&nbsp;+&nbsp;SQL Data
-            &nbsp;·&nbsp; Bahasa Indonesia
+            &nbsp;·&nbsp; Document RAG&nbsp;+&nbsp;SQL Data
+            &nbsp;·&nbsp; Bilingual (ID / EN)
         </div>
     </div>
 </div>
@@ -331,9 +331,9 @@ _DISCLAIMER_HTML = """
 ">
     <span style="font-size:1.2em;">ℹ️</span>
     <span>
-        Jawaban didasarkan pada dokumen dan data perusahaan.
-        <strong>Selalu verifikasi dengan sumber resmi</strong>
-        sebelum mengambil keputusan bisnis.
+        Answers are based on company documents and data.
+        <strong>Always verify with authoritative sources</strong>
+        before making business decisions.
     </span>
 </div>
 """
@@ -387,13 +387,13 @@ def render_sidebar() -> None:
         st.markdown(_SIDEBAR_LOGO_HTML, unsafe_allow_html=True)
 
         # ── About section ──────────────────────────────────────────────
-        st.markdown("### Tentang Asisten")
+        st.markdown("### About the Assistant")
         st.markdown(
             """
-Asisten menjawab dalam **Bahasa Indonesia** berdasarkan:
-- 📄 RAG Dokumen (PDF, DOCX, TXT)
-- 🗄️ Query data terstruktur (SQL)
-- 🔀 Jawaban gabungan dokumen + data
+The assistant answers in the **same language as your question** (ID or EN) based on:
+- 📄 Document RAG (PDF, DOCX, TXT)
+- 🗄️ Structured data queries (SQL)
+- 🔀 Combined document + data answers
             """,
             unsafe_allow_html=False,
         )
@@ -403,7 +403,7 @@ Asisten menjawab dalam **Bahasa Indonesia** berdasarkan:
         st.divider()
 
         # ── Sample prompts ─────────────────────────────────────────────
-        st.markdown("### 💬 Contoh Pertanyaan")
+        st.markdown("### 💬 Sample Questions")
         for prompt in SAMPLE_PROMPTS:
             label = prompt[:58] + "…" if len(prompt) > 58 else prompt
             if st.button(label, key=f"prompt_{prompt[:30]}", use_container_width=True):
@@ -413,39 +413,39 @@ Asisten menjawab dalam **Bahasa Indonesia** berdasarkan:
 
 def render_status() -> None:
     """Render live system status indicators."""
-    st.markdown("### 🔌 Status Sistem")
+    st.markdown("### 🔌 System Status")
 
     from src.config.settings import settings
 
     # ── Vector store ───────────────────────────────────────────────────
     vs_ok = (Path(settings.vector_store_path) / "index.faiss").exists()
     if vs_ok:
-        st.success("Vector Store: Aktif", icon="✅")
+        st.success("Vector Store: Active", icon="✅")
     else:
-        st.warning("Vector Store: Belum diingest", icon="⚠️")
+        st.warning("Vector Store: Not ingested", icon="⚠️")
 
     # ── Database ───────────────────────────────────────────────────────
     try:
         from src.connectors.db_adapter import get_table_names
         tables = get_table_names()
-        st.success(f"Database: {len(tables)} tabel", icon="✅")
+        st.success(f"Database: {len(tables)} tables", icon="✅")
     except Exception:
-        st.error("Database: Tidak terhubung", icon="❌")
+        st.error("Database: Not connected", icon="❌")
 
     # ── LLM endpoint ──────────────────────────────────────────────────
     if settings.llm_base_url:
         model_short = settings.llm_model_id.split("/")[-1][:22]
         st.success(f"LLM: {model_short}", icon="✅")
     else:
-        st.error("LLM: URL tidak dikonfigurasi", icon="❌")
+        st.error("LLM: URL not configured", icon="❌")
 
 
 def render_mode_badge(mode: str) -> None:
     """Render a pill badge showing the answer mode."""
     badge_styles = {
-        "dokumen": ("🗂️", "#00A591", "#E6F7F5", "Dokumen RAG"),
-        "data":    ("🗄️", "#6366F1", "#EEF2FF", "Data Terstruktur"),
-        "gabungan":("🔀", "#F96702", "#FFF7F0", "Gabungan"),
+        "dokumen": ("🗂️", "#00A591", "#E6F7F5", "Document RAG"),
+        "data":    ("🗄️", "#6366F1", "#EEF2FF", "Structured Data"),
+        "gabungan":("🔀", "#F96702", "#FFF7F0", "Combined"),
     }
     icon, border, bg, label_text = badge_styles.get(
         mode, ("❓", "#6B7280", "#F3F4F6", mode)
@@ -474,7 +474,7 @@ def render_citations(result: AnswerResult) -> None:
     """Render expandable source documents and SQL trace panels."""
     if result.doc_citations:
         with st.expander(
-            f"📄 Sumber Dokumen — {len(result.doc_citations)} kutipan ditemukan",
+            f"📄 Source Documents — {len(result.doc_citations)} citations found",
             expanded=False,
         ):
             for i, cit in enumerate(result.doc_citations, 1):
@@ -488,7 +488,7 @@ def render_citations(result: AnswerResult) -> None:
                     <span style="font-size:0.75rem;color:#6B7280;">
                         📁 <code>{cit.source_path}</code>
                         &nbsp;·&nbsp; Chunk {cit.chunk_index + 1}
-                        &nbsp;·&nbsp; Diindeks: {cit.ingest_timestamp[:10]}
+                        &nbsp;·&nbsp; Indexed: {cit.ingest_timestamp[:10]}
                     </span>
                     </div>""",
                     unsafe_allow_html=True,
@@ -498,21 +498,21 @@ def render_citations(result: AnswerResult) -> None:
                     st.divider()
 
     if result.sql_citation:
-        with st.expander("🗄️ Query Data Terstruktur — Detail Eksekusi", expanded=False):
+        with st.expander("🗄️ Structured Data Query — Execution Details", expanded=False):
             col1, col2 = st.columns(2)
-            col1.metric("Baris Dikembalikan", result.sql_citation.row_count)
-            col2.metric("Latensi Query", f"{result.sql_citation.latency_ms:.1f} ms")
+            col1.metric("Rows Returned", result.sql_citation.row_count)
+            col2.metric("Query Latency", f"{result.sql_citation.latency_ms:.1f} ms")
             st.markdown(
                 "<p style='font-size:0.82rem;color:#6B7280;font-weight:600;"
                 "text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;'>"
-                "SQL yang Dieksekusi (dibuat sistem):</p>",
+                "SQL Executed (system-generated):</p>",
                 unsafe_allow_html=True,
             )
             st.code(result.sql_citation.sql, language="sql")
             st.markdown(
                 "<p style='font-size:0.82rem;color:#6B7280;font-weight:600;"
                 "text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;'>"
-                "Hasil (10 baris pertama):</p>",
+                "Results (first 10 rows):</p>",
                 unsafe_allow_html=True,
             )
             st.markdown(result.sql_citation.table_markdown)
@@ -541,5 +541,5 @@ def render_error(message: str) -> None:
 def get_chat_input() -> str | None:
     """Return the submitted question or None."""
     prefill = st.session_state.pop("prefill_prompt", None)
-    question = st.chat_input("Ketik pertanyaan Anda di sini…", key="chat_input")
+    question = st.chat_input("Type your question here…", key="chat_input")
     return prefill or question

@@ -37,39 +37,27 @@ def _parse_sse(raw: str) -> list[dict]:
     return events
 
 
-def _make_app_client(index_html: str = "<html/>"):
-    """Import the FastAPI app with a patched static directory and return a TestClient.
-
-    The lifespan is intentionally bypassed (lifespan=False on TestClient) to
-    avoid needing real filesystem resources during unit tests.
-    """
+def _make_app_client():
+    """Return a TestClient for the FastAPI app (lifespan bypassed for unit tests)."""
     from app import api as api_module
-
-    # Inject fake SPA HTML so GET / returns 200
-    api_module._INDEX_HTML = index_html
     return TestClient(api_module.app, raise_server_exceptions=True)
 
 
 # ── GET / ──────────────────────────────────────────────────────────────────
 
-def test_index_returns_404_when_no_spa():
+def test_index_returns_404_when_no_spa(tmp_path, monkeypatch):
     from app import api as api_module
-    original = api_module._INDEX_HTML
-    try:
-        api_module._INDEX_HTML = ""
-        client = TestClient(api_module.app)
-        resp = client.get("/")
-        assert resp.status_code == 404
-    finally:
-        api_module._INDEX_HTML = original
+    monkeypatch.setattr(api_module, "_STATIC", tmp_path)
+    client = TestClient(api_module.app)
+    resp = client.get("/")
+    assert resp.status_code == 404
 
 
-def test_index_returns_html_when_spa_cached():
-    client = _make_app_client("<html><body>SPA</body></html>")
+def test_index_returns_html_when_spa_exists():
+    client = _make_app_client()
     resp = client.get("/")
     assert resp.status_code == 200
     assert "text/html" in resp.headers["content-type"]
-    assert "SPA" in resp.text
 
 
 # ── GET /api/samples ───────────────────────────────────────────────────────
@@ -249,7 +237,7 @@ def test_chat_sse_emits_mode_token_done():
         client = _make_app_client()
         resp = client.post(
             "/api/chat",
-            json={"question": "Apa itu kredit?", "history": []},
+            json={"question": "What is credit?", "history": []},
         )
 
     assert resp.status_code == 200
@@ -276,7 +264,7 @@ def test_chat_sse_mode_value():
          patch("app.api.finalize_answer", return_value=result):
 
         client = _make_app_client()
-        resp = client.post("/api/chat", json={"question": "jumlah UMKM?", "history": []})
+        resp = client.post("/api/chat", json={"question": "total MSME count?", "history": []})
 
     events = _parse_sse(resp.text)
     mode_evt = next(e for e in events if e["event"] == "mode")
@@ -289,7 +277,7 @@ def test_chat_sse_emits_error_on_pipeline_failure():
 
     with patch("app.api.prepare_answer", side_effect=RuntimeError("backend down")):
         client = _make_app_client()
-        resp = client.post("/api/chat", json={"question": "apa?", "history": []})
+        resp = client.post("/api/chat", json={"question": "what?", "history": []})
 
     events = _parse_sse(resp.text)
     assert any(e["event"] == "error" for e in events)
@@ -421,7 +409,7 @@ def test_chat_sse_emits_error_on_stream_synthesis_failure():
          patch("app.api.finalize_answer", return_value=result):
 
         client = _make_app_client()
-        resp = client.post("/api/chat", json={"question": "test?", "history": []})
+        resp = client.post("/api/chat", json={"question": "test question?", "history": []})
 
     events = _parse_sse(resp.text)
     assert any(e["event"] == "error" for e in events)
@@ -439,7 +427,7 @@ def test_chat_sse_returns_usage_in_done_event():
          patch("app.api.finalize_answer", return_value=result):
 
         client = _make_app_client()
-        resp = client.post("/api/chat", json={"question": "apa itu NPL?", "history": []})
+        resp = client.post("/api/chat", json={"question": "what is NPL?", "history": []})
 
     events = _parse_sse(resp.text)
     done = next((e for e in events if e["event"] == "done"), None)
@@ -458,9 +446,9 @@ def test_e2e_dokumen_pipeline(monkeypatch):
     from src.retrieval.retriever import RetrievedChunk
 
     fake_chunk = RetrievedChunk(
-        text="Kebijakan kredit UMKM mensyaratkan agunan minimal.",
-        title="Kebijakan Kredit",
-        source_path="/docs/kredit.txt",
+        text="SME credit policy requires minimum collateral.",
+        title="Credit Policy",
+        source_path="/docs/credit_policy.txt",
         chunk_index=0,
         score=0.9,
         ingest_timestamp="2026-04-17T00:00:00",
@@ -471,10 +459,10 @@ def test_e2e_dokumen_pipeline(monkeypatch):
          patch("src.orchestration.answer_builder.get_llm_client") as mock_llm_factory:
 
         mock_llm = MagicMock()
-        mock_llm.stream_chat.return_value = iter(["Kebijakan kredit UMKM mensyaratkan agunan."])
+        mock_llm.stream_chat.return_value = iter(["SME credit policy requires collateral."])
         mock_llm_factory.return_value = mock_llm
 
-        prep = prepare_answer("Apa syarat kredit UMKM?", top_k=1, domain="banking")
+        prep = prepare_answer("What are the MSME credit requirements?", top_k=1, domain="banking")
         assert prep.mode == "dokumen"
         assert len(prep.doc_chunks) == 1
 
@@ -484,7 +472,7 @@ def test_e2e_dokumen_pipeline(monkeypatch):
         result = finalize_answer(prep, "".join(tokens))
         assert result.mode == "dokumen"
         assert len(result.doc_citations) == 1
-        assert result.doc_citations[0].title == "Kebijakan Kredit"
+        assert result.doc_citations[0].title == "Credit Policy"
 
 
 def test_e2e_data_pipeline_sql_failure(monkeypatch):
@@ -494,10 +482,10 @@ def test_e2e_data_pipeline_sql_failure(monkeypatch):
 
     with patch("src.orchestration.router.classify_question", return_value="data"), \
          patch("src.orchestration.answer_builder.generate_sql",
-               side_effect=SqlGuardrailError("Tabel tidak diizinkan.")), \
+               side_effect=SqlGuardrailError("Table not permitted.")), \
          patch("src.orchestration.answer_builder.get_llm_client"):
 
-        prep = prepare_answer("Total kredit ilegal?", top_k=1, domain="banking")
+        prep = prepare_answer("Total illegal credit?", top_k=1, domain="banking")
         assert prep.mode == "data"
         assert prep.query_result is None
 

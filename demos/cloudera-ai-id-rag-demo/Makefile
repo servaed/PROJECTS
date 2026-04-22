@@ -12,7 +12,7 @@ help:
 	@echo ""
 	@echo "  Development"
 	@echo "    make dev              Start local dev server on port 8080 (hot-reload)"
-	@echo "    make seed             Seed SQLite database + ingest documents into FAISS"
+	@echo "    make seed             Seed Parquet files + ingest documents into FAISS"
 	@echo "    make reset-vs         Delete vector store (forces re-ingestion on next start)"
 	@echo ""
 	@echo "  Testing"
@@ -26,8 +26,8 @@ dev:
 	uvicorn app.api:app --host 0.0.0.0 --port $(PORT) --reload
 
 seed:
-	@echo "[1/2] Seeding demo SQLite database…"
-	python data/sample_tables/seed_database.py
+	@echo "[1/2] Seeding Parquet files for DuckDB…"
+	python data/sample_tables/seed_parquet.py
 	@echo "[2/2] Ingesting documents into FAISS vector store…"
 	python -m src.retrieval.document_loader
 	@echo "Done. Run 'make dev' to start the server."
