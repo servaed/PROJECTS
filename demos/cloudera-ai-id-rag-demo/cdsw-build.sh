@@ -20,8 +20,8 @@ echo "========================================================"
 echo "[build 1/3] Installing Python dependencies..."
 pip install --quiet --no-warn-script-location -r requirements.txt
 
-echo "[build 2/3] Seeding demo SQLite database (local-dev fallback)..."
-python data/sample_tables/seed_database.py
+echo "[build 2/3] Seeding demo Parquet files (DuckDB data layer)..."
+python data/sample_tables/seed_parquet.py
 
 echo "[build 3/3] Pre-downloading embedding model (multilingual-e5-large)..."
 python - <<'PYEOF'

@@ -16,8 +16,8 @@ import sys
 
 PARQUET_DIR = pathlib.Path(__file__).parent.parent / "parquet"
 
-# Column names per table, matching the INSERT order in seed_database.py.
-# msme_credit omits `id` (AUTOINCREMENT); all other tables include it as first column.
+# Column names per table, matching the row structure produced by sample_data.py.
+# msme_credit omits `id`; all other tables include it as the first column.
 TABLE_COLUMNS: dict[str, list[str]] = {
     "msme_credit": ["customer_id", "region", "segment", "outstanding", "credit_quality", "month"],
     "customer": ["id", "name", "segment", "region", "total_exposure", "internal_rating", "onboard_date"],

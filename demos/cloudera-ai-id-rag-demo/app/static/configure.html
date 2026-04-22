@@ -538,19 +538,44 @@
       </div>
       <div class="card-body">
 
-        <div class="field" id="f_DATABASE_URL">
+        <div class="field" id="f_QUERY_ENGINE">
           <div class="field-top">
-            <label class="field-label" for="DATABASE_URL">Database URL</label>
-            <span id="src_DATABASE_URL" class="src-badge src-none">Not set</span>
+            <label class="field-label" for="QUERY_ENGINE">Query Engine</label>
+            <span id="src_QUERY_ENGINE" class="src-badge src-none">Not set</span>
           </div>
-          <div class="pw-wrap">
-            <input type="password" id="DATABASE_URL" name="DATABASE_URL"
-                   placeholder="sqlite:///data/sample_tables/demo.db  (default)"/>
-            <button type="button" class="pw-toggle" onclick="togglePw('DATABASE_URL',this)">Show</button>
-          </div>
+          <select id="QUERY_ENGINE" name="QUERY_ENGINE">
+            <option value="">— use default (duckdb) —</option>
+            <option value="duckdb">duckdb — local Parquet files (demo default)</option>
+            <option value="trino">trino — Cloudera Data Warehouse (production)</option>
+          </select>
           <div class="field-hint">
-            SQLAlchemy connection string.  The demo default is a local SQLite file.
-            For production use a read-only PostgreSQL or Hive connection.
+            <b>duckdb</b>: reads local Parquet files seeded by <code>seed_parquet.py</code>.
+            <b>trino</b>: connects to a CDW Trino coordinator — set TRINO_HOST below.
+          </div>
+        </div>
+
+        <div class="field" id="f_DUCKDB_PARQUET_DIR">
+          <div class="field-top">
+            <label class="field-label" for="DUCKDB_PARQUET_DIR">Parquet Directory</label>
+            <span id="src_DUCKDB_PARQUET_DIR" class="src-badge src-none">Not set</span>
+          </div>
+          <input type="text" id="DUCKDB_PARQUET_DIR" name="DUCKDB_PARQUET_DIR"
+                 placeholder="./data/parquet  (default)"/>
+          <div class="field-hint">
+            Directory containing one <code>.parquet</code> file per table.
+            Only used when QUERY_ENGINE=duckdb.
+          </div>
+        </div>
+
+        <div class="field" id="f_TRINO_HOST">
+          <div class="field-top">
+            <label class="field-label" for="TRINO_HOST">Trino Host</label>
+            <span id="src_TRINO_HOST" class="src-badge src-none">Not set</span>
+          </div>
+          <input type="text" id="TRINO_HOST" name="TRINO_HOST"
+                 placeholder="your-cdw-endpoint.cloudera.site"/>
+          <div class="field-hint">
+            Trino coordinator hostname (no protocol).  Only used when QUERY_ENGINE=trino.
           </div>
         </div>
 
@@ -560,10 +585,10 @@
             <span id="src_SQL_APPROVED_TABLES" class="src-badge src-none">Not set</span>
           </div>
           <input type="text" id="SQL_APPROVED_TABLES" name="SQL_APPROVED_TABLES"
-                 placeholder="e.g. kredit_umkm,nasabah,cabang  (comma-separated)"/>
+                 placeholder="e.g. msme_credit,customer,branch  (comma-separated)"/>
           <div class="field-hint">
             Comma-separated list of tables the SQL agent is allowed to query.
-            Leave blank to allow all tables in the database (not recommended for production).
+            Leave blank to allow all tables (not recommended for production).
           </div>
         </div>
 
