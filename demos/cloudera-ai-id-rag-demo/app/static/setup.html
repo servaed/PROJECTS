@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cloudera AI — Setup Check</title>
+  <title>Cloudera AI — Status</title>
 
   <!-- Anti-FOUC: match theme from main app -->
   <script>
@@ -335,17 +335,17 @@
 <div class="topbar">
   <a href="/"><img src="/static/cloudera-logo.png" alt="Cloudera"/></a>
   <div class="topbar-sep"></div>
-  <div class="topbar-title">Enterprise <span>Assistant</span> — Setup Check</div>
+  <div class="topbar-title">Enterprise <span>Assistant</span> — Status</div>
   <div class="topbar-right">
     <button class="back-btn" id="refreshBtn" onclick="load()">↻ Refresh</button>
     <button class="back-btn" id="ingestBtn" onclick="triggerIngest()" title="Rebuild vector store from source documents">⟳ Re-ingest</button>
     <button class="back-btn" id="logBtn" onclick="toggleLogs()">≡ Logs</button>
     <div style="width:1px;height:20px;background:var(--border);margin:0 2px;flex-shrink:0;"></div>
-    <a class="back-btn" href="/">💬 Chat</a>
-    <a class="back-btn" href="/explorer">🗄 SQL Explorer</a>
+    <a class="back-btn" href="/">⊙ Chat</a>
+    <a class="back-btn" href="/explorer">🗄 Data Explorer</a>
     <a class="back-btn" href="/upload">↑ Upload</a>
-    <a class="back-btn" href="/setup" style="background:var(--o-dim);border-color:rgba(249,103,2,0.3);color:var(--o-text)">◎ Setup</a>
-    <a class="back-btn" href="/configure">⚙ Configure</a>
+    <a class="back-btn" href="/setup" style="background:var(--o-dim);border-color:rgba(249,103,2,0.3);color:var(--o-text)">◎ Status</a>
+    <a class="back-btn" href="/configure">⚙ Settings</a>
     <button class="back-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☀</button>
   </div>
 </div>
@@ -359,7 +359,7 @@
 
 <div class="main">
   <div class="page-header">
-    <h1>System Setup</h1>
+    <h1>System Status</h1>
     <p>Verify that all components are configured and reachable before running a demo.<br/>
        This page auto-refreshes every 30 seconds. Fix any <span style="color:var(--err);font-weight:600">red</span> items before your demo.</p>
   </div>

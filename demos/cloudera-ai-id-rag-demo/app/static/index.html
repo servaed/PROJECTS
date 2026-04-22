@@ -519,10 +519,10 @@
         <!-- Right controls -->
         <div style=${{ marginLeft:'auto', display:'flex', alignItems:'center', gap:'6px' }}>
           ${[
-            { href:'/explorer', label:'🗄 SQL Explorer' },
+            { href:'/explorer', label:'🗄 Data Explorer' },
             { href:'/upload',   label:'↑ Upload' },
-            { href:'/setup',    label:'◎ Setup' },
-            { href:'/configure',label:'⚙ Configure' },
+            { href:'/setup',    label:'◎ Status' },
+            { href:'/configure',label:'⚙ Settings' },
           ].map(function(link) {
             return html`<a
               key=${link.href}
@@ -1123,7 +1123,6 @@
           borderRadius:'3px 14px 14px 14px',
           padding:'13px 17px',
           transition:'border-color 0.3s',
-          position:'relative',
         }}>
           ${msg.error
             ? html`<div style=${{ color:'var(--err)', fontSize:'0.84rem' }}>⚠ ${msg.error}</div>`
@@ -1139,7 +1138,7 @@
               ${msg.isStreaming && !msg.isThinking && html`<span className="cursor"/>`}
             `}
           ${!msg.isStreaming && !msg.error && msg.content && html`
-            <div style=${{ position:'absolute', top:'8px', right:'8px', display:'flex', gap:'5px' }}>
+            <div style=${{ display:'flex', justifyContent:'flex-end', gap:'5px', marginTop:'8px' }}>
               ${hasCits && html`
                 <button
                   onClick=${copyWithSources}
@@ -1301,7 +1300,7 @@
         </div>
         <div style=${{ display:'flex', gap:'8px', flexWrap:'wrap', justifyContent:'center' }}>
           ${[
-            { href:'/explorer', icon:'🗄', label:'SQL Explorer', desc:'Query tables & browse docs' },
+            { href:'/explorer', icon:'🗄', label:'Data Explorer', desc:'Query tables & browse data' },
             { href:'/upload',   icon:'📤', label:'Upload Docs',  desc:'Add to knowledge base' },
           ].map(function(t) {
             return html`
@@ -1480,7 +1479,7 @@
               fontSize:'0.85rem', fontWeight:600,
               textDecoration:'none', display:'inline-block',
               boxShadow:'0 2px 8px rgba(249,103,2,0.35)',
-            }}>⚙ Configure LLM</a>
+            }}>⚙ Settings → LLM</a>
             <button
               onClick=${props.onDismiss}
               style=${{

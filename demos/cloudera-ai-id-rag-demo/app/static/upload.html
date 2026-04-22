@@ -89,7 +89,7 @@
     .dropzone input[type=file] {
       position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
-    .dz-icon { font-size: 40px; margin-bottom: 12px; }
+    .dz-icon { width: 48px; height: 48px; margin: 0 auto 12px; color: var(--t3); }
     .dz-label { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
     .dz-sub { font-size: 13px; color: var(--t2); }
     .dz-types { font-size: 12px; color: var(--t3); margin-top: 8px; font-family: var(--mono); }
@@ -119,10 +119,11 @@
     .form-label span { font-weight: 400; color: var(--t3); }
     .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
     .radio-btn {
-      flex: 1; min-width: 80px; display: flex; align-items: center; justify-content: center;
+      flex: 1; min-width: 90px; display: flex; align-items: center; justify-content: center;
       gap: 6px; padding: 10px 12px; border-radius: var(--radius-sm);
       border: 1.5px solid var(--border); cursor: pointer; font-size: 13px; font-weight: 500;
       transition: all 0.12s; user-select: none; background: none; color: var(--t1);
+      white-space: nowrap;
     }
     .radio-btn input { position: absolute; opacity: 0; pointer-events: none; }
     .radio-btn.checked { border-color: var(--orange); background: var(--o-dim); color: var(--orange); }
@@ -217,11 +218,11 @@
     <div class="topbar-sep"></div>
     <div class="topbar-title">Enterprise <span>Assistant</span> — Upload</div>
     <nav class="topbar-links">
-      <a class="topbar-link" href="/">💬 Chat</a>
-      <a class="topbar-link" href="/explorer">🗄 SQL Explorer</a>
+      <a class="topbar-link" href="/">⊙ Chat</a>
+      <a class="topbar-link" href="/explorer">🗄 Data Explorer</a>
       <a class="topbar-link active" href="/upload">↑ Upload</a>
-      <a class="topbar-link" href="/setup">◎ Setup</a>
-      <a class="topbar-link" href="/configure">⚙ Configure</a>
+      <a class="topbar-link" href="/setup">◎ Status</a>
+      <a class="topbar-link" href="/configure">⚙ Settings</a>
       <button class="topbar-link theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
     </nav>
   </div>
@@ -240,7 +241,11 @@
            onclick="document.getElementById('file-input').click()">
         <input type="file" id="file-input" accept=".txt,.pdf,.docx,.md"
                onchange="onFileSelected(this.files[0])" onclick="event.stopPropagation()"/>
-        <div class="dz-icon">📂</div>
+        <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
         <div class="dz-label">Drop file here or click to browse</div>
         <div class="dz-sub">Supported formats: .txt, .pdf, .docx, .md</div>
         <div class="dz-types">Max recommended size: 10 MB</div>

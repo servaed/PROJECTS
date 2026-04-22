@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Configure — Cloudera AI Enterprise Assistant</title>
+  <title>Settings — Cloudera AI Enterprise Assistant</title>
 
   <script>
     (function(){
@@ -236,13 +236,13 @@
 <div class="topbar">
   <a href="/"><img src="/static/cloudera-logo.png" alt="Cloudera"/></a>
   <div class="topbar-div"></div>
-  <div class="topbar-title" id="topbarTitle">Enterprise <span>Assistant</span> — Configure</div>
+  <div class="topbar-title" id="topbarTitle">Enterprise <span>Assistant</span> — Settings</div>
   <div class="topbar-right">
     <a class="icon-btn" href="/">💬 Chat</a>
-    <a class="icon-btn" href="/explorer">🗄 SQL Explorer</a>
+    <a class="icon-btn" href="/explorer">🗄 Data Explorer</a>
     <a class="icon-btn" href="/upload">↑ Upload</a>
-    <a class="icon-btn" href="/setup">◎ Setup</a>
-    <a class="icon-btn active" href="/configure">⚙ Configure</a>
+    <a class="icon-btn" href="/setup">◎ Status</a>
+    <a class="icon-btn active" href="/configure">⚙ Settings</a>
     <button class="icon-btn theme-btn" id="themeBtn" title="Toggle theme"></button>
   </div>
 </div>
@@ -654,7 +654,6 @@
       <button type="submit" class="btn-primary" id="saveBtn">Save Configuration</button>
       <button type="button" class="btn-secondary" id="testBtn" onclick="testLlm()">⚡ Test LLM</button>
       <button type="button" class="btn-secondary" id="exportBtn" onclick="exportEnv()">⬇ Download .env</button>
-      <a href="/setup" class="btn-secondary">⊕ Full Status</a>
       <a href="/" class="btn-primary" id="launchBtn"
          style="display:none;background:var(--ok);box-shadow:0 2px 8px rgba(52,168,83,0.35);">
         ✓ Launch Assistant →
