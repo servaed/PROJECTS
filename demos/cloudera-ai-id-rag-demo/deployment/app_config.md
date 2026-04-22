@@ -83,12 +83,22 @@ See `DEPLOYMENT.md` for the full deployment guide.
 
 ## Query Engine
 
-The demo supports two query engines. The Dockerfile sets `QUERY_ENGINE=trino` automatically.
-Local dev defaults to `sqlite`.
+The demo supports two query engines. Default is `duckdb` (no server required).
+For CDP production, switch to `trino` pointing at Cloudera Data Warehouse.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `QUERY_ENGINE` | No | `sqlite` | `sqlite` (local dev) or `trino` (Docker/CML) |
+| `QUERY_ENGINE` | No | `duckdb` | `duckdb` (local Parquet) or `trino` (CDP CDW) |
+| `SQL_APPROVED_TABLES` | No | all 9 demo tables | Comma-separated table allowlist |
+| `SQL_MAX_ROWS` | No | `500` | Max rows per SQL result (hard cap: 1000) |
+
+### DuckDB settings (when `QUERY_ENGINE=duckdb`)
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DUCKDB_PARQUET_DIR` | No | `./data/parquet` | Directory of Parquet files (one per table) |
+
+Seed Parquet files before first run: `python data/sample_tables/seed_parquet.py`
 
 ### Trino settings (when `QUERY_ENGINE=trino`)
 
@@ -102,14 +112,6 @@ Local dev defaults to `sqlite`.
 
 For CDP production, point `TRINO_HOST` to your Cloudera Data Warehouse (CDW) endpoint.
 
-### SQLite settings (when `QUERY_ENGINE=sqlite`)
-
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `DATABASE_URL` | No | `sqlite:///./data/sample_tables/demo.db` | SQLAlchemy connection URL |
-| `SQL_APPROVED_TABLES` | No | all 9 demo tables | Comma-separated table allowlist |
-| `SQL_MAX_ROWS` | No | `500` | Max rows per SQL result (hard cap: 1000) |
-
 ---
 
 ## Document Storage
@@ -119,7 +121,7 @@ Local dev defaults to `local`.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `DOCS_STORAGE_TYPE` | No | `local` | `local`, `hdfs`, or `s3` |
+| `DOCS_STORAGE_TYPE` | No | `local` | `local` or `s3` (Ozone/MinIO) |
 | `DOCS_SOURCE_PATH` | No | `./data/sample_docs` | Used when `DOCS_STORAGE_TYPE=local` |
 
 ### MinIO / Ozone settings (when `DOCS_STORAGE_TYPE=s3`)
@@ -134,13 +136,6 @@ Local dev defaults to `local`.
 
 For CDP production, set `MINIO_ENDPOINT` to your Ozone S3 Gateway URL
 (e.g. `http://ozone-s3g.your-cluster:9878`) and update the access credentials.
-
-### HDFS settings (when `DOCS_STORAGE_TYPE=hdfs`)
-
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `HDFS_URL` | If hdfs | `http://namenode:9870` | HDFS WebHDFS endpoint |
-| `HDFS_USER` | If hdfs | `hdfs` | HDFS user |
 
 ---
 

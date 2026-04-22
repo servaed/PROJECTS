@@ -4,9 +4,9 @@ This guide covers deploying **cloudera-ai-id-rag-demo** as a
 [Cloudera AI Application](https://docs.cloudera.com/machine-learning/cloud/applications/topics/ml-applications.html)
 on Cloudera AI Workbench (CML) using the **Git Source** path.
 
-> **Demo architecture note:** The demo runs on SQLite + local filesystem for simplicity.
-> In a real enterprise deployment this maps to Cloudera Data Warehouse (Trino + Iceberg)
-> and Apache Ozone — the same data model, swap the connectors.
+> **Demo architecture note:** The demo runs on DuckDB (reading local Parquet files) + local filesystem.
+> In a real enterprise deployment this maps to Cloudera Data Warehouse (Trino + Iceberg on Ozone) —
+> the same SQL dialect and same Parquet/Iceberg file format, swap the connectors via env vars.
 
 ---
 
@@ -198,14 +198,14 @@ Find the endpoint URL and API key at: **CML Workspace → AI Inference → your 
 [0/5] Load data/.env.local (saved by /configure wizard on prior runs)
 [1/5] pip install -r requirements.txt  (skipped after first run)
 [2/5] Install provider SDK if needed (boto3 for Bedrock, anthropic package)
-[3/5] Seed SQLite demo.db — 9 tables, 1485 rows (idempotent)
+[3/5] Seed Parquet files via seed_parquet.py — 9 tables, 1485 rows (idempotent, checks msme_credit.parquet)
 [4/5] Build FAISS vector store (skipped if data/vector_store/index.faiss exists)
       First run: downloads multilingual-e5-large (~500 MB) — please wait
 [5/5] exec uvicorn app.api:app on $CDSW_APP_PORT
 ```
 
-**First boot:** ~3–5 min (embedding model download + SQLite seed)
-**Warm restart:** ~30 s (pip skipped, vector store skipped)
+**First boot:** ~3–5 min (embedding model download + Parquet seed)
+**Warm restart:** ~30 s (pip skipped, Parquet files already present, vector store skipped)
 
 ---
 
@@ -252,7 +252,7 @@ Open `/setup → Logs`. Expected on successful startup:
 [4/5] Vector store: found at ./data/vector_store — skipping ingestion.
 [5/5] Starting FastAPI server (React UI) on port 8080...
 INFO  Startup check — vector store: OK
-INFO  Startup check — database: OK (9 tables via sqlite)
+INFO  Startup check — database: OK (9 tables via duckdb)
 INFO  Startup check — LLM: configured (provider=openai)
 ```
 
@@ -401,19 +401,30 @@ Reduces RAM by ~3 GB, adds API cost per query.
 | `EMBEDDINGS_PROVIDER` | `local` | `local` or `openai` |
 | `EMBEDDINGS_MODEL` | `intfloat/multilingual-e5-large` | HuggingFace model or OpenAI model |
 
-### Database
+### Query Engine / Database
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | `sqlite:///./data/sample_tables/demo.db` | SQLAlchemy connection URL |
-| `SQL_APPROVED_TABLES` | 9 demo tables | Comma-separated allowlist for LLM queries |
+| `QUERY_ENGINE` | `duckdb` | `duckdb` (local Parquet) or `trino` (CDP CDW) |
+| `DUCKDB_PARQUET_DIR` | `./data/parquet` | Directory of Parquet files read by DuckDB |
+| `SQL_APPROVED_TABLES` | all 9 demo tables | Comma-separated table allowlist for LLM queries |
 | `SQL_MAX_ROWS` | `500` | Max rows per result (hard cap: 1000) |
+
+**Trino settings** (when `QUERY_ENGINE=trino`):
+
+| Variable | Default | Description |
+|---|---|---|
+| `TRINO_HOST` | `localhost` | Trino coordinator hostname |
+| `TRINO_PORT` | `8085` | Trino HTTP port |
+| `TRINO_CATALOG` | `iceberg` | Catalog name |
+| `TRINO_SCHEMA` | `demo` | Schema within the catalog |
+| `TRINO_USER` | `admin` | Trino username |
 
 ### Documents
 
 | Variable | Default | Description |
 |---|---|---|
-| `DOCS_STORAGE_TYPE` | `local` | `local`, `s3`, or `hdfs` |
+| `DOCS_STORAGE_TYPE` | `local` | `local` or `s3` (Ozone/MinIO) |
 | `DOCS_SOURCE_PATH` | `./data/sample_docs` | Used when `DOCS_STORAGE_TYPE=local` |
 
 ### Application

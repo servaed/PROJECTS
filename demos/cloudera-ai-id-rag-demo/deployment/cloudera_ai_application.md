@@ -73,7 +73,7 @@ See `DEPLOYMENT.md` Section 4 for all providers (Azure, Bedrock, Anthropic, Loca
 [0/5] Load data/.env.local (saved credentials from /configure wizard)
 [1/5] pip install -r requirements.txt (skipped after first run)
 [2/5] Install provider SDK if needed (boto3 / anthropic)
-[3/5] Seed SQLite demo database — 9 tables, 1485 rows (idempotent)
+[3/5] Seed Parquet files via seed_parquet.py — 9 tables, 1485 rows (idempotent)
 [4/5] Build FAISS vector store (skipped if index.faiss exists)
 [5/5] exec uvicorn on $CDSW_APP_PORT
 ```
@@ -114,9 +114,11 @@ Admin pre-configures available profiles. Resources must be on a single node.
 
 | Demo (this deployment) | CDP Production equivalent |
 |---|---|
-| SQLite (local file) | Cloudera Data Warehouse — Trino + Iceberg |
+| DuckDB + local Parquet files | Cloudera Data Warehouse — Trino + Iceberg on Ozone |
 | Local filesystem docs | Apache Ozone (S3-compatible gateway) |
 | FAISS (local) | Enterprise vector store |
+
+Switch: `QUERY_ENGINE=trino` + `TRINO_HOST=<cdw-endpoint>`; `DOCS_STORAGE_TYPE=s3` + `MINIO_ENDPOINT=<ozone-s3gw>`.
 
 To connect to real CDP: set `QUERY_ENGINE=trino` + `TRINO_HOST` and
 `DOCS_STORAGE_TYPE=s3` + `MINIO_ENDPOINT=http://ozone-s3gw:9878`.

@@ -78,11 +78,11 @@ Complete all pre-demo steps before the call. Estimated run time: **25–35 minut
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | LLM response slow (>15s) | Model cold start or quota | Pre-warm by sending one question before demo |
-| "Data tidak tersedia" for data questions | Trino not fully ready | Wait 30s, try again; check `/setup` |
+| "No data available" for data questions | DuckDB Parquet files not seeded | Check `/setup` → Database card; run `make seed` |
 | Wrong language in response | Language toggle out of sync | Toggle to ID then back; refresh page |
 | Auto-play skips a question | SSE stream timed out | Stop demo, click "New conversation", restart auto-play |
 | Sidebar shows red indicator | LLM not configured | Open `/configure`, set LLM_BASE_URL + LLM_API_KEY |
-| Container OOM killed | Java + Python memory overlap | Ensure pod has ≥8 GB; check JVM flags in `jvm.config` |
+| Pod OOM killed | Embedding model RAM (~3 GB) + app RAM | Ensure pod has ≥8 GiB; use OpenAI embeddings to reduce to 2 GiB |
 
 ---
 

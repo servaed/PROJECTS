@@ -66,7 +66,55 @@ Settings cleanup: removed `hdfs` from docs_storage_type, removed hdfs_url/hdfs_u
 36/36 bilingual questions passing after all fixes.
 86/86 unit tests passing.
 
+---
+
+## Part 2 — SQLite → DuckDB Migration + Explorer/Upload Pages
+
+Continued in the same day's work session.
+
+### SQLite → DuckDB
+
+Replaced SQLAlchemy/SQLite with DuckDB reading local Parquet files. Motivation: align
+local dev SQL dialect with production Trino (both use standard SQL on Parquet), eliminate
+the SQLAlchemy dependency, simplify the connector stack.
+
+- `src/connectors/duckdb_adapter.py` (new): DuckDB in-process engine, one view per .parquet,
+  thread-safe singleton connection.
+- `src/connectors/db_adapter.py`: default engine `"duckdb"`; added `get_table_row_count()`
+  and `get_engine_label()` used by health endpoints.
+- `data/sample_tables/seed_parquet.py` (new): seeds 9 Parquet files from `sample_data.py`
+  using pandas + pyarrow. Replaces `seed_database.py`.
+- `src/config/settings.py`: `query_engine` default → `"duckdb"`; added `duckdb_parquet_dir`;
+  removed `database_url`.
+- `requirements.txt`: added `duckdb>=1.1.0`, `python-multipart>=0.0.9`; dropped `SQLAlchemy`.
+- `deployment/launch_app.sh` step 3: seeds Parquet via `seed_parquet.py`.
+
+### SQL Explorer + Document Upload Pages
+
+- `app/static/explorer.html` (new): SQL query editor with schema browser, dark mode.
+- `app/static/upload.html` (new): document upload with domain/language tagging.
+- `app/api.py`: added `GET /explorer`, `GET /upload`, `GET /api/sql/tables`,
+  `POST /api/sql/query`, `GET /api/docs/list`, `POST /api/docs/upload`.
+- `/api/setup` database section now shows per-table row counts + engine label.
+
+### Bilingual Documents Added
+
+7 English counterpart documents added under `data/sample_docs/{domain}/`:
+`sme_credit_policy_en.txt`, `kyc_aml_procedures_en.txt`, `ojk_regulatory_summary_en.txt`,
+`customer_service_sla_policy_en.txt`, `spectrum_network_operations_en.txt`,
+`public_service_standard_en.txt`, `municipal_budget_regulation_en.txt`.
+
+`document_loader.py`: added `_infer_language()` helper; `RawDocument.language` field
+propagated to FAISS metadata so retrieval filters by language.
+
+### All Docs Updated (skills, DEPLOYMENT.md, app_config.md, etc.)
+
+All references to SQLite, seed_database.py, DATABASE_URL, HDFS adapter updated to
+DuckDB/Parquet equivalents across CLAUDE.md, README.md, DEPLOYMENT.md, app_config.md,
+cloudera_ai_application.md, PRESALES_CHECKLIST.md, all skills SKILL.md files.
+
 ## Next Steps
 
-- Consider adding Trino connector integration test (currently only SQLite tested)
-- Consider adding document count to `/api/status` response for monitoring
+- Consider Trino integration test (DuckDB connector tested, Trino only validated via SQL parity)
+- Consider adding `GET /api/docs/{name}` to serve individual document content for the explorer
+- `/api/status` document count is available via FilesAdapter — could add to sidebar indicator

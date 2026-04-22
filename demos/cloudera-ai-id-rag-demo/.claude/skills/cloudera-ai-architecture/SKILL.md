@@ -64,7 +64,7 @@ sys.exit(subprocess.call(["bash", "deployment/launch_app.sh"]))
 1. Source `data/.env.local` (saved credentials from /configure wizard)
 2. `pip install -r requirements.txt` (skipped after first run)
 3. Install provider SDK if needed (boto3 / anthropic)
-4. Seed SQLite — 9 tables, 1485 rows (idempotent)
+4. Seed Parquet files via `seed_parquet.py` — 9 tables, 1485 rows (idempotent, checks `msme_credit.parquet`)
 5. Build FAISS vector store (skipped if `index.faiss` exists)
 6. `exec uvicorn app.api:app --host 0.0.0.0 --port ${CDSW_APP_PORT:-8080}`
 
@@ -104,16 +104,19 @@ Minimum absolute: 2 GB RAM (Cloudera docs recommendation).
 
 ## Storage Architecture
 
-| Layer | This demo (Git/SQLite) | CDP Production equivalent |
+| Layer | This demo (Git/DuckDB) | CDP Production equivalent |
 |---|---|---|
-| Relational store | SQLite (local file) | Cloudera Data Warehouse (CDW / Trino) |
-| Document store | Local filesystem | Apache Ozone S3 Gateway |
-| Iceberg catalog | N/A | Cloudera Unified Metastore |
+| Relational store | DuckDB reading Parquet files in `data/parquet/` | Cloudera Data Warehouse (CDW / Trino + Iceberg) |
+| Document store | Local filesystem (`data/sample_docs/`) | Apache Ozone S3 Gateway |
+| Iceberg catalog | N/A (Parquet files, no catalog) | Cloudera Unified Metastore |
 | Vector store | FAISS (local) | Enterprise vector DB |
 | Object storage | N/A | Apache Ozone bucket |
 
 For production: set `QUERY_ENGINE=trino`, `TRINO_HOST`, `TRINO_CATALOG`, `TRINO_SCHEMA`
 and `DOCS_STORAGE_TYPE=s3`, `MINIO_ENDPOINT=http://ozone-s3gw:9878`.
+
+**SQL dialect parity**: DuckDB and Trino share the same SQL syntax for the queries this app
+generates. Switching engines requires only an env var change, no SQL changes.
 
 ---
 
@@ -148,8 +151,7 @@ The app can read these to determine the logged-in user without implementing SSO 
 
 | Embedded demo component | CDP Production service |
 |---|---|
-| SQLite | Cloudera Data Warehouse (CDW) with Trino + Iceberg |
+| DuckDB + local Parquet files | Cloudera Data Warehouse (CDW) with Trino + Iceberg on Ozone |
 | Local filesystem docs | Apache Ozone (S3-compatible gateway) |
 | FAISS (local) | Enterprise vector store / Pinecone / OpenSearch kNN |
 | uvicorn (single process) | Cloudera AI Application (horizontally scalable) |
-| Nessie (if Docker path) | Cloudera Unified Metastore |

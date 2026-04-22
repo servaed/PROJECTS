@@ -1,6 +1,6 @@
 ---
 name: app-deploy
-description: Steps for preparing and validating deployment as a Cloudera AI Application. Covers Script (Python launcher) path (SQLite), env vars, configure wizard, startup scripts, and CML-specific constraints sourced from official Cloudera documentation.
+description: Steps for preparing and validating deployment as a Cloudera AI Application. Covers Script (Python launcher) path, DuckDB/Parquet seed, env vars, configure wizard, startup scripts, and CML-specific constraints sourced from official Cloudera documentation.
 ---
 
 # Skill: App Deployment (Cloudera AI Workbench)
@@ -53,7 +53,7 @@ demos/cloudera-ai-id-rag-demo/run_app.py
 - [ ] `run_app.py` exists and points to the correct `launch_app.sh` path
 - [ ] `APP_PORT` left as default (8080) — matches CML's `CDSW_APP_PORT`
 - [ ] LLM credentials set via Application env vars **or** saved via `/configure` wizard
-- [ ] `SQL_APPROVED_TABLES` limits exposed tables for the demo
+- [ ] `SQL_APPROVED_TABLES` limits exposed tables (default: `msme_credit,customer,branch,subscriber,data_usage,network,resident,regional_budget,public_service`)
 - [ ] No credentials in version control (`.env` and `data/.env.local` in `.gitignore`)
 - [ ] `requirements.txt` is up to date
 - [ ] All tests pass: `pytest tests/ -v`
@@ -139,7 +139,7 @@ Branch: `master`
 [0/5] Source data/.env.local (written by /configure wizard on prior runs)
 [1/5] pip install -r requirements.txt (skipped after first run via marker file)
 [2/5] Install provider-specific SDK if needed (boto3 / anthropic)
-[3/5] Seed SQLite demo database — 9 tables, 1485 rows (idempotent)
+[3/5] Seed Parquet files for DuckDB — 9 tables, 1485 rows (idempotent, checks msme_credit.parquet)
 [4/5] Build FAISS vector store (skipped if index.faiss already exists)
 [5/5] exec uvicorn app.api:app --host 0.0.0.0 --port $APP_PORT
 ```

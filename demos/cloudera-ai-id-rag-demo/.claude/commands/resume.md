@@ -20,8 +20,11 @@ git log --oneline -10
 # Verify the vector store exists
 ls data/vector_store/
 
-# Verify the demo database exists
-ls data/sample_tables/demo.db
+# Verify Parquet files exist (DuckDB data layer)
+ls data/parquet/
+
+# Re-seed Parquet files if missing
+python data/sample_tables/seed_parquet.py
 
 # Run tests to confirm nothing is broken
 pytest tests/ -v
@@ -31,4 +34,7 @@ uvicorn app.api:app --host 0.0.0.0 --port 8080 --reload
 
 # Check system status endpoint
 curl http://localhost:8080/api/status
+
+# Check health endpoint (used by setup overlay)
+curl http://localhost:8080/health
 ```

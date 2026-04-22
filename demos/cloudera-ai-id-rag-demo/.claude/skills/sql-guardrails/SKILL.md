@@ -36,7 +36,14 @@ Never call `run_query()` with SQL that has not passed `validate_sql()`.
 ## LLM Cannot-Answer Sentinel
 
 If the LLM returns `TIDAK_DAPAT_DIJAWAB`, `validate_sql()` raises `SqlGuardrailError`.
-The orchestrator catches this and returns `ANSWER_SQL_FAILED_ID` to the user.
+The orchestrator catches this and returns `get_answer_sql_failed(language)` to the user
+(localised: Bahasa Indonesia or English depending on the chat request language).
+
+## Error Message Language
+
+Since the 2026-04-22 English migration all `SqlGuardrailError` messages are in English
+(e.g. "Only SELECT queries are permitted."). These are internal error strings passed to
+the orchestrator, not shown directly to end users.
 
 ## Logging
 
@@ -45,8 +52,15 @@ This is done in `src/sql/executor.py` automatically.
 
 ## Adding New Approved Tables
 
-Update `SQL_APPROVED_TABLES` in the `.env` file or environment variable:
+Update `SQL_APPROVED_TABLES` in the `.env` file or environment variable.
+Current demo tables (English names):
 ```
-SQL_APPROVED_TABLES=kredit_umkm,nasabah,cabang,new_table
+SQL_APPROVED_TABLES=msme_credit,customer,branch,subscriber,data_usage,network,resident,regional_budget,public_service
 ```
 Never add tables to the allowlist without confirming they contain only data the demo is authorized to expose.
+
+## DuckDB vs Trino
+
+The guardrails work identically on both engines — same SQL dialect for the queries this
+app generates (SELECT, GROUP BY, WHERE, LIMIT, JOIN). The approved-table check runs before
+query execution and is engine-agnostic.

@@ -19,8 +19,12 @@ python -m src.retrieval.document_loader
 
 ## Retrieval
 
-`src/retrieval/retriever.py` runs similarity search and returns `RetrievedChunk` objects.
-Each chunk carries: `text`, `title`, `source_path`, `chunk_index`, `score`, `ingest_timestamp`.
+`src/retrieval/retriever.py` runs hybrid BM25 + FAISS search fused via Reciprocal Rank Fusion (RRF)
+and returns `RetrievedChunk` objects. Each chunk carries: `text`, `title`, `source_path`,
+`chunk_index`, `score`, `ingest_timestamp`, `domain`, `language`.
+
+Retriever always filters by `domain` and optionally by `language` so each UI language
+only sees chunks from its own knowledge base (`_en.txt` files → `language="en"`).
 
 ## Citation Rules
 
@@ -32,12 +36,22 @@ Each chunk carries: `text`, `title`, `source_path`, `chunk_index`, `score`, `ing
 ## Answer Grounding
 
 For document-mode answers, pass all retrieved chunks as context to the LLM via `build_document_prompt()`.
-If no chunks are retrieved, return `ANSWER_NOT_FOUND_ID` — do not call the LLM with empty context.
+If no chunks are retrieved, return `get_answer_not_found(language)` — do not call the LLM with empty context.
+The fallback string is localised: Bahasa Indonesia for `language="id"`, English for `language="en"`.
 
 ## Embeddings Model
 
-Default: `intfloat/multilingual-e5-base` — supports Bahasa Indonesia and English.
+Default: `intfloat/multilingual-e5-large` (560M params, 1024-dim) — supports Bahasa Indonesia and English.
 Override with `EMBEDDINGS_MODEL` env var. For OpenAI embeddings: set `EMBEDDINGS_PROVIDER=openai`.
+Requires ~3 GB RAM; use OpenAI embeddings to reduce to ~2 GB total.
+
+## Adding New Documents (via Upload UI)
+
+Upload via the browser: `http://<app-url>/upload`
+- Select domain (banking / telco / government) and language (ID or EN)
+- File is saved to `data/sample_docs/{domain}/{filename}`
+- English files must end in `_en` (e.g. `my_policy_en.txt`) — auto-appended if missing
+- Optional: enable "Re-ingest after upload" to rebuild the vector store immediately
 
 ## Adding New Document Types
 
