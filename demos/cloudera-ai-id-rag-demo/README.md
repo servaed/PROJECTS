@@ -38,58 +38,116 @@ Indonesian banking, telco, and government sectors.
 
 ## Architecture
 
+### System overview
+
+```mermaid
+flowchart TB
+    User(["👤 User\nBahasa Indonesia / English"])
+
+    subgraph APP["  ☁  Cloudera AI Application — port 8080  "]
+        direction TB
+        SPA["⚡ React 18 SPA\nStreaming · Auto-play demo · Dark/light · Domain tabs"]
+
+        subgraph APIGW["FastAPI — app/api.py"]
+            direction LR
+            EP1["POST /api/chat\n→ SSE stream"]
+            EP2["POST /api/configure\n→ live reload"]
+            EP3["GET /health · /api/status\n/api/ingest · /api/sql/query"]
+        end
+
+        subgraph PIPELINE["Orchestration Pipeline"]
+            RTR["🔀 Router\n4-tier heuristics + LLM fallback\ndokumen · data · gabungan"]
+            AB["Answer Builder\nprepare → stream → finalize"]
+        end
+
+        subgraph LOCAL["📦 Local defaults  (demo)"]
+            direction LR
+            FI["FAISS Index\ne5-large · SHA-256"]
+            DB["DuckDB\n9 tables · 1,485 rows"]
+            DC["14 source docs\n7 Bahasa Indonesia + 7 English"]
+        end
+    end
+
+    subgraph CDP["  ☁  Cloudera Data Platform  (production swap)  "]
+        direction LR
+        LLM["🤖 LLM\nCloudera AI Inference\nOpenAI · Azure · Bedrock · Anthropic"]
+        CDW["CDW — Trino\nApache Iceberg tables"]
+        OZ["Apache Ozone\nS3-compatible document store"]
+    end
+
+    User <-->|HTTPS| SPA
+    SPA -->|JSON| EP1
+    EP1 --> RTR
+    RTR -->|dokumen| FI
+    RTR -->|data| DB
+    FI --> AB
+    DB --> AB
+    DC --> FI
+    AB -->|completion API| LLM
+    AB -->|SSE tokens| SPA
+
+    DB -. "QUERY_ENGINE=trino" .-> CDW
+    FI -. "DOCS_STORAGE_TYPE=s3" .-> OZ
+    DC -. "DOCS_STORAGE_TYPE=s3" .-> OZ
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        CLOUDERA AI APPLICATION                      │
-│                                                                     │
-│   Browser ──► React SPA (port 8080)                                 │
-│                │                                                    │
-│                ▼                                                    │
-│   FastAPI backend  (app/api.py)                                     │
-│     ├─ POST /api/chat          SSE streaming: mode → token → done   │
-│     ├─ GET  /api/status        Live component status                │
-│     ├─ GET  /api/samples       Sample prompts (domain + lang)       │
-│     ├─ GET  /api/setup         Health report                        │
-│     └─ POST /api/configure     Write credentials → apply live       │
-│                │                                                    │
-│                ▼                                                    │
-│   Orchestration Pipeline                                            │
-│     ├─ Router      classify → dokumen / data / gabungan             │
-│     ├─ RAG         BM25 + FAISS hybrid → LLM synthesis             │
-│     └─ SQL         schema guard → query → LLM synthesis             │
-└──────────────────────┬──────────────────┬───────────────────────────┘
-                       │                  │
-          ┌────────────▼───────┐  ┌───────▼──────────────────────────┐
-          │   CLOUDERA AI      │  │   CLOUDERA DATA PLATFORM (CDP)    │
-          │   INFERENCE        │  │                                   │
-          │                    │  │  Cloudera Data Warehouse (CDW)    │
-          │  Cloudera AI / LLM │  │    Trino + Apache Iceberg tables  │
-          │  OpenAI-compatible │  │                                   │
-          │  Amazon Bedrock    │  │  Apache Ozone (S3-compatible)     │
-          │  Anthropic         │  │    Document storage               │
-          └────────────────────┘  │    Iceberg warehouse bucket       │
-                                  └──────────────────────────────────┘
+
+### Request pipeline
+
+```mermaid
+flowchart LR
+    Q(["❓ Question"]) --> RTR["🔀 Router\n4-tier heuristics\n+ LLM fallback"]
+
+    RTR -->|dokumen| RAG
+    RTR -->|data| SQL
+    RTR -->|gabungan| RAG
+    RTR -->|gabungan| SQL
+
+    subgraph RAG["◈ Document RAG"]
+        direction TB
+        R1["BM25 keyword search"]
+        R2["FAISS semantic search"]
+        R3["Reciprocal Rank Fusion"]
+        R1 --> R3
+        R2 --> R3
+    end
+
+    subgraph SQL["⬡ Structured SQL"]
+        direction TB
+        S1["Schema discovery"]
+        S2["LLM → SQL generation"]
+        S3["AST guardrail check"]
+        S4["DuckDB / Trino execute"]
+        S1 --> S2 --> S3 --> S4
+    end
+
+    RAG --> SYNTH["🤖 LLM Synthesis\nBilingual · Streaming SSE\n⟨think⟩ tag filtering"]
+    SQL --> SYNTH
+
+    SYNTH --> OUT["📤 Response\nAnswer + ⚡ latency\nDoc citations + relevance scores\nSQL trace + bar chart"]
 ```
 
-**Stack:**
-- Backend: **FastAPI + uvicorn** — async, SSE streaming, port 8080
-- Frontend: **React 18 SPA** — served from `app/static/`, no build step (htm tagged templates)
-- Embeddings: `intfloat/multilingual-e5-large` (local, no API key required) or OpenAI
-- Retrieval: **Hybrid BM25 + FAISS** (Reciprocal Rank Fusion) for better precision
-- Query engine: **Cloudera Data Warehouse (CDW)** — Trino with Iceberg connector
-- Object storage: **Apache Ozone** (S3-compatible, identical API to AWS S3)
-- Table format: **Apache Iceberg** (open table format, Parquet files on Ozone)
-- SQL safety: sqlparse AST walking + allowlist + keyword blocklist + FAISS SHA-256 hash
+### Stack
 
-**Local development** (no CDP cluster required):
+| Layer | Technology |
+|-------|-----------|
+| **Serving** | FastAPI + uvicorn · async · SSE streaming · port 8080 |
+| **Frontend** | React 18 SPA · htm tagged templates · no build step required |
+| **Embeddings** | `intfloat/multilingual-e5-large` (local, 560 M params, ID + EN) or OpenAI |
+| **Retrieval** | BM25 + FAISS cosine similarity · Reciprocal Rank Fusion |
+| **SQL (demo)** | DuckDB · Parquet files · 9 tables · read-only with AST guardrails |
+| **SQL (production)** | CDW — Trino + Apache Iceberg on Ozone |
+| **Document store (demo)** | Local filesystem |
+| **Document store (production)** | Apache Ozone (S3-compatible) |
+| **LLM** | Pluggable — Cloudera AI Inference · OpenAI · Azure · Bedrock · Anthropic |
 
-| CDP Component | Local equivalent | Switch |
+### Connector swap — demo ↔ CDP
+
+| Demo default | Cloudera CDP equivalent | Env var |
 |---|---|---|
-| Cloudera Data Warehouse (Trino) | DuckDB (Parquet files) | `QUERY_ENGINE=duckdb` |
-| Apache Ozone (S3) | Local filesystem | `DOCS_STORAGE_TYPE=local` |
+| DuckDB + Parquet files | CDW — Trino + Apache Iceberg | `QUERY_ENGINE=trino` |
+| Local filesystem | Apache Ozone (S3-compatible) | `DOCS_STORAGE_TYPE=s3` |
 
-Connectors are pluggable — swap from local to CDP by changing two environment variables.
-No code changes required.
+No code changes required — connector swap is purely configuration.
 
 ---
 
@@ -141,7 +199,7 @@ cloudera-ai-id-rag-demo/
 │  ├─ sql/                       # SQL guardrails (AST), generation, execution
 │  ├─ orchestration/             # Router, answer builder, citations
 │  ├─ connectors/
-│  │  ├─ db_adapter.py           # Factory: sqlite (dev) or trino (CDP)
+│  │  ├─ db_adapter.py           # Factory: DuckDB (dev) or Trino (CDP)
 │  │  ├─ trino_adapter.py        # Trino Python client (Iceberg on CDW)
 │  │  ├─ ozone_adapter.py        # boto3 S3 client (Apache Ozone / S3-compatible)
 │  │  └─ files_adapter.py        # Local filesystem adapter (dev mode)
