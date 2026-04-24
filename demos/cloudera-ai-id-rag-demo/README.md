@@ -1,11 +1,10 @@
 # cloudera-ai-id-rag-demo
 
-A **bilingual enterprise conversational assistant** (Bahasa Indonesia + English) deployed
-as a Cloudera AI Application.
+An **enterprise conversational assistant** deployed as a Cloudera AI Application.
 
 The assistant answers questions from enterprise documents (RAG) and structured tables (SQL),
 with full source traceability and streaming responses. Designed for presales demos in
-Indonesian banking, telco, and government sectors.
+banking, telco, and government sectors.
 
 ---
 
@@ -13,7 +12,7 @@ Indonesian banking, telco, and government sectors.
 
 | Feature | Description |
 |---------|-------------|
-| Bilingual chat | Questions and answers in Bahasa Indonesia **or** English — auto-detected |
+| Multilingual chat | Questions and answers in English or Indonesian — auto-detected |
 | Domain selector | Sidebar tabs: 🏦 Banking · 📡 Telco · 🏛 Government |
 | Document RAG | Answers from TXT, PDF, DOCX, HTML, Markdown with source preview |
 | Structured data query | Natural language to SQL — read-only with full guardrails |
@@ -42,7 +41,7 @@ Indonesian banking, telco, and government sectors.
 
 ```mermaid
 flowchart TB
-    User(["👤 User\nBahasa Indonesia / English"])
+    User(["👤 User"])
 
     subgraph APP["  ☁  Cloudera AI Application — port 8080  "]
         direction TB
@@ -56,7 +55,7 @@ flowchart TB
         end
 
         subgraph PIPELINE["Orchestration Pipeline"]
-            RTR["🔀 Router\n4-tier heuristics + LLM fallback\ndokumen · data · gabungan"]
+            RTR["🔀 Router\n4-tier heuristics + LLM fallback\ndocument · data · combined"]
             AB["Answer Builder\nprepare → stream → finalize"]
         end
 
@@ -78,7 +77,7 @@ flowchart TB
     User <-->|HTTPS| SPA
     SPA -->|JSON| EP1
     EP1 --> RTR
-    RTR -->|dokumen| FI
+    RTR -->|document| FI
     RTR -->|data| DB
     FI --> AB
     DB --> AB
@@ -97,10 +96,10 @@ flowchart TB
 flowchart LR
     Q(["❓ Question"]) --> RTR["🔀 Router\n4-tier heuristics\n+ LLM fallback"]
 
-    RTR -->|dokumen| RAG
+    RTR -->|document| RAG
     RTR -->|data| SQL
-    RTR -->|gabungan| RAG
-    RTR -->|gabungan| SQL
+    RTR -->|combined| RAG
+    RTR -->|combined| SQL
 
     subgraph RAG["◈ Document RAG"]
         direction TB
