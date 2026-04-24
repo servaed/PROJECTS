@@ -24,7 +24,7 @@ Complete all pre-demo steps before the call. Estimated run time: **25–35 minut
 
 - [ ] Open the app URL in browser
 - [ ] Select the correct domain (Banking 🏦 / Telco 📡 / Government 🏛)
-- [ ] Select the correct language (Bahasa Indonesia / English)
+- [ ] Select the correct language (Indonesian / English)
 - [ ] Confirm all sidebar indicators show green
 - [ ] Run one sample question manually to warm up the LLM cache
 - [ ] Click **"New conversation"** (trash icon) to clear the warm-up history
@@ -39,7 +39,7 @@ Complete all pre-demo steps before the call. Estimated run time: **25–35 minut
 - Mention: "This runs entirely on Cloudera AI, with your data staying in your cluster"
 
 ### 2. Document RAG — Policy Questions (8 min)
-- Run 2 dokumen-mode questions from the sidebar
+- Run 2 document-mode questions from the sidebar
 - Point out: **citation cards** expand to show the exact source text
 - Highlight: **chunk index + ingest timestamp** = full audit trail
 
@@ -49,14 +49,14 @@ Complete all pre-demo steps before the call. Estimated run time: **25–35 minut
 - Point out: latency indicator (green = fast), row count, formatted numbers
 
 ### 4. Combined — Policy vs Reality (10 min)
-- Run 2 gabungan-mode questions (the "money slide")
+- Run 2 combined-mode questions (the "money slide")
 - Explain: assistant retrieves live data AND policy document in one call
 - Highlight: mode badge shows "Combined" — transparent about what it's doing
 
 ### 5. Q&A / Custom Question (5 min)
 - Invite the customer to type their own question
 - If it fails gracefully: explain guardrails ("We only allow read queries against approved tables")
-- Use the **language toggle** if a bilingual demo is needed
+- Use the **language toggle** if a multilingual demo is needed
 
 ---
 

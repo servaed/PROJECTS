@@ -63,7 +63,7 @@ flowchart TB
             direction LR
             FI["FAISS Index\ne5-large · SHA-256"]
             DB["DuckDB\n9 tables · 1,485 rows"]
-            DC["14 source docs\n7 Bahasa Indonesia + 7 English"]
+            DC["14 source docs\n7 Indonesian + 7 English"]
         end
     end
 
@@ -119,7 +119,7 @@ flowchart LR
         S1 --> S2 --> S3 --> S4
     end
 
-    RAG --> SYNTH["🤖 LLM Synthesis\nBilingual · Streaming SSE\n⟨think⟩ tag filtering"]
+    RAG --> SYNTH["🤖 LLM Synthesis\nMultilingual · Streaming SSE\n⟨think⟩ tag filtering"]
     SQL --> SYNTH
 
     SYNTH --> OUT["📤 Response\nAnswer + ⚡ latency\nDoc citations + relevance scores\nSQL trace + bar chart"]
@@ -131,7 +131,7 @@ flowchart LR
 |-------|-----------|
 | **Serving** | FastAPI + uvicorn · async · SSE streaming · port 8080 |
 | **Frontend** | React 18 SPA · htm tagged templates · no build step required |
-| **Embeddings** | `intfloat/multilingual-e5-large` (local, 560 M params, ID + EN) or OpenAI |
+| **Embeddings** | `intfloat/multilingual-e5-large` (local, 560 M params, multilingual) or OpenAI |
 | **Retrieval** | BM25 + FAISS cosine similarity · Reciprocal Rank Fusion |
 | **SQL (demo)** | DuckDB · Parquet files · 9 tables · read-only with AST guardrails |
 | **SQL (production)** | CDW — Trino + Apache Iceberg on Ozone |
@@ -177,7 +177,7 @@ cloudera-ai-id-rag-demo/
 ├─ .env.example
 ├─ .gitignore
 ├─ run_app.py                    # CML Application script entry point
-├─ eval_all.py                   # 36-question bilingual evaluation runner
+├─ eval_all.py                   # 36-question evaluation runner
 ├─ app/
 │  ├─ api.py                     # FastAPI entry point — all routes
 │  ├─ main.py                    # Streamlit entry point (notebook/local fallback)
@@ -193,7 +193,7 @@ cloudera-ai-id-rag-demo/
 │  ├─ config/logging.py
 │  ├─ llm/base.py                # Abstract LLM interface
 │  ├─ llm/inference_client.py    # OpenAI-compatible client + streaming + ping
-│  ├─ llm/prompts.py             # System prompts (bilingual)
+│  ├─ llm/prompts.py             # System prompts (multilingual)
 │  ├─ retrieval/                 # Document loading, chunking, embeddings, FAISS
 │  ├─ sql/                       # SQL guardrails (AST), generation, execution
 │  ├─ orchestration/             # Router, answer builder, citations
@@ -205,9 +205,9 @@ cloudera-ai-id-rag-demo/
 │  └─ utils/                     # Language helpers, ID generation
 ├─ data/
 │  ├─ sample_docs/
-│  │  ├─ banking/                # 6 documents (3 Bahasa Indonesia + 3 English)
-│  │  ├─ telco/                  # 4 documents (2 Bahasa Indonesia + 2 English)
-│  │  └─ government/             # 4 documents (2 Bahasa Indonesia + 2 English)
+│  │  ├─ banking/                # 6 documents (3 Indonesian + 3 English)
+│  │  ├─ telco/                  # 4 documents (2 Indonesian + 2 English)
+│  │  └─ government/             # 4 documents (2 Indonesian + 2 English)
 │  ├─ sample_tables/             # Parquet seeder + data generator — 9 tables, 1485 rows
 │  └─ .env.local                 # ← written by /configure wizard (gitignored)
 ├─ deployment/
@@ -300,7 +300,7 @@ Cloudera AI Application deployment before credentials are configured.
 
 ### Domain & language selector (sidebar)
 - Click **🏦 Banking**, **📡 Telco**, or **🏛 Gov** tabs to switch the active domain
-- Toggle **Bahasa Indonesia / English** to switch the response language
+- Toggle **Indonesian / English** to switch the response language
 
 ### ▶ Run Demo (auto-play)
 Click **▶ Run Demo** to walk through all sample prompts automatically (1.8 s pause between answers).
@@ -351,7 +351,7 @@ pytest tests/ -v
 | `test_retrieval.py` | 17 | Chunking, citation building, mocked vector store |
 | `test_api.py` | 27 | FastAPI endpoints, SSE stream shape, LLM provider indicators |
 
-**Evaluation** (36 bilingual questions against the running app):
+**Evaluation** (36 questions across both languages against the running app):
 ```bash
 python eval_all.py
 ```
@@ -392,9 +392,9 @@ See the full guide in [`DEPLOYMENT.md`](DEPLOYMENT.md).
 | Telco | `subscriber` (80), `data_usage` (480), `network` (20) | Churn risk scores, ARPU, 80 subscribers × 6 months usage, 20 network stations |
 | Government | `resident` (40), `regional_budget` (88), `public_service` (132) | 40 districts, 11 programs × 4 quarters × 2 years, 11 service types × 12 months |
 
-14 documents — 7 Bahasa Indonesia + 7 English:
+14 documents — 7 Indonesian + 7 English:
 
-| Domain | Bahasa Indonesia | English |
+| Domain | Indonesian | English |
 |--------|-----------------|---------|
 | Banking | `kebijakan_kredit_umkm.txt` · `prosedur_kyc_nasabah.txt` · `regulasi_ojk_2025.txt` | `sme_credit_policy_en.txt` · `kyc_aml_procedures_en.txt` · `ojk_regulatory_summary_en.txt` |
 | Telco | `kebijakan_layanan_pelanggan.txt` · `regulasi_spektrum_frekuensi.txt` | `customer_service_sla_policy_en.txt` · `spectrum_network_operations_en.txt` |

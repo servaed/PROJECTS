@@ -224,7 +224,7 @@ Navigate to `http://<app-url>/setup`. All status cards must be green:
 ### Test with Sample Questions
 
 **Document RAG:**
-> *Jelaskan ketentuan restrukturisasi kredit berdasarkan dokumen kebijakan.*
+> *"What are the credit restructuring terms according to the policy document?"*
 
 Expected: streaming Indonesian answer with source document citation cards.
 
