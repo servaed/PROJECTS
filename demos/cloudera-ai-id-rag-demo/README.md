@@ -41,88 +41,110 @@ banking, telco, and government sectors.
 
 ```mermaid
 flowchart TB
-    User(["👤 User"])
+    classDef user     fill:#FFF7ED,stroke:#F96702,color:#9A3412,font-weight:700
+    classDef frontend fill:#FFF3E0,stroke:#F96702,color:#E65100,font-weight:600
+    classDef api      fill:#F0FDF4,stroke:#16A34A,color:#14532D,font-weight:500
+    classDef orch     fill:#EFF6FF,stroke:#2563EB,color:#1E3A8A,font-weight:500
+    classDef store    fill:#F0FDFA,stroke:#0D9488,color:#134E4A,font-weight:500
+    classDef llm      fill:#FAF5FF,stroke:#9333EA,color:#581C87,font-weight:700
+    classDef cdp      fill:#EDE9FE,stroke:#7C3AED,color:#4C1D95,font-weight:500
 
-    subgraph APP["  ☁  Cloudera AI Application — port 8080  "]
+    User(["👤 User\nIndonesian · English"]):::user
+
+    subgraph CML["  ☁  Cloudera AI Application — port 8080  "]
         direction TB
-        SPA["⚡ React 18 SPA\nStreaming · Auto-play demo · Dark/light · Domain tabs"]
 
-        subgraph APIGW["FastAPI — app/api.py"]
+        SPA["⚡ React 18 SPA\nStreaming · Auto-play demo · Dark/Light · Domain tabs"]:::frontend
+
+        subgraph APILAYER["  FastAPI — app/api.py  "]
             direction LR
-            EP1["POST /api/chat\n→ SSE stream"]
-            EP2["POST /api/configure\n→ live reload"]
-            EP3["GET /health · /api/status\n/api/ingest · /api/sql/query"]
+            A1["POST /api/chat\n→ SSE stream"]:::api
+            A2["POST /api/configure\n→ live reload"]:::api
+            A3["GET /health · /api/status\n/api/ingest · /api/sql/query"]:::api
         end
 
-        subgraph PIPELINE["Orchestration Pipeline"]
-            RTR["🔀 Router\n4-tier heuristics + LLM fallback\ndocument · data · combined"]
-            AB["Answer Builder\nprepare → stream → finalize"]
+        subgraph PIPE["  Orchestration Pipeline  "]
+            direction LR
+            RTR["🔀 Router\n4-tier heuristics + LLM fallback\ndocument · data · combined"]:::orch
+            AB["Answer Builder\nprepare → stream → finalize"]:::orch
         end
 
-        subgraph LOCAL["📦 Local defaults  (demo)"]
+        subgraph LOCAL["  Local Storage — Demo Default  "]
             direction LR
-            FI["FAISS Index\ne5-large · SHA-256"]
-            DB["DuckDB\n9 tables · 1,485 rows"]
-            DC["14 source docs\n7 Indonesian + 7 English"]
+            FI[("FAISS Index\ne5-large · SHA-256")]:::store
+            DB[("DuckDB\n9 tables · 1,485 rows")]:::store
+            DC["📄 14 source docs\n7 Indonesian + 7 English"]:::store
         end
     end
 
-    subgraph CDP["  ☁  Cloudera Data Platform  (production swap)  "]
+    subgraph CDP["  ☁  Cloudera Data Platform — Production Swap  "]
         direction LR
-        LLM["🤖 LLM\nCloudera AI Inference\nOpenAI · Azure · Bedrock · Anthropic"]
-        CDW["CDW — Trino\nApache Iceberg tables"]
-        OZ["Apache Ozone\nS3-compatible document store"]
+        LLM(["🤖 LLM\nCloudera AI Inference\nOpenAI · Azure · Bedrock · Anthropic"]):::llm
+        CDW[("CDW — Trino\nApache Iceberg")]:::cdp
+        OZ[("Apache Ozone\nS3-compatible")]:::cdp
     end
 
-    User <-->|HTTPS| SPA
-    SPA -->|JSON| EP1
-    EP1 --> RTR
+    User     <-->|"HTTPS"| SPA
+    SPA       -->|"JSON"| A1
+    A1         --> RTR
     RTR -->|document| FI
     RTR -->|data| DB
-    FI --> AB
-    DB --> AB
-    DC --> FI
-    AB -->|completion API| LLM
-    AB -->|SSE tokens| SPA
+    FI         --> AB
+    DB         --> AB
+    DC         --> FI
+    AB        -->|"completion API"| LLM
+    AB        -->|"SSE tokens"| SPA
 
-    DB -. "QUERY_ENGINE=trino" .-> CDW
-    FI -. "DOCS_STORAGE_TYPE=s3" .-> OZ
-    DC -. "DOCS_STORAGE_TYPE=s3" .-> OZ
+    DB  -. "QUERY_ENGINE=trino"    .-> CDW
+    FI  -. "DOCS_STORAGE_TYPE=s3" .-> OZ
+    DC  -. "DOCS_STORAGE_TYPE=s3" .-> OZ
 ```
 
 ### Request pipeline
 
 ```mermaid
 flowchart LR
-    Q(["❓ Question"]) --> RTR["🔀 Router\n4-tier heuristics\n+ LLM fallback"]
+    classDef input  fill:#FFF7ED,stroke:#F96702,color:#9A3412,font-weight:700
+    classDef router fill:#EFF6FF,stroke:#2563EB,color:#1E3A8A,font-weight:600
+    classDef rag    fill:#F0FDFA,stroke:#0D9488,color:#134E4A,font-weight:500
+    classDef sql    fill:#F0FDF4,stroke:#16A34A,color:#14532D,font-weight:500
+    classDef synth  fill:#FAF5FF,stroke:#9333EA,color:#581C87,font-weight:700
+    classDef output fill:#FFF8E1,stroke:#D97706,color:#92400E,font-weight:600
 
-    RTR -->|document| RAG
-    RTR -->|data| SQL
-    RTR -->|combined| RAG
-    RTR -->|combined| SQL
+    Q(["❓ Question"]):::input
 
-    subgraph RAG["◈ Document RAG"]
+    RTR["🔀 Router\n4-tier heuristics\n+ LLM fallback"]:::router
+
+    subgraph RAG["  ◈  Document RAG  "]
         direction TB
-        R1["BM25 keyword search"]
-        R2["FAISS semantic search"]
-        R3["Reciprocal Rank Fusion"]
+        R1["BM25 keyword search"]:::rag
+        R2["FAISS semantic search"]:::rag
+        R3["Reciprocal Rank Fusion"]:::rag
         R1 --> R3
         R2 --> R3
     end
 
-    subgraph SQL["⬡ Structured SQL"]
+    subgraph SQL["  ⬡  Structured SQL  "]
         direction TB
-        S1["Schema discovery"]
-        S2["LLM → SQL generation"]
-        S3["AST guardrail check"]
-        S4["DuckDB / Trino execute"]
+        S1["Schema discovery"]:::sql
+        S2["LLM → SQL generation"]:::sql
+        S3["AST guardrail check"]:::sql
+        S4["DuckDB / Trino execute"]:::sql
         S1 --> S2 --> S3 --> S4
     end
 
-    RAG --> SYNTH["🤖 LLM Synthesis\nMultilingual · Streaming SSE\n⟨think⟩ tag filtering"]
-    SQL --> SYNTH
+    SYNTH["🤖 LLM Synthesis\nMultilingual · Streaming SSE\n⟨think⟩ tag filtering"]:::synth
 
-    SYNTH --> OUT["📤 Response\nAnswer + ⚡ latency\nDoc citations + relevance scores\nSQL trace + bar chart"]
+    OUT["📤 Response\n⚡ Answer + latency badge\n◈ Doc citations + relevance\n⬡ SQL trace + bar chart"]:::output
+
+    Q       --> RTR
+    RTR -->|document| RAG
+    RTR -->|data| SQL
+    RTR -->|combined| RAG
+    RTR -->|combined| SQL
+    RAG     --> SYNTH
+    SQL     --> SYNTH
+    SYNTH   --> OUT
 ```
 
 ### Stack
