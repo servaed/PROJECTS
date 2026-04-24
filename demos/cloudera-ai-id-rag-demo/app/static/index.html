@@ -518,6 +518,52 @@
 
         <!-- Right controls -->
         <div style=${{ marginLeft:'auto', display:'flex', alignItems:'center', gap:'6px' }}>
+          ${props.autoPlayTotal > 0 && (props.isAutoPlaying
+            ? html`
+              <div style=${{ display:'flex', alignItems:'center', gap:'5px', flexShrink:0 }}>
+                <span style=${{
+                  display:'inline-block', width:'7px', height:'7px', borderRadius:'50%', flexShrink:0,
+                  background: props.isAutoPaused ? 'var(--t3)' : 'var(--orange)',
+                  animation: props.isAutoPaused ? 'none' : 'dotpulse 1s ease-in-out infinite',
+                }}/>
+                <button
+                  onClick=${props.isAutoPaused ? props.onResumeAutoPlay : props.onPauseAutoPlay}
+                  title=${props.isAutoPaused ? 'Resume demo (Ctrl+Shift+D)' : 'Pause demo (Ctrl+Shift+D)'}
+                  style=${{
+                    height:'32px', padding:'0 12px', borderRadius:'8px',
+                    border:'1px solid var(--orange)', background:'var(--o-dim)',
+                    color:'var(--o-text)', fontSize:'0.78rem', fontWeight:600,
+                    cursor:'pointer', transition:'all 0.15s', flexShrink:0, whiteSpace:'nowrap',
+                  }}
+                >${props.isAutoPaused ? '▶ Resume' : '⏸'} ${props.autoPlayIdx+1}/${props.autoPlayTotal}</button>
+                <button
+                  onClick=${props.onStopAutoPlay}
+                  title="Stop demo"
+                  style=${{
+                    height:'32px', padding:'0 8px', borderRadius:'8px',
+                    border:'1px solid var(--border)', background:'var(--s2)',
+                    color:'var(--t3)', fontSize:'0.78rem',
+                    cursor:'pointer', transition:'all 0.15s', flexShrink:0,
+                  }}
+                  onMouseEnter=${function(e){ e.currentTarget.style.background='var(--s3)'; e.currentTarget.style.color='var(--t1)'; }}
+                  onMouseLeave=${function(e){ e.currentTarget.style.background='var(--s2)'; e.currentTarget.style.color='var(--t3)'; }}
+                >⏹</button>
+              </div>`
+            : html`
+              <button
+                onClick=${props.onStartAutoPlay}
+                title="Run demo sequence (Ctrl+Shift+D)"
+                style=${{
+                  height:'32px', padding:'0 14px', borderRadius:'8px',
+                  border:'1px solid var(--border)', background:'var(--s2)',
+                  color:'var(--t2)', fontSize:'0.78rem', fontWeight:500,
+                  cursor:'pointer', transition:'all 0.15s', flexShrink:0, whiteSpace:'nowrap',
+                  display:'flex', alignItems:'center', gap:'5px',
+                }}
+                onMouseEnter=${function(e){ e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.color='var(--orange)'; }}
+                onMouseLeave=${function(e){ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--t2)'; }}
+              >▶ Demo</button>`
+          )}
           ${[
             { href:'/explorer', label:'🗄 Data Explorer' },
             { href:'/upload',   label:'↑ Upload' },
@@ -1134,8 +1180,15 @@
                   sedang berpikir…
                 </div>
               `}
+              ${msg.isStreaming && !msg.content && !msg.isThinking && html`
+                <div style=${{ display:'flex', gap:'6px', alignItems:'center', padding:'2px 0' }}>
+                  ${[0,1,2].map(function(i) {
+                    return html`<div key=${i} className="dot" style=${{ width:'7px', height:'7px', borderRadius:'50%', background:'var(--dot-color)', animationDelay:(i*0.18)+'s' }}/>`;
+                  })}
+                </div>
+              `}
               <div className="prose" dangerouslySetInnerHTML=${md(msg.content)}/>
-              ${msg.isStreaming && !msg.isThinking && html`<span className="cursor"/>`}
+              ${msg.isStreaming && !msg.isThinking && msg.content && html`<span className="cursor"/>`}
             `}
           ${!msg.isStreaming && !msg.error && msg.content && html`
             <div style=${{ display:'flex', justifyContent:'flex-end', gap:'5px', marginTop:'8px' }}>
@@ -1724,6 +1777,14 @@
           onDomainChange=${function(d) { setDomain(d); }}
           language=${language}
           onLanguageChange=${function(l) { setLanguage(l); }}
+          isAutoPlaying=${isAutoPlaying}
+          isAutoPaused=${isAutoPaused}
+          autoPlayIdx=${autoPlayIdx}
+          autoPlayTotal=${samples.length}
+          onStartAutoPlay=${startAutoPlay}
+          onPauseAutoPlay=${pauseAutoPlay}
+          onResumeAutoPlay=${resumeAutoPlay}
+          onStopAutoPlay=${stopAutoPlay}
         />
 
         <!-- Body: sidebar + main -->

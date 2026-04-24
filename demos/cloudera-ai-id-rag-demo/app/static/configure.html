@@ -816,7 +816,7 @@ document.getElementById('configForm').onsubmit = function(e) {
     'AZURE_OPENAI_ENDPOINT', 'AZURE_OPENAI_API_KEY',
     'AZURE_OPENAI_DEPLOYMENT', 'AZURE_OPENAI_API_VERSION',
     'EMBEDDINGS_PROVIDER', 'EMBEDDINGS_MODEL',
-    'DATABASE_URL', 'SQL_APPROVED_TABLES',
+    'QUERY_ENGINE', 'DUCKDB_PARQUET_DIR', 'TRINO_HOST', 'SQL_APPROVED_TABLES',
     'DOCS_SOURCE_PATH', 'VECTOR_STORE_PATH', 'LOG_LEVEL',
   ];
   var payload = {};
@@ -846,14 +846,23 @@ document.getElementById('configForm').onsubmit = function(e) {
     note.textContent = 'Last saved: ' + new Date().toLocaleTimeString();
     loadConfig();
 
-    // POST /api/configure updates os.environ immediately — no restart needed.
-    // /api/restart spawns a detached background process that conflicts with CML's
-    // own kernel restart, causing Errno 98 (two uvicorn instances fighting for the port).
-    showBanner('✓ Configuration saved.' + skipMsg + ' Settings are now active.', 'ok');
     var launchBtn = document.getElementById('launchBtn');
     launchBtn.style.display = 'inline-flex';
     btn.disabled = false;
     btn.textContent = 'Save Configuration';
+
+    // Auto-test LLM after save so the user gets immediate confirmation
+    showBanner('✓ Configuration saved.' + skipMsg + ' Testing LLM connection…', 'warn');
+    testLlm(function(result) {
+      if (result.ok) {
+        showBanner('✓ Configuration saved and LLM connected — ' +
+          (result.provider || '') + (result.model ? ' / ' + result.model : '') +
+          ' — ' + result.ms + ' ms.' + skipMsg, 'ok');
+      } else {
+        showBanner('✓ Configuration saved.' + skipMsg +
+          ' Warning: LLM test failed — ' + result.msg, 'warn');
+      }
+    });
 
   }).catch(function(err) {
     btn.disabled = false;
@@ -863,7 +872,7 @@ document.getElementById('configForm').onsubmit = function(e) {
 };
 
 // ── Inline LLM test ───────────────────────────────────────────────────────
-function testLlm() {
+function testLlm(onDone) {
   var btn = document.getElementById('testBtn');
   var box = document.getElementById('testResult');
   btn.disabled = true;
@@ -882,9 +891,11 @@ function testLlm() {
         box.className = 'ok';
         box.textContent = '✓ LLM connected — ' + (d.provider || '') +
           (d.model ? ' / ' + d.model : '') + ' — ' + ms + ' ms';
+        if (onDone) onDone({ ok: true, provider: d.provider, model: d.model, ms: ms });
       } else {
         box.className = 'err';
         box.textContent = '✗ ' + (d.fix || 'Connection failed');
+        if (onDone) onDone({ ok: false, msg: d.fix || 'Connection failed' });
       }
     })
     .catch(function(err) {
@@ -892,6 +903,7 @@ function testLlm() {
       btn.textContent = '⚡ Test LLM';
       box.className = 'err';
       box.textContent = '✗ Request failed: ' + err.message;
+      if (onDone) onDone({ ok: false, msg: err.message });
     });
 }
 
@@ -933,7 +945,8 @@ function exportEnv() {
 var isSetupMode = new URLSearchParams(window.location.search).get('setup') === '1';
 if (isSetupMode) {
   document.getElementById('setupBanner').style.display = 'flex';
-  document.getElementById('backBtn').style.display = 'none';
+  var backBtnEl = document.getElementById('backBtn');
+  if (backBtnEl) backBtnEl.style.display = 'none';
   var ttEl = document.getElementById('topbarTitle');
   ttEl.innerHTML = 'Enterprise <span>Assistant</span> — Konfigurasi Awal';
 }
