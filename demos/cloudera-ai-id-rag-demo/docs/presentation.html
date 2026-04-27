@@ -335,24 +335,24 @@
       <div class="logo-text">Cloudera <span>AI</span></div>
     </div>
     <div class="anim anim-2" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
-      <span class="pill pill-orange">Enterprise RAG Demo</span>
-      <span class="pill pill-teal">Banking · Telco · Government</span>
-      <span class="pill pill-indigo">Bahasa Indonesia + English</span>
+      <span class="pill pill-orange">🏦 Banking</span>
+      <span class="pill pill-teal">📡 Telco</span>
+      <span class="pill pill-indigo">🏛 Government</span>
     </div>
     <h1 class="anim anim-3">
-      Cloudera AI<br/>
-      <span class="accent">Enterprise Assistant</span>
+      Your Data Already Has<br/>
+      <span class="accent">All the Answers.</span>
     </h1>
-    <p class="lead anim anim-4" style="max-width:600px;">
-      A bilingual conversational AI demo that answers enterprise questions
-      from documents and structured data — with full source traceability,
-      deployed as a Cloudera AI Application.
+    <p class="lead anim anim-4" style="max-width:640px;">
+      Cloudera AI Enterprise Assistant lets your team ask questions in plain language
+      — and get instant, trusted answers from your own documents and data.
+      In Bahasa Indonesia or English.
     </p>
     <div class="stat-row anim anim-5">
-      <div class="stat"><div class="stat-n">3</div><div class="stat-l">Industry Verticals</div></div>
-      <div class="stat"><div class="stat-n">14</div><div class="stat-l">Knowledge Docs</div></div>
-      <div class="stat"><div class="stat-n">9</div><div class="stat-l">SQL Tables</div></div>
-      <div class="stat"><div class="stat-n">86</div><div class="stat-l">Unit Tests</div></div>
+      <div class="stat"><div class="stat-n">3</div><div class="stat-l">Industries Covered</div></div>
+      <div class="stat"><div class="stat-n">&lt;3s</div><div class="stat-l">Answer Time</div></div>
+      <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Source-Cited Answers</div></div>
+      <div class="stat"><div class="stat-n">2</div><div class="stat-l">Languages Supported</div></div>
     </div>
     <div class="slide-footer anim anim-6">
       <span class="slide-num">01 / 09</span>
@@ -361,34 +361,31 @@
     </div>
   </section>
 
-  <!-- ── SLIDE 2: Objectives ────────────────────────────────────────────── -->
+  <!-- ── SLIDE 2: The Problem ───────────────────────────────────────────── -->
   <section class="slide bg-dark" id="s2">
-    <div class="slide-tag">Objectives</div>
-    <h2>What This Demo <span class="accent">Proves</span></h2>
-    <p class="lead" style="margin-bottom:32px;">
-      A production-grade conversational AI system that closes the gap between
-      enterprise data and actionable insight — entirely on the Cloudera platform.
-    </p>
+    <div class="slide-tag">The Problem</div>
+    <h2>Your Teams Are <span class="accent">Wasting Hours</span> Every Day</h2>
+    <p class="lead" style="margin-bottom:28px;">Enterprise knowledge is scattered — locked in policy documents, buried in databases, and siloed across departments. Getting a simple answer can take days.</p>
     <div class="card-grid card-grid-2" style="gap:14px;">
-      <div class="card card-teal">
-        <div class="card-icon">🎯</div>
-        <div class="card-title">Answer from Documents AND Data</div>
-        <div class="card-body">Hybrid retrieval (BM25 + FAISS) over policy documents, combined with live SQL queries over structured tables — in one conversational turn.</div>
+      <div class="card" style="--card-accent:#EA4335;">
+        <div class="card-icon">😩</div>
+        <div class="card-title">"Which policy applies to this customer?"</div>
+        <div class="card-body">A relationship manager reads through 50-page policy PDFs to verify credit restructuring eligibility — while the customer waits on the phone.</div>
       </div>
-      <div class="card card-indigo">
-        <div class="card-icon">🌐</div>
-        <div class="card-title">Bilingual, Enterprise-Ready</div>
-        <div class="card-body">Responds fluently in Bahasa Indonesia and English. Language is detected per message — no separate models or prompts needed.</div>
+      <div class="card" style="--card-accent:#EA4335;">
+        <div class="card-icon">🔍</div>
+        <div class="card-title">"Is our network SLA actually being met?"</div>
+        <div class="card-body">A telco manager asks IT for a report. Three days later they get a spreadsheet — too late to act on the churn risk they were worried about.</div>
       </div>
-      <div class="card card-orange">
-        <div class="card-icon">📍</div>
-        <div class="card-title">Full Source Traceability</div>
-        <div class="card-body">Every answer shows the exact document chunks and SQL queries used. Grounding confidence badge confirms the answer is evidence-based, not hallucinated.</div>
+      <div class="card" style="--card-accent:#EA4335;">
+        <div class="card-icon">⚠</div>
+        <div class="card-title">"Are we at risk of the APBD penalty?"</div>
+        <div class="card-body">A government budget officer manually cross-references budget reports against regulation documents to assess absorption risk — monthly, by hand.</div>
       </div>
-      <div class="card card-green">
-        <div class="card-icon">☁</div>
-        <div class="card-title">Portable: Laptop → CDP Production</div>
-        <div class="card-body">DuckDB + local files for demos on any laptop. Swap two env vars to connect Trino on CDW and Ozone S3 on a real CDP cluster — zero code changes.</div>
+      <div class="card" style="--card-accent:var(--orange);">
+        <div class="card-icon">💡</div>
+        <div class="card-title">The real cost is not just time.</div>
+        <div class="card-body">Delayed decisions, compliance gaps, inconsistent policy application, and frustrated employees — all because answers are hard to find.</div>
       </div>
     </div>
     <div class="slide-footer">
@@ -398,64 +395,44 @@
     </div>
   </section>
 
-  <!-- ── SLIDE 3: Architecture Overview ────────────────────────────────── -->
+  <!-- ── SLIDE 3: The Solution ──────────────────────────────────────────── -->
   <section class="slide bg-teal" id="s3">
-    <div class="slide-tag">Architecture</div>
-    <h2>System <span class="accent">Architecture</span></h2>
-    <p class="lead" style="margin-bottom:28px;">Three-phase pipeline: classify → retrieve → synthesise. Each phase is independently testable and swappable.</p>
+    <div class="slide-tag">The Solution</div>
+    <h2>Ask in Plain Language. <span class="accent">Get Trusted Answers.</span></h2>
+    <p class="lead" style="margin-bottom:28px;">The AI reads your policy documents and live business data simultaneously — and always shows exactly where the answer came from.</p>
 
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <!-- Layer 1: Input -->
-      <div class="arch-row">
-        <div class="arch-box hl-orange">
-          <span class="ab-icon">💬</span>User Question
-          <span class="ab-sub">Bahasa ID / English</span>
-        </div>
-        <div class="arch-arrow">→</div>
-        <div class="arch-box hl-orange">
-          <span class="ab-icon">⚛</span>React SPA
-          <span class="ab-sub">SSE streaming · No build step</span>
-        </div>
-        <div class="arch-arrow">→</div>
-        <div class="arch-box">
-          <span class="ab-icon">⚡</span>FastAPI
-          <span class="ab-sub">POST /api/chat · uvicorn</span>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <!-- Scenario 1 -->
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:18px 22px;display:flex;gap:20px;align-items:flex-start;">
+        <div style="font-size:1.4rem;flex-shrink:0;">🏦</div>
+        <div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Banking — Credit Officer</div>
+          <div style="font-size:0.9rem;color:var(--t1);margin-bottom:6px;">
+            "Apakah outstanding kredit UMKM di Jakarta sudah sesuai target ekspansi 15% kebijakan 2026?"
+          </div>
+          <div style="font-size:0.78rem;color:var(--green);">✓ Reads the 2026 policy document → checks live credit data → gives a direct yes/no with the actual numbers. In 2 seconds.</div>
         </div>
       </div>
-
-      <div style="text-align:center;font-size:0.75rem;color:var(--t3);">↓ classify</div>
-
-      <!-- Layer 2: Router -->
-      <div class="arch-row">
-        <div class="arch-box hl-teal">
-          <span class="ab-icon">🔀</span>Router
-          <span class="ab-sub">Heuristics + LLM fallback</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <span class="arch-arrow">→</span>
-          <span class="pill pill-teal" style="font-size:0.6rem;">document</span>
-          <span class="pill pill-indigo" style="font-size:0.6rem;">data</span>
-          <span class="pill pill-orange" style="font-size:0.6rem;">combined</span>
+      <!-- Scenario 2 -->
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:18px 22px;display:flex;gap:20px;align-items:flex-start;">
+        <div style="font-size:1.4rem;flex-shrink:0;">📡</div>
+        <div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--indigo);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Telco — Network Operations</div>
+          <div style="font-size:0.9rem;color:var(--t1);margin-bottom:6px;">
+            "Which subscribers have high churn risk and qualify for the retention program?"
+          </div>
+          <div style="font-size:0.78rem;color:var(--green);">✓ Checks retention eligibility criteria in the SLA policy → queries subscriber churn scores → returns a ranked list, ready to act on.</div>
         </div>
       </div>
-
-      <div style="text-align:center;font-size:0.75rem;color:var(--t3);">↓ retrieve (parallel)</div>
-
-      <!-- Layer 3: Retrieval -->
-      <div class="arch-row">
-        <div class="arch-box hl-teal">
-          <span class="ab-icon">📄</span>Document RAG
-          <span class="ab-sub">BM25 + FAISS + Cross-encoder</span>
-        </div>
-        <div class="arch-arrow">+</div>
-        <div class="arch-box hl-indigo">
-          <span class="ab-icon">🗄</span>SQL Engine
-          <span class="ab-sub">DuckDB (dev) · Trino (CDP CDW)</span>
-        </div>
-        <div class="arch-arrow">→</div>
-        <div class="arch-box hl-orange">
-          <span class="ab-icon">✦</span>LLM Synthesis
-          <span class="ab-sub">Streaming SSE · Citations</span>
+      <!-- Scenario 3 -->
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:18px 22px;display:flex;gap:20px;align-items:flex-start;">
+        <div style="font-size:1.4rem;flex-shrink:0;">🏛</div>
+        <div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Government — Budget Controller</div>
+          <div style="font-size:0.9rem;color:var(--t1);margin-bottom:6px;">
+            "Satuan kerja mana yang berisiko kena penalti sesuai regulasi APBD?"
+          </div>
+          <div style="font-size:0.78rem;color:var(--green);">✓ Reads APBD penalty regulation → checks budget realization per work unit → flags who is at risk and by how much.</div>
         </div>
       </div>
     </div>
@@ -467,45 +444,45 @@
     </div>
   </section>
 
-  <!-- ── SLIDE 4: Three Routing Modes ──────────────────────────────────── -->
+  <!-- ── SLIDE 4: What It Can Answer ───────────────────────────────────── -->
   <section class="slide bg-dark" id="s4">
-    <div class="slide-tag">Intelligence Layer</div>
-    <h2>Three-Mode <span class="accent">Intelligent Routing</span></h2>
-    <p class="lead" style="margin-bottom:28px;">The router classifies every question in milliseconds using keyword heuristics — no LLM call unless genuinely ambiguous. History-aware for multi-turn conversations.</p>
+    <div class="slide-tag">Capabilities</div>
+    <h2>Three Types of Questions, <span class="accent">One Conversation</span></h2>
+    <p class="lead" style="margin-bottom:28px;">No need to log into different systems. Ask naturally — the AI figures out which source to check.</p>
     <div class="card-grid card-grid-3">
       <div class="card card-teal">
-        <div class="card-icon">◈</div>
-        <span class="pill pill-teal" style="align-self:flex-start;margin-bottom:6px;">Document RAG</span>
-        <div class="card-title">Policy & Procedure Questions</div>
-        <div class="card-body">
-          "What are the credit restructuring conditions?"<br/><br/>
-          Retrieves from 14 policy documents using hybrid BM25 + FAISS + cross-encoder reranking.
+        <div class="card-icon">📋</div>
+        <span class="pill pill-teal" style="align-self:flex-start;margin-bottom:8px;">Policy Questions</span>
+        <div class="card-title">Answers from your documents</div>
+        <div class="card-body" style="margin-top:8px;">
+          <em style="color:var(--t2);">"What are the conditions for credit restructuring?"</em><br/><br/>
+          Reads your internal policy documents and returns the exact answer — with the source document and page section cited.
         </div>
       </div>
       <div class="card card-indigo">
-        <div class="card-icon">⬡</div>
-        <span class="pill pill-indigo" style="align-self:flex-start;margin-bottom:6px;">Structured Data</span>
-        <div class="card-title">Aggregation & Listing Questions</div>
-        <div class="card-body">
-          "Show top 5 customers by credit exposure."<br/><br/>
-          Generates and executes validated SQL with retry on failure. Shows live data from 9 tables, 1,485 rows.
+        <div class="card-icon">📊</div>
+        <span class="pill pill-indigo" style="align-self:flex-start;margin-bottom:8px;">Data Questions</span>
+        <div class="card-title">Answers from your live data</div>
+        <div class="card-body" style="margin-top:8px;">
+          <em style="color:var(--t2);">"Show the top 5 customers by credit exposure."</em><br/><br/>
+          Queries your business database in real time and presents a formatted table — no SQL knowledge required.
         </div>
       </div>
       <div class="card card-orange">
-        <div class="card-icon">⬡</div>
-        <span class="pill pill-orange" style="align-self:flex-start;margin-bottom:6px;">Combined</span>
-        <div class="card-title">Comparison & Compliance Questions</div>
-        <div class="card-body">
-          "Has MSME credit outstanding met the 15% expansion policy target?"<br/><br/>
-          Runs both retrieval and SQL in parallel, then synthesises a single grounded answer.
+        <div class="card-icon">⚡</div>
+        <span class="pill pill-orange" style="align-self:flex-start;margin-bottom:8px;">Insight Questions</span>
+        <div class="card-title">Policy + data, fused together</div>
+        <div class="card-body" style="margin-top:8px;">
+          <em style="color:var(--t2);">"Are we meeting the 15% growth target set by policy?"</em><br/><br/>
+          Checks the policy for the target, queries the database for the actual number, and gives a direct compliance verdict.
         </div>
       </div>
     </div>
     <div class="divider"></div>
-    <div style="display:flex;gap:20px;flex-wrap:wrap;">
-      <div style="font-size:0.78rem;color:var(--t2);">⚡ <strong style="color:var(--t1);">4-tier heuristics</strong> — no LLM call for unambiguous questions</div>
-      <div style="font-size:0.78rem;color:var(--t2);">🕐 <strong style="color:var(--t1);">History-aware</strong> — follow-ups like "how about telco?" resolve correctly</div>
-      <div style="font-size:0.78rem;color:var(--t2);">⟳ <strong style="color:var(--t1);">SQL retry loop</strong> — auto-rephrases on generation failure</div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div style="font-size:0.82rem;color:var(--t2);">🌐 <strong style="color:var(--t1);">Bilingual</strong> — ask in Bahasa Indonesia or English</div>
+      <div style="font-size:0.82rem;color:var(--t2);">💬 <strong style="color:var(--t1);">Conversational</strong> — follow-up questions work naturally</div>
+      <div style="font-size:0.82rem;color:var(--t2);">📎 <strong style="color:var(--t1);">Always cited</strong> — every answer shows its source</div>
     </div>
     <div class="slide-footer">
       <span class="slide-num">04 / 09</span>
@@ -514,69 +491,56 @@
     </div>
   </section>
 
-  <!-- ── SLIDE 5: Challenges Solved ────────────────────────────────────── -->
+  <!-- ── SLIDE 5: Business Outcomes ────────────────────────────────────── -->
   <section class="slide bg-indigo" id="s5">
-    <div class="slide-tag">Value Proposition</div>
-    <h2>Enterprise <span class="accent">Challenges Solved</span></h2>
-    <div class="two-col" style="gap:32px;margin-top:8px;">
+    <div class="slide-tag">Business Value</div>
+    <h2>What Changes for <span class="accent">Your Business</span></h2>
+    <div class="two-col" style="gap:36px;margin-top:4px;">
       <div class="check-list">
         <div class="check-item">
           <div class="check-icon">✓</div>
           <div>
-            <strong>Data silos between documents and databases</strong>
-            <div class="sub">Policy lives in PDFs; facts live in SQL tables. This demo bridges both in a single answer — with sources cited for each.</div>
+            <strong>Faster decisions, fewer escalations</strong>
+            <div class="sub">Front-line staff get policy answers instantly — without calling compliance, waiting for reports, or searching shared drives. Time-to-answer drops from days to seconds.</div>
           </div>
         </div>
         <div class="check-item">
           <div class="check-icon">✓</div>
           <div>
-            <strong>Hallucination in LLM answers</strong>
-            <div class="sub">Every statement is grounded to a retrieved chunk or SQL result. The grounding confidence badge signals whether the answer has sources.</div>
+            <strong>Consistent, auditable answers</strong>
+            <div class="sub">Every answer cites its source. You can trace exactly which policy clause or data row the AI used — critical for compliance, audit, and regulatory reporting.</div>
           </div>
         </div>
         <div class="check-item">
           <div class="check-icon">✓</div>
           <div>
-            <strong>Language barriers in Indonesian enterprise</strong>
-            <div class="sub">Answers in the user's language — Bahasa Indonesia or English — detected per message. Multilingual embeddings support both natively.</div>
+            <strong>Serves Indonesian-language users natively</strong>
+            <div class="sub">No translation layer, no second-class experience. Staff ask in Bahasa Indonesia, get answers in Bahasa Indonesia — from your own documents and data.</div>
           </div>
         </div>
         <div class="check-item">
           <div class="check-icon">✓</div>
           <div>
-            <strong>Demo portability and setup overhead</strong>
-            <div class="sub">One command (<span style="font-family:var(--mono);font-size:0.75em;color:var(--teal);">make demo-reset</span>) restores a clean state. Runs on any laptop with Python 3.10+ — no Docker, no cloud account needed.</div>
+            <strong>Knowledge base stays current automatically</strong>
+            <div class="sub">New policies, updated regulations, and new data are uploaded through a browser — no IT ticket, no redeploy. The AI learns overnight.</div>
           </div>
         </div>
       </div>
-      <div class="check-list">
-        <div class="check-item">
-          <div class="check-icon">✓</div>
-          <div>
-            <strong>LLM vendor lock-in risk</strong>
-            <div class="sub">Pluggable LLM clients for Cloudera CAII, OpenAI, Azure, AWS Bedrock, Anthropic, and local models (Ollama/vLLM). Switch with one env var.</div>
+      <div>
+        <!-- Impact numbers -->
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:16px;">
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--indigo);margin-bottom:16px;">Indicative Impact</div>
+          <div class="stat-row" style="gap:20px;">
+            <div class="stat"><div class="stat-n" style="font-size:2rem;">~80%</div><div class="stat-l">Faster policy lookup</div></div>
+            <div class="stat"><div class="stat-n" style="font-size:2rem;">100%</div><div class="stat-l">Answers with source</div></div>
+          </div>
+          <div class="stat-row" style="gap:20px;margin-top:14px;">
+            <div class="stat"><div class="stat-n" style="font-size:2rem;">0</div><div class="stat-l">New IT systems needed</div></div>
+            <div class="stat"><div class="stat-n" style="font-size:2rem;">&lt;5min</div><div class="stat-l">Demo setup time</div></div>
           </div>
         </div>
-        <div class="check-item">
-          <div class="check-icon">✓</div>
-          <div>
-            <strong>Knowledge base management in production</strong>
-            <div class="sub">Upload docs via drag-and-drop, scrape URLs, or import CSV/Excel — all from the browser. Nightly re-ingestion runs as a CML Job automatically.</div>
-          </div>
-        </div>
-        <div class="check-item">
-          <div class="check-icon">✓</div>
-          <div>
-            <strong>Retrieval quality degradation at scale</strong>
-            <div class="sub">Three-stage retrieval: FAISS semantic search → BM25 keyword re-ranking → cross-encoder reranking. Each layer catches what the previous misses.</div>
-          </div>
-        </div>
-        <div class="check-item">
-          <div class="check-icon">✓</div>
-          <div>
-            <strong>Observability and cost tracking</strong>
-            <div class="sub">Every inference is logged to the /metrics dashboard and optionally to MLflow — provider, model, latency, token usage, mode distribution.</div>
-          </div>
+        <div style="background:var(--o-dim);border:1px solid rgba(249,103,2,0.25);border-radius:10px;padding:14px 16px;font-size:0.82rem;color:var(--t1);line-height:1.6;">
+          <strong style="color:var(--orange);">No hallucinations.</strong> The AI only answers from your documents and data — and tells you when it can't find an answer, rather than guessing.
         </div>
       </div>
     </div>
@@ -587,41 +551,41 @@
     </div>
   </section>
 
-  <!-- ── SLIDE 6: Cloudera Capabilities ────────────────────────────────── -->
+  <!-- ── SLIDE 6: Why Cloudera ──────────────────────────────────────────── -->
   <section class="slide bg-orange" id="s6">
-    <div class="slide-tag">Cloudera Platform</div>
-    <h2>Cloudera <span class="accent">Platform Showcase</span></h2>
-    <p class="lead" style="margin-bottom:24px;">Every component maps to a Cloudera product or capability — making it a living reference architecture for customer conversations.</p>
+    <div class="slide-tag">Why Cloudera</div>
+    <h2>Built on a Platform You Can <span class="accent">Trust</span></h2>
+    <p class="lead" style="margin-bottom:24px;">This is not a point solution. It is built end-to-end on Cloudera — which means it inherits enterprise-grade security, governance, and scale from day one.</p>
     <div class="card-grid card-grid-3" style="gap:12px;">
       <div class="card card-orange">
-        <div class="card-icon">🤖</div>
-        <div class="card-title">Cloudera AI Inference</div>
-        <div class="card-body">The default LLM provider. Hosts Llama, Mistral, and other models on the customer's own CDP infrastructure. The LLM Compare panel benchmarks it against other providers live.</div>
+        <div class="card-icon">🔒</div>
+        <div class="card-title">Your Data Never Leaves Your Control</div>
+        <div class="card-body">Run the AI model on Cloudera's own infrastructure with Cloudera AI Inference — no data sent to public cloud LLMs unless you choose to. Full data sovereignty.</div>
       </div>
       <div class="card card-teal">
-        <div class="card-icon">💻</div>
-        <div class="card-title">Cloudera AI Workbench (CML)</div>
-        <div class="card-body">The entire demo deploys as a CML Application — one Git repo, one Script field, zero infrastructure setup. CML Jobs run nightly re-ingestion automatically.</div>
+        <div class="card-icon">⚙</div>
+        <div class="card-title">Zero New Infrastructure</div>
+        <div class="card-body">Deploys as a Cloudera AI Workbench Application — on the platform your team already uses. No new servers, no new vendors, no new contracts.</div>
       </div>
       <div class="card card-indigo">
-        <div class="card-icon">🗄</div>
-        <div class="card-title">CDW (Trino / Impala)</div>
-        <div class="card-body">Swap <span style="font-family:var(--mono);font-size:0.8em;">QUERY_ENGINE=trino</span> to hit a CDW virtual warehouse. Same SQL — no code change. Iceberg time-travel queries showcased in the Data Explorer.</div>
+        <div class="card-icon">📈</div>
+        <div class="card-title">Connects to Your Existing Data</div>
+        <div class="card-body">Reads from your Cloudera Data Warehouse (CDW) directly. No copying, no syncing, no ETL pipeline — live data, always current.</div>
       </div>
       <div class="card card-green">
-        <div class="card-icon">🪣</div>
-        <div class="card-title">Ozone / S3 Object Storage</div>
-        <div class="card-body">Swap <span style="font-family:var(--mono);font-size:0.8em;">DOCS_STORAGE_TYPE=s3</span> to load policy documents from Ozone S3GW instead of local disk. No retrieval code changes needed.</div>
+        <div class="card-icon">📂</div>
+        <div class="card-title">Works with Your Document Store</div>
+        <div class="card-body">Documents stored in Ozone or S3? The assistant reads from there natively. No migration required — just point it at your existing storage.</div>
       </div>
       <div class="card card-yellow">
-        <div class="card-icon">🧊</div>
-        <div class="card-title">Apache Iceberg</div>
-        <div class="card-body">Parquet files are structured as Iceberg-compatible table data. The Time Travel tab demonstrates Iceberg's point-in-time query capability — a unique Cloudera differentiator.</div>
+        <div class="card-icon">🕐</div>
+        <div class="card-title">Query Historical Data</div>
+        <div class="card-body">Using Cloudera's Iceberg tables, you can ask "what did the data look like 6 months ago?" — a powerful capability for auditors and compliance teams.</div>
       </div>
       <div class="card card-orange">
-        <div class="card-icon">📊</div>
-        <div class="card-title">MLflow Experiment Tracking</div>
-        <div class="card-body">Logs every chat inference — provider, model, latency, token usage, mode — to a MLflow experiment. The /metrics dashboard shows live session analytics.</div>
+        <div class="card-icon">🔍</div>
+        <div class="card-title">Full Observability & Cost Tracking</div>
+        <div class="card-body">Every AI interaction is logged — what was asked, which source answered it, how fast, at what cost. Management-ready dashboards built in.</div>
       </div>
     </div>
     <div class="slide-footer">
@@ -631,79 +595,64 @@
     </div>
   </section>
 
-  <!-- ── SLIDE 7: RAG Quality Stack ────────────────────────────────────── -->
+  <!-- ── SLIDE 7: Industry Use Cases ───────────────────────────────────── -->
   <section class="slide bg-dark" id="s7">
-    <div class="slide-tag">Technical Depth</div>
-    <h2>Production-Grade <span class="accent">RAG Quality Stack</span></h2>
-    <div class="two-col" style="gap:40px;">
+    <div class="slide-tag">Industry Applications</div>
+    <h2>Relevant to Every <span class="accent">Enterprise Vertical</span></h2>
+    <div class="three-col" style="gap:20px;margin-top:4px;">
       <div>
-        <div class="layer-stack">
-          <div class="layer" style="background:var(--t-dim);border-color:rgba(0,165,145,0.3);">
-            <div class="layer-icon">1️⃣</div>
-            <div>
-              <div class="layer-name">FAISS Semantic Search</div>
-              <div class="layer-tech">multilingual-e5-large · 1024-dim · cosine similarity</div>
-            </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <span style="font-size:1.8rem;">🏦</span>
+          <div>
+            <div style="font-size:0.95rem;font-weight:700;color:var(--t1);">Banking & Finance</div>
+            <div style="font-size:0.72rem;color:var(--t2);">OJK compliance · UMKM credit · KYC</div>
           </div>
-          <div style="text-align:center;color:var(--t3);font-size:0.8rem;">↓ fuse via RRF</div>
-          <div class="layer" style="background:var(--i-dim);border-color:rgba(129,140,248,0.3);">
-            <div class="layer-icon">2️⃣</div>
-            <div>
-              <div class="layer-name">BM25 Keyword Re-ranking</div>
-              <div class="layer-tech">rank-bm25 · entity / code name recall</div>
-            </div>
-          </div>
-          <div style="text-align:center;color:var(--t3);font-size:0.8rem;">↓ Reciprocal Rank Fusion</div>
-          <div class="layer" style="background:var(--o-dim);border-color:rgba(249,103,2,0.3);">
-            <div class="layer-icon">3️⃣</div>
-            <div>
-              <div class="layer-name">Cross-encoder Reranking</div>
-              <div class="layer-tech">ms-marco-MiniLM-L-6-v2 · joint (query, chunk) scoring</div>
-            </div>
-          </div>
-          <div style="text-align:center;color:var(--t3);font-size:0.8rem;">↓ top-K to LLM</div>
-          <div class="layer" style="background:var(--g-dim);border-color:rgba(52,211,153,0.3);">
-            <div class="layer-icon">✦</div>
-            <div>
-              <div class="layer-name">LLM Synthesis + Citations</div>
-              <div class="layer-tech">streaming SSE · grounding badge · full chunk preview</div>
-            </div>
-          </div>
+        </div>
+        <div class="check-list" style="gap:9px;">
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Credit restructuring eligibility checks in seconds</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>OJK regulatory compliance Q&amp;A</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>KYC/AML procedure lookups</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Branch performance vs. target analysis</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>NPL portfolio monitoring vs. policy thresholds</div>
         </div>
       </div>
       <div>
-        <div class="check-list">
-          <div class="check-item">
-            <div class="check-icon">✓</div>
-            <div>
-              <strong>Prompt caching</strong>
-              <div class="sub">Anthropic cache_control + Bedrock cachePoint on system prompts. Cuts cost ~90% and latency ~30% for repeated queries.</div>
-            </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <span style="font-size:1.8rem;">📡</span>
+          <div>
+            <div style="font-size:0.95rem;font-weight:700;color:var(--t1);">Telecommunications</div>
+            <div style="font-size:0.72rem;color:var(--t2);">SLA compliance · churn · network ops</div>
           </div>
-          <div class="check-item">
-            <div class="check-icon">✓</div>
-            <div>
-              <strong>SQL few-shot examples</strong>
-              <div class="sub">6 worked domain examples in the generation prompt. Dramatically reduces TIDAK_DAPAT_DIJAWAB on edge queries.</div>
-            </div>
+        </div>
+        <div class="check-list" style="gap:9px;">
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>SLA breach detection vs. policy thresholds</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>High-risk churn subscriber identification</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Retention program eligibility screening</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Network utilization vs. capacity thresholds</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Spectrum regulation compliance</div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <span style="font-size:1.8rem;">🏛</span>
+          <div>
+            <div style="font-size:0.95rem;font-weight:700;color:var(--t1);">Government & Public Sector</div>
+            <div style="font-size:0.72rem;color:var(--t2);">APBD · public service · regulation</div>
           </div>
-          <div class="check-item">
-            <div class="check-icon">✓</div>
-            <div>
-              <strong>Agentic SQL retry</strong>
-              <div class="sub">On generation failure, automatically rephrases the question and retries once — invisible to the user.</div>
-            </div>
-          </div>
-          <div class="check-item">
-            <div class="check-icon">✓</div>
-            <div>
-              <strong>86 unit tests · 36-question bilingual eval</strong>
-              <div class="sub">Full test coverage including 10 multi-turn conversation scenarios across all three domains.</div>
-            </div>
-          </div>
+        </div>
+        <div class="check-list" style="gap:9px;">
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>APBD budget absorption and penalty risk</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Public service SLA and IKM compliance</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Regulation lookup in plain Bahasa Indonesia</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Work unit performance vs. regulation target</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Regional population and service data analysis</div>
         </div>
       </div>
     </div>
+    <div class="divider"></div>
+    <p style="font-size:0.82rem;color:var(--t2);">
+      💡 <strong style="color:var(--t1);">Adaptable:</strong> Swap in your own documents and data — the AI adapts to your industry, your policies, and your terminology in days, not months.
+    </p>
     <div class="slide-footer">
       <span class="slide-num">07 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:77%"></div></div>
@@ -711,44 +660,36 @@
     </div>
   </section>
 
-  <!-- ── SLIDE 8: Deployment Path ──────────────────────────────────────── -->
+  <!-- ── SLIDE 8: Getting Started ───────────────────────────────────────── -->
   <section class="slide bg-teal" id="s8">
-    <div class="slide-tag">Deployment</div>
-    <h2>From Laptop to <span class="accent">CDP Production</span></h2>
-    <div class="three-col" style="gap:16px;margin-bottom:20px;">
-      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:18px;">
-        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--teal);margin-bottom:12px;">Stage 1 — Laptop</div>
-        <div class="check-list" style="gap:7px;">
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div>DuckDB + local Parquet files</div>
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div>Local FAISS vector store</div>
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div><span style="font-family:var(--mono);font-size:0.7em;">make demo-reset</span> factory reset</div>
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div>Any LLM provider</div>
-        </div>
+    <div class="slide-tag">Getting Started</div>
+    <h2>From Conversation to <span class="accent">Go-Live in 3 Steps</span></h2>
+    <p class="lead" style="margin-bottom:28px;">No long implementation projects. No rip-and-replace. This is additive AI on top of what your organisation already has.</p>
+    <div class="three-col" style="gap:16px;margin-bottom:28px;">
+      <div style="background:var(--s2);border:1px solid rgba(0,165,145,0.4);border-radius:14px;padding:22px;position:relative;">
+        <div style="position:absolute;top:-12px;left:20px;background:var(--teal);color:#fff;font-size:0.7rem;font-weight:700;padding:3px 12px;border-radius:10px;text-transform:uppercase;letter-spacing:0.08em;">Step 1</div>
+        <div style="font-size:1.6rem;margin-bottom:10px;">🗂</div>
+        <div style="font-size:0.9rem;font-weight:700;color:var(--t1);margin-bottom:8px;">Connect your content</div>
+        <div style="font-size:0.78rem;color:var(--t2);line-height:1.6;">Upload your policy documents, regulations, and procedures. Point it at your existing Cloudera data warehouse. Takes an afternoon.</div>
       </div>
-      <div style="background:var(--s2);border:1px solid rgba(0,165,145,0.4);border-radius:12px;padding:18px;">
-        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--teal);margin-bottom:12px;">Stage 2 — CML Workbench</div>
-        <div class="check-list" style="gap:7px;">
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div>Git source deployment</div>
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div>CML Application (port 8080)</div>
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div>CML Jobs (nightly re-ingest)</div>
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div>Cloudera AI Inference LLM</div>
-        </div>
+      <div style="background:var(--s2);border:1px solid rgba(0,165,145,0.6);border-radius:14px;padding:22px;position:relative;">
+        <div style="position:absolute;top:-12px;left:20px;background:var(--teal);color:#fff;font-size:0.7rem;font-weight:700;padding:3px 12px;border-radius:10px;text-transform:uppercase;letter-spacing:0.08em;">Step 2</div>
+        <div style="font-size:1.6rem;margin-bottom:10px;">✅</div>
+        <div style="font-size:0.9rem;font-weight:700;color:var(--t1);margin-bottom:8px;">Test with your team</div>
+        <div style="font-size:0.78rem;color:var(--t2);line-height:1.6;">Ask your real questions. Validate the answers against what your subject-matter experts know. Refine — no engineers needed for content changes.</div>
       </div>
-      <div style="background:var(--s2);border:1px solid rgba(249,103,2,0.4);border-radius:12px;padding:18px;">
-        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--orange);margin-bottom:12px;">Stage 3 — Full CDP</div>
-        <div class="check-list" style="gap:7px;">
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div>Trino on CDW (1 env var)</div>
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div>Ozone S3GW for docs (1 env var)</div>
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div>Apache Iceberg time travel</div>
-          <div class="check-item" style="font-size:0.78rem;"><div class="check-icon" style="width:16px;height:16px;font-size:0.55rem;">✓</div>MLflow on CML experiment tracker</div>
-        </div>
+      <div style="background:var(--s2);border:1px solid rgba(249,103,2,0.5);border-radius:14px;padding:22px;position:relative;">
+        <div style="position:absolute;top:-12px;left:20px;background:var(--orange);color:#fff;font-size:0.7rem;font-weight:700;padding:3px 12px;border-radius:10px;text-transform:uppercase;letter-spacing:0.08em;">Step 3</div>
+        <div style="font-size:1.6rem;margin-bottom:10px;">🚀</div>
+        <div style="font-size:0.9rem;font-weight:700;color:var(--t1);margin-bottom:8px;">Deploy to your organisation</div>
+        <div style="font-size:0.78rem;color:var(--t2);line-height:1.6;">Roll out to your teams on Cloudera AI Workbench — with your SSO/LDAP login, your data governance policies, and your security controls already in place.</div>
       </div>
     </div>
-    <div class="code-block">
-      <span class="cmt"># Stage 1 → Stage 3 migration: change exactly two environment variables</span><br/>
-      <span class="key">QUERY_ENGINE</span>=<span class="str">trino</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt"># was: duckdb</span><br/>
-      <span class="key">DOCS_STORAGE_TYPE</span>=<span class="str">s3</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt"># was: local</span><br/>
-      <span class="cmt"># Zero code changes. Same SQL dialect, same API, same UI.</span>
+    <div style="background:var(--o-dim);border:1px solid rgba(249,103,2,0.25);border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:14px;">
+      <span style="font-size:1.4rem;">💡</span>
+      <div style="font-size:0.85rem;color:var(--t1);line-height:1.6;">
+        <strong>This demo itself runs in under 5 minutes on a laptop.</strong> We can run it live right now with your questions — and show you what it looks like with your own content in a proof-of-concept engagement.
+      </div>
     </div>
     <div class="slide-footer">
       <span class="slide-num">08 / 09</span>
@@ -769,25 +710,27 @@
       <div class="logo-sep"></div>
       <div class="logo-text">Cloudera <span>AI</span></div>
     </div>
-    <h1 style="max-width:700px;">
-      Ready to See It<br/>
-      <span class="accent">Live?</span>
+    <h1 style="max-width:700px;margin-bottom:16px;">
+      Let's Run It Live<br/>
+      <span class="accent">With Your Questions.</span>
     </h1>
-    <p class="lead" style="margin-bottom:28px;max-width:600px;">
-      The demo runs on your laptop in under 5 minutes — no cloud account,
-      no Docker, no external dependencies. One command and it's live.
+    <p class="lead" style="margin-bottom:28px;max-width:620px;">
+      The demo is running right now. Type any question about banking credit policy,
+      telco SLA compliance, or government budget — in Bahasa Indonesia or English
+      — and see a sourced answer in seconds.
     </p>
-    <div class="code-block" style="max-width:520px;margin-bottom:28px;">
-      <span class="cmt"># Clone and start</span><br/>
-      <span class="kw">git</span> clone https://github.com/servaed/PROJECTS<br/>
-      <span class="kw">cd</span> demos/cloudera-ai-id-rag-demo<br/>
-      <span class="kw">make</span> <span class="fn">dev</span><br/>
-      <span class="cmt"># Open: http://localhost:8080</span>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:32px;">
+      <a href="/" style="padding:14px 28px;border-radius:10px;background:var(--orange);color:#fff;font-weight:700;font-size:0.95rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(249,103,2,0.4);">
+        💬 Open the Live Demo
+      </a>
+      <div style="padding:14px 22px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.06);color:var(--t2);font-size:0.85rem;display:flex;align-items:center;gap:8px;">
+        📧 Eduard Bangga · Cloudera Presales Indonesia
+      </div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <span class="pill pill-teal">86 tests · 36-question bilingual eval</span>
-      <span class="pill pill-indigo">Anthropic · Bedrock · OpenAI · Cloudera CAII</span>
-      <span class="pill pill-orange">Banking · Telco · Government</span>
+      <span class="pill pill-teal">✓ Data stays on your infrastructure</span>
+      <span class="pill pill-indigo">✓ Works in Bahasa Indonesia</span>
+      <span class="pill pill-orange">✓ Banking · Telco · Government</span>
     </div>
     <div class="slide-footer">
       <span class="slide-num">09 / 09</span>
