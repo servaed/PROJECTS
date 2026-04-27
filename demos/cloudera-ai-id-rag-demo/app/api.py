@@ -250,6 +250,15 @@ async def upload_page():
     return HTMLResponse(p.read_text(encoding="utf-8"))
 
 
+@app.get("/presentation", response_class=HTMLResponse)
+async def presentation_page():
+    """Serve the presales slide deck."""
+    p = _STATIC / "presentation.html"
+    if not p.exists():
+        return HTMLResponse("<h1>presentation.html not found</h1>", status_code=404)
+    return HTMLResponse(p.read_text(encoding="utf-8"))
+
+
 app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 
 
