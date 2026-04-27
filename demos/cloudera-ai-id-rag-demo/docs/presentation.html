@@ -115,11 +115,12 @@
       margin-bottom: 40px;
     }
     .logo-mark {
-      width: 36px; height: 36px;
-      background: var(--orange); border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem; font-weight: 900; color: #fff;
-      flex-shrink: 0;
+      height: 28px; width: auto;
+      flex-shrink: 0; display: flex; align-items: center;
+    }
+    .logo-mark svg { height: 28px; width: auto; }
+    .logo-sep {
+      width: 1px; height: 20px; background: rgba(255,255,255,0.15); flex-shrink: 0;
     }
     .logo-text {
       font-family: var(--display); font-size: 1rem; font-weight: 700;
@@ -257,7 +258,11 @@
       height: 100%; background: var(--orange); border-radius: 2px;
       transition: width 0.4s ease;
     }
-    .slide-logo { font-size: 0.7rem; color: var(--t3); flex-shrink: 0; }
+    .slide-logo {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.68rem; color: var(--t3); flex-shrink: 0;
+    }
+    .slide-logo svg { height: 12px; width: auto; opacity: 0.45; }
 
     /* ── Navigation ────────────────────────────────────────────────────────── */
     .nav-btn {
@@ -320,7 +325,13 @@
   <!-- ── SLIDE 1: Cover ─────────────────────────────────────────────────── -->
   <section class="slide active bg-cover" id="s1">
     <div class="logo-bar anim anim-1">
-      <div class="logo-mark">C</div>
+      <div class="logo-mark">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none">
+          <path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/>
+          <path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 12 19 12 18 12 17 C 12 8 20 1 30 1 C 36 1 42 4 46 9 C 49 4 55 1 62 1 C 71 1 78 8 78 17 C 78 18 78 19 77 20 C 78 22 78 24 78 26 C 78 35 71 42 62 42 L 16 42 C 15 42 14 42 14 42 Z"/>
+        </svg>
+      </div>
+      <div class="logo-sep"></div>
       <div class="logo-text">Cloudera <span>AI</span></div>
     </div>
     <div class="anim anim-2" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
@@ -346,7 +357,7 @@
     <div class="slide-footer anim anim-6">
       <span class="slide-num">01 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:11%"></div></div>
-      <span class="slide-logo">cloudera.com</span>
+      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
     </div>
   </section>
 
@@ -383,7 +394,7 @@
     <div class="slide-footer">
       <span class="slide-num">02 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:22%"></div></div>
-      <span class="slide-logo">cloudera.com</span>
+      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
     </div>
   </section>
 
@@ -452,7 +463,7 @@
     <div class="slide-footer">
       <span class="slide-num">03 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:33%"></div></div>
-      <span class="slide-logo">cloudera.com</span>
+      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
     </div>
   </section>
 
@@ -499,7 +510,7 @@
     <div class="slide-footer">
       <span class="slide-num">04 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:44%"></div></div>
-      <span class="slide-logo">cloudera.com</span>
+      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
     </div>
   </section>
 
@@ -572,7 +583,7 @@
     <div class="slide-footer">
       <span class="slide-num">05 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:55%"></div></div>
-      <span class="slide-logo">cloudera.com</span>
+      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
     </div>
   </section>
 
@@ -616,7 +627,7 @@
     <div class="slide-footer">
       <span class="slide-num">06 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:66%"></div></div>
-      <span class="slide-logo">cloudera.com</span>
+      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
     </div>
   </section>
 
@@ -696,7 +707,7 @@
     <div class="slide-footer">
       <span class="slide-num">07 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:77%"></div></div>
-      <span class="slide-logo">cloudera.com</span>
+      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
     </div>
   </section>
 
@@ -742,14 +753,20 @@
     <div class="slide-footer">
       <span class="slide-num">08 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:88%"></div></div>
-      <span class="slide-logo">cloudera.com</span>
+      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
     </div>
   </section>
 
   <!-- ── SLIDE 9: Call to Action ────────────────────────────────────────── -->
   <section class="slide bg-cover" id="s9">
     <div class="logo-bar">
-      <div class="logo-mark">C</div>
+      <div class="logo-mark">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none">
+          <path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/>
+          <path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 12 19 12 18 12 17 C 12 8 20 1 30 1 C 36 1 42 4 46 9 C 49 4 55 1 62 1 C 71 1 78 8 78 17 C 78 18 78 19 77 20 C 78 22 78 24 78 26 C 78 35 71 42 62 42 L 16 42 C 15 42 14 42 14 42 Z"/>
+        </svg>
+      </div>
+      <div class="logo-sep"></div>
       <div class="logo-text">Cloudera <span>AI</span></div>
     </div>
     <h1 style="max-width:700px;">
@@ -775,7 +792,7 @@
     <div class="slide-footer">
       <span class="slide-num">09 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
-      <span class="slide-logo">cloudera.com</span>
+      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
     </div>
   </section>
 
