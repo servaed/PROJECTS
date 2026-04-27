@@ -20,9 +20,9 @@ def is_likely_bahasa(text: str) -> bool:
 def mode_label(mode: str) -> str:
     """Return a display label for an answer mode."""
     labels = {
-        "dokumen": "Documents",
-        "data": "Structured Data",
-        "gabungan": "Combined",
+        "document": "Documents",
+        "data":     "Structured Data",
+        "combined": "Combined",
     }
     return labels.get(mode, mode.capitalize())
 
@@ -30,8 +30,8 @@ def mode_label(mode: str) -> str:
 def mode_badge_color(mode: str) -> str:
     """Return a Streamlit-friendly color string for the mode badge."""
     colors = {
-        "dokumen": "blue",
-        "data": "green",
-        "gabungan": "orange",
+        "document": "blue",
+        "data":     "green",
+        "combined": "orange",
     }
     return colors.get(mode, "gray")

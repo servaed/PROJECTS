@@ -239,6 +239,7 @@
       <a class="topbar-link active" href="/explorer">🗄 Data Explorer</a>
       <a class="topbar-link" href="/upload">↑ Upload</a>
       <a class="topbar-link" href="/setup">◎ Status</a>
+      <a class="topbar-link" href="/metrics">📊 Metrics</a>
       <a class="topbar-link" href="/configure">⚙ Settings</a>
       <button class="topbar-link theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
     </nav>
@@ -248,6 +249,8 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('sql', this)">SQL Query Editor</button>
     <button class="tab-btn" onclick="switchTab('docs', this)">Documents Browser</button>
+    <button class="tab-btn" onclick="switchTab('compare', this)">⚖ LLM Compare</button>
+    <button class="tab-btn" onclick="switchTab('timetravel', this)">⏱ Time Travel</button>
   </div>
 
   <!-- SQL Tab -->
@@ -298,6 +301,107 @@
       </div>
       <div class="docs-grid" id="docs-grid">
         <div class="state-box"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LLM Compare Tab -->
+  <div id="tab-compare" class="content" style="overflow-y:auto;padding:24px;flex-direction:column;gap:20px;">
+    <div style="max-width:900px;width:100%;margin:0 auto;">
+      <h2 style="font-size:1rem;font-weight:700;margin-bottom:4px;">LLM Provider Comparison</h2>
+      <p style="font-size:0.8rem;color:var(--t2);margin-bottom:20px;">Send the same question to two provider configs simultaneously and compare latency, token usage, and answer quality.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--teal);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em;">Provider A</div>
+          <select id="cmp-provider-a" style="width:100%;margin-bottom:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;">
+            <option value="">— Use configured default —</option>
+            <option value="cloudera">Cloudera CAII</option>
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="bedrock">AWS Bedrock</option>
+            <option value="azure">Azure OpenAI</option>
+            <option value="local">Local (Ollama/vLLM)</option>
+          </select>
+          <input id="cmp-model-a" type="text" placeholder="Model ID (e.g. gpt-4o)" style="width:100%;margin-bottom:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;font-family:var(--mono);">
+          <input id="cmp-url-a" type="url" placeholder="Base URL (optional)" style="width:100%;margin-bottom:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;font-family:var(--mono);">
+          <input id="cmp-key-a" type="password" placeholder="API Key (optional)" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;font-family:var(--mono);">
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--indigo);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em;">Provider B</div>
+          <select id="cmp-provider-b" style="width:100%;margin-bottom:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;">
+            <option value="">— Use configured default —</option>
+            <option value="cloudera">Cloudera CAII</option>
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="bedrock">AWS Bedrock</option>
+            <option value="azure">Azure OpenAI</option>
+            <option value="local">Local (Ollama/vLLM)</option>
+          </select>
+          <input id="cmp-model-b" type="text" placeholder="Model ID (e.g. claude-3-5-sonnet)" style="width:100%;margin-bottom:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;font-family:var(--mono);">
+          <input id="cmp-url-b" type="url" placeholder="Base URL (optional)" style="width:100%;margin-bottom:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;font-family:var(--mono);">
+          <input id="cmp-key-b" type="password" placeholder="API Key (optional)" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;font-family:var(--mono);">
+        </div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Question</div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <textarea id="cmp-question" rows="2" placeholder="Ask a question to compare both providers..." style="flex:1;padding:9px 12px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.85rem;resize:vertical;font-family:var(--font);"></textarea>
+          <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+            <select id="cmp-domain" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;">
+              <option value="banking">Banking</option>
+              <option value="telco">Telco</option>
+              <option value="government">Government</option>
+            </select>
+            <button onclick="runCompare()" style="padding:9px 18px;border-radius:20px;border:none;background:var(--orange);color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;">⚖ Compare</button>
+          </div>
+        </div>
+      </div>
+      <div id="cmp-results" style="display:none;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div id="cmp-result-a" style="background:var(--surface);border:1.5px solid var(--teal);border-radius:10px;padding:16px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--teal);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">Provider A</div>
+          <div id="cmp-meta-a" style="font-size:0.72rem;color:var(--t2);margin-bottom:10px;font-family:var(--mono);"></div>
+          <div id="cmp-answer-a" style="font-size:0.85rem;color:var(--t1);line-height:1.6;white-space:pre-wrap;"></div>
+        </div>
+        <div id="cmp-result-b" style="background:var(--surface);border:1.5px solid var(--indigo);border-radius:10px;padding:16px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--indigo);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">Provider B</div>
+          <div id="cmp-meta-b" style="font-size:0.72rem;color:var(--t2);margin-bottom:10px;font-family:var(--mono);"></div>
+          <div id="cmp-answer-b" style="font-size:0.85rem;color:var(--t1);line-height:1.6;white-space:pre-wrap;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Iceberg Time Travel Tab -->
+  <div id="tab-timetravel" class="content" style="overflow-y:auto;padding:24px;flex-direction:column;gap:20px;">
+    <div style="max-width:800px;width:100%;margin:0 auto;">
+      <h2 style="font-size:1rem;font-weight:700;margin-bottom:4px;">Iceberg Time Travel</h2>
+      <p style="font-size:0.8rem;color:var(--t2);margin-bottom:4px;">Query historical snapshots of Iceberg tables using Trino's <code style="font-family:var(--mono);font-size:0.75em;background:var(--s2);padding:1px 4px;border-radius:3px">FOR SYSTEM_TIME AS OF</code> syntax.</p>
+      <p style="font-size:0.75rem;color:var(--t3);margin-bottom:20px;">Requires <strong>QUERY_ENGINE=trino</strong>. Demonstrates Cloudera's Iceberg advantage — point-in-time analytics without data copies.</p>
+      <div id="tt-duckdb-warning" style="display:none;padding:12px 16px;background:rgba(249,171,0,0.1);border:1px solid rgba(249,171,0,0.3);border-radius:8px;font-size:0.8rem;color:#7a5200;margin-bottom:16px;">
+        &#9888; Time Travel requires QUERY_ENGINE=trino. Current engine is DuckDB (local dev mode).
+        To demo this feature, configure Trino + Iceberg on CDP CDW.
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+          <div style="flex:1;min-width:160px;">
+            <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:6px;color:var(--t2);">Table</label>
+            <select id="tt-table" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;font-family:var(--mono);">
+              <option>msme_credit</option><option>subscriber</option><option>network</option>
+              <option>regional_budget</option><option>public_service</option>
+            </select>
+          </div>
+          <div style="flex:1;min-width:200px;">
+            <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:6px;color:var(--t2);">As of timestamp</label>
+            <input id="tt-timestamp" type="datetime-local" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;">
+          </div>
+          <div style="flex:0 0 auto;display:flex;align-items:flex-end;">
+            <button onclick="runTimeTravel()" style="padding:9px 18px;border-radius:20px;border:none;background:var(--indigo);color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;">⏱ Query</button>
+          </div>
+        </div>
+        <div id="tt-sql-preview" style="font-size:0.75rem;font-family:var(--mono);color:var(--t3);padding:8px 10px;background:var(--s2);border-radius:6px;"></div>
+      </div>
+      <div id="tt-results" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;display:none;">
+        <div id="tt-results-inner"></div>
       </div>
     </div>
   </div>
@@ -499,6 +603,119 @@
 
   // ── Init ───────────────────────────────────────────────────────────────────
   loadTables();
+
+  // ── LLM Provider Comparison ────────────────────────────────────────────────
+  function runCompare() {
+    var question = document.getElementById('cmp-question').value.trim();
+    if (!question) { alert('Enter a question first.'); return; }
+    var body = {
+      question: question,
+      domain: document.getElementById('cmp-domain').value,
+      language: 'id',
+      provider_a: document.getElementById('cmp-provider-a').value,
+      model_a:    document.getElementById('cmp-model-a').value,
+      base_url_a: document.getElementById('cmp-url-a').value,
+      api_key_a:  document.getElementById('cmp-key-a').value,
+      provider_b: document.getElementById('cmp-provider-b').value,
+      model_b:    document.getElementById('cmp-model-b').value,
+      base_url_b: document.getElementById('cmp-url-b').value,
+      api_key_b:  document.getElementById('cmp-key-b').value,
+    };
+    document.getElementById('cmp-results').style.display = 'grid';
+    ['a','b'].forEach(function(side) {
+      document.getElementById('cmp-answer-' + side).textContent = '⟳ Running…';
+      document.getElementById('cmp-meta-' + side).textContent = '';
+    });
+    fetch('/api/compare', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      function renderSide(side, res) {
+        var ans = document.getElementById('cmp-answer-' + side);
+        var meta = document.getElementById('cmp-meta-' + side);
+        if (res.ok) {
+          ans.textContent = res.answer || '';
+          meta.textContent = (res.model || '?') + ' · ' + res.latency_ms + 'ms · ' +
+            (res.input_tokens || 0) + ' in / ' + (res.output_tokens || 0) + ' out tokens';
+        } else {
+          ans.textContent = '⚠ ' + (res.error || 'Error');
+          meta.textContent = res.latency_ms + 'ms';
+        }
+      }
+      renderSide('a', d.a); renderSide('b', d.b);
+    })
+    .catch(function(err) {
+      ['a','b'].forEach(function(s) {
+        document.getElementById('cmp-answer-' + s).textContent = 'Request failed: ' + err.message;
+      });
+    });
+  }
+
+  // ── Iceberg Time Travel ────────────────────────────────────────────────────
+  // Set default timestamp to 1 hour ago
+  (function() {
+    var d = new Date(Date.now() - 3600000);
+    var local = new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0,16);
+    document.getElementById('tt-timestamp').value = local;
+    updateTtSqlPreview();
+  })();
+
+  document.getElementById('tt-table').addEventListener('change', updateTtSqlPreview);
+  document.getElementById('tt-timestamp').addEventListener('change', updateTtSqlPreview);
+
+  function updateTtSqlPreview() {
+    var tbl = document.getElementById('tt-table').value;
+    var ts  = document.getElementById('tt-timestamp').value.replace('T', ' ');
+    document.getElementById('tt-sql-preview').textContent =
+      'SELECT * FROM ' + tbl + " FOR SYSTEM_TIME AS OF TIMESTAMP '" + ts + "' LIMIT 100;";
+  }
+
+  function runTimeTravel() {
+    // Check engine first
+    fetch('/api/sql/tables')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var warn = document.getElementById('tt-duckdb-warning');
+        if (d.engine !== 'trino') {
+          warn.style.display = 'block';
+          // Show demo SQL anyway
+          var tbl = document.getElementById('tt-table').value;
+          var ts  = document.getElementById('tt-timestamp').value.replace('T', ' ');
+          var sql = "SELECT * FROM " + tbl + " FOR SYSTEM_TIME AS OF TIMESTAMP '" + ts + "' LIMIT 100";
+          document.getElementById('tt-results').style.display = 'block';
+          document.getElementById('tt-results-inner').innerHTML =
+            '<div style="font-size:0.8rem;color:var(--t2);">Time Travel SQL (would run on Trino):</div>' +
+            '<code style="display:block;margin-top:8px;font-family:var(--mono);font-size:0.78rem;background:var(--s2);padding:10px;border-radius:6px;white-space:pre-wrap;">' +
+            escHtml(sql) + '</code>';
+          return;
+        }
+        warn.style.display = 'none';
+        var tbl = document.getElementById('tt-table').value;
+        var ts  = document.getElementById('tt-timestamp').value.replace('T', ' ');
+        var sql = "SELECT * FROM " + tbl + " FOR SYSTEM_TIME AS OF TIMESTAMP '" + ts + "' LIMIT 100";
+        // Run via SQL query endpoint
+        fetch('/api/sql/query', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({sql: sql}),
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+          document.getElementById('tt-results').style.display = 'block';
+          if (res.ok) {
+            document.getElementById('tt-results-inner').innerHTML =
+              '<div style="font-size:0.75rem;color:var(--t2);margin-bottom:8px;">' + res.count + ' rows at ' +
+              document.getElementById('tt-timestamp').value + '</div>' + renderTable(res.rows);
+          } else {
+            document.getElementById('tt-results-inner').innerHTML =
+              '<div class="error-box">' + escHtml(res.error || 'Unknown error') + '</div>';
+          }
+        });
+      });
+  }
 </script>
 </body>
 </html>

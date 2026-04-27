@@ -345,6 +345,7 @@
     <a class="back-btn" href="/explorer">🗄 Data Explorer</a>
     <a class="back-btn" href="/upload">↑ Upload</a>
     <a class="back-btn" href="/setup" style="background:var(--o-dim);border-color:rgba(249,103,2,0.3);color:var(--o-text)">◎ Status</a>
+    <a class="back-btn" href="/metrics">📊 Metrics</a>
     <a class="back-btn" href="/configure">⚙ Settings</a>
     <button class="back-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☀</button>
   </div>
@@ -555,7 +556,53 @@
     return cardEl;
   }
 
-  function render(data) {
+  function buildStatsCard(s) {
+    var fmt = function(n) { return (n || 0).toLocaleString(); };
+    var uptime = s.uptime_s || 0;
+    var hh = Math.floor(uptime / 3600);
+    var mm = Math.floor((uptime % 3600) / 60);
+    var ss = uptime % 60;
+    var uptimeStr = (hh ? hh + 'h ' : '') + (mm ? mm + 'm ' : '') + ss + 's';
+
+    var rows = [
+      ['Requests this session', fmt(s.total_requests)],
+      ['Input tokens',  fmt(s.input_tokens)],
+      ['Output tokens', fmt(s.output_tokens)],
+      ['Total tokens',  fmt(s.total_tokens)],
+      ['Uptime',        uptimeStr],
+    ];
+    var body = rows.map(function(row) {
+      return e('div', { class:'detail-row' }, [
+        e('span', { class:'detail-label' }, [row[0]]),
+        e('span', { class:'detail-value' }, [row[1]]),
+      ]);
+    });
+    var hint = e('div', { style:'margin-top:8px;font-size:0.72rem;color:var(--t3);line-height:1.5' },
+      ['Token counts are estimated (1 token ≈ 4 chars). Resets on app restart.']);
+    body.push(hint);
+
+    var iconEl = e('div', { class:'card-icon', style:'background:var(--i-dim)' }, ['≈']);
+    iconEl.style.color = 'var(--indigo)';
+    iconEl.style.fontFamily = 'var(--mono)';
+    iconEl.style.fontSize = '1.1rem';
+    iconEl.style.fontWeight = '700';
+    var badge = e('div', { class:'card-status', style:'background:var(--i-dim);color:var(--indigo);border:1px solid var(--indigo)33' }, [
+      e('div', { class:'status-dot', style:'background:var(--indigo)' }),
+      e('span', {}, ['Session']),
+    ]);
+    var header = e('div', { class:'card-header' }, [
+      iconEl,
+      e('span', { class:'card-name' }, ['Token Usage']),
+      badge,
+    ]);
+    var bodyEl = e('div', { class:'card-body' }, body);
+    var cardEl = e('div', { class:'card full-width' });
+    cardEl.appendChild(header);
+    cardEl.appendChild(bodyEl);
+    return cardEl;
+  }
+
+  function render(data, stats) {
     var allOk = data.vector_store.ok && data.database.ok && data.llm.ok && data.embeddings.ok && data.documents.ok;
     var okCount = [data.vector_store, data.database, data.llm, data.embeddings, data.documents]
       .filter(function(d) { return d.ok; }).length;
@@ -580,6 +627,7 @@
     container.appendChild(buildLlmCard(data.llm));
     container.appendChild(buildEmbCard(data.embeddings));
     container.appendChild(buildDocsCard(data.documents));
+    if (stats) container.appendChild(buildStatsCard(stats));
   }
 
   function updateCountdown() {
@@ -594,16 +642,18 @@
     clearTimeout(refreshTimer);
     countdownVal = REFRESH_INTERVAL;
 
-    fetch('/api/setup')
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        render(data);
+    Promise.all([
+      fetch('/api/setup').then(function(r) { return r.json(); }),
+      fetch('/api/stats').then(function(r) { return r.json(); }).catch(function() { return null; }),
+    ])
+      .then(function(results) {
+        render(results[0], results[1]);
         if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh'; }
         scheduleNext();
       })
       .catch(function(err) {
         var bar = document.getElementById('summaryBar');
-        bar.innerHTML = '⚠ Failed to load setup status: ' + err.message;
+        bar.innerHTML = '&#9888; Failed to load setup status: ' + err.message;
         if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh'; }
         scheduleNext();
       });

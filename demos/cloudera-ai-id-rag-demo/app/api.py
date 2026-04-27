@@ -40,6 +40,7 @@ from pydantic import BaseModel, field_validator
 from src.config.logging import setup_logging
 from src.config.settings import settings
 from src.orchestration.answer_builder import prepare_answer, stream_synthesis, finalize_answer
+from src.utils.metrics import log_inference as _log_inference
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -269,6 +270,14 @@ DOMAIN_CONFIG: dict[str, dict] = {
         "label": "Government",
         "tables": ["resident", "regional_budget", "public_service"],
     },
+    "all": {
+        "label": "All Domains",
+        "tables": [
+            "msme_credit", "customer", "branch",
+            "subscriber", "data_usage", "network",
+            "resident", "regional_budget", "public_service",
+        ],
+    },
 }
 
 _DEFAULT_DOMAIN = "banking"
@@ -279,10 +288,10 @@ _DEFAULT_DOMAIN = "banking"
 # Each entry: domain, mode (routing hint), text_id (Bahasa), text_en (English)
 _SAMPLES: list[dict] = [
     # ── Banking ───────────────────────────────────────────────────────────
-    {"domain": "banking", "mode": "dokumen",
+    {"domain": "banking", "mode": "document",
      "text_id": "Apa saja syarat pengajuan kredit UMKM dan dokumen yang wajib dilengkapi?",
      "text_en": "What are the MSME credit requirements and mandatory documents?"},
-    {"domain": "banking", "mode": "dokumen",
+    {"domain": "banking", "mode": "document",
      "text_id": "Bagaimana prosedur restrukturisasi kredit jika debitur mengalami kesulitan pembayaran?",
      "text_en": "What is the credit restructuring procedure when a debtor has payment difficulties?"},
     {"domain": "banking", "mode": "data",
@@ -291,17 +300,17 @@ _SAMPLES: list[dict] = [
     {"domain": "banking", "mode": "data",
      "text_id": "Tampilkan 5 nasabah dengan total eksposur kredit tertinggi.",
      "text_en": "Show the top 5 customers by total credit exposure."},
-    {"domain": "banking", "mode": "gabungan",
+    {"domain": "banking", "mode": "combined",
      "text_id": "Apakah outstanding kredit UMKM di Jakarta sudah sesuai target ekspansi 15% yang ditetapkan kebijakan 2026?",
      "text_en": "Does the Jakarta MSME credit outstanding align with the 15% expansion target set by the 2026 policy?"},
-    {"domain": "banking", "mode": "gabungan",
+    {"domain": "banking", "mode": "combined",
      "text_id": "Bagaimana kualitas kredit di Bandung dibandingkan kondisi yang memenuhi syarat restrukturisasi menurut kebijakan bank?",
      "text_en": "How does Bandung's credit quality compare to the restructuring eligibility conditions per bank policy?"},
     # ── Telco ─────────────────────────────────────────────────────────────
-    {"domain": "telco", "mode": "dokumen",
+    {"domain": "telco", "mode": "document",
      "text_id": "Apa saja standar waktu penanganan keluhan pelanggan yang ditetapkan dalam SLA?",
      "text_en": "What are the customer complaint resolution time standards defined in the SLA?"},
-    {"domain": "telco", "mode": "dokumen",
+    {"domain": "telco", "mode": "document",
      "text_id": "Bagaimana kebijakan retensi pelanggan dan syarat mendapatkan diskon perpanjangan kontrak?",
      "text_en": "What is the customer retention policy and the conditions for contract renewal discounts?"},
     {"domain": "telco", "mode": "data",
@@ -310,17 +319,17 @@ _SAMPLES: list[dict] = [
     {"domain": "telco", "mode": "data",
      "text_id": "Berapa pelanggan dengan churn risk score di atas 70 dan di wilayah mana saja?",
      "text_en": "How many subscribers have a churn risk score above 70 and in which regions?"},
-    {"domain": "telco", "mode": "gabungan",
+    {"domain": "telco", "mode": "combined",
      "text_id": "Apakah utilisasi jaringan di Bali sudah melampaui batas SLA ketersediaan yang ditetapkan dalam kebijakan?",
      "text_en": "Has network utilization in Bali exceeded the availability SLA threshold defined in the policy?"},
-    {"domain": "telco", "mode": "gabungan",
+    {"domain": "telco", "mode": "combined",
      "text_id": "Pelanggan mana yang berisiko churn tinggi dan apakah mereka memenuhi syarat program retensi berdasarkan kebijakan?",
      "text_en": "Which high-churn-risk subscribers qualify for the retention program based on the policy criteria?"},
     # ── Government ────────────────────────────────────────────────────────
-    {"domain": "government", "mode": "dokumen",
+    {"domain": "government", "mode": "document",
      "text_id": "Berapa standar waktu penyelesaian layanan KTP elektronik dan apa kompensasi jika terlambat?",
      "text_en": "What is the processing time standard for electronic ID cards and what compensation is given for delays?"},
-    {"domain": "government", "mode": "dokumen",
+    {"domain": "government", "mode": "document",
      "text_id": "Apa saja kanal pengaduan yang tersedia dan bagaimana prosedur penanganannya?",
      "text_en": "What complaint channels are available and what is the handling procedure?"},
     {"domain": "government", "mode": "data",
@@ -329,10 +338,10 @@ _SAMPLES: list[dict] = [
     {"domain": "government", "mode": "data",
      "text_id": "Layanan publik mana yang memiliki tingkat kepuasan masyarakat terendah per Maret 2026?",
      "text_en": "Which public services have the lowest citizen satisfaction rate as of March 2026?"},
-    {"domain": "government", "mode": "gabungan",
+    {"domain": "government", "mode": "combined",
      "text_id": "Apakah layanan IMB sudah memenuhi standar waktu dan IKM yang ditetapkan dalam kebijakan pelayanan publik?",
      "text_en": "Does the building permit (IMB) service meet the processing time and satisfaction standards set by the public service policy?"},
-    {"domain": "government", "mode": "gabungan",
+    {"domain": "government", "mode": "combined",
      "text_id": "Satuan kerja mana yang realisasi anggarannya rendah dan apakah ada risiko penalti sesuai regulasi APBD?",
      "text_en": "Which work units have low budget realization and face penalty risk under the APBD regulation?"},
 ]
@@ -646,7 +655,7 @@ async def api_test_component(component: str):
                 "fix": None if files else "Add at least one document file to DOCS_SOURCE_PATH."}
 
 
-_MODE_ORDER = {"dokumen": 0, "data": 1, "gabungan": 2}
+_MODE_ORDER = {"document": 0, "data": 1, "combined": 2}
 
 
 @app.get("/api/samples")
@@ -675,11 +684,18 @@ async def api_samples(domain: str = _DEFAULT_DOMAIN, lang: str = "id"):
 
 @app.get("/api/domains")
 async def api_domains():
-    """Return available domain configurations for the frontend dropdown."""
-    return [
+    """Return available domain configurations for the frontend dropdown.
+
+    The "all" pseudo-domain is always last so the sidebar renders it after
+    the individual domain tabs.
+    """
+    result = [
         {"id": k, "label": v["label"]}
         for k, v in DOMAIN_CONFIG.items()
+        if k != "all"
     ]
+    result.append({"id": "all", "label": DOMAIN_CONFIG["all"]["label"]})
+    return result
 
 
 def _read_override_file() -> dict[str, str]:
@@ -808,6 +824,15 @@ async def api_configure_post(body: ConfigureRequest):
     }
 
 
+@app.get("/api/stats", tags=["ops"])
+async def api_stats():
+    """Return session-level token usage counters (reset on restart)."""
+    with _stats_lock:
+        snap = dict(_session_stats)
+    snap["uptime_s"] = round(time.monotonic() - _STARTUP_TIME)
+    return snap
+
+
 _ingest_state: dict = {
     "running": False,
     "started_at": None,
@@ -815,6 +840,16 @@ _ingest_state: dict = {
     "last_result": None,
 }
 _ingest_lock = threading.Lock()
+
+# ── Session token counters (in-memory, reset on restart) ──────────────────
+_stats_lock = threading.Lock()
+_session_stats: dict = {
+    "total_requests": 0,
+    "input_tokens":   0,
+    "output_tokens":  0,
+    "total_tokens":   0,
+    "since": time.time(),
+}
 
 
 # ── SQL Explorer ───────────────────────────────────────────────────────────
@@ -1053,6 +1088,339 @@ async def api_ingest_status():
     }
 
 
+@app.get("/api/ingest/stream")
+async def api_ingest_stream():
+    """Stream ingest progress as SSE events.  Polls _ingest_state every 500 ms.
+
+    Events emitted:
+      progress  — {step, message, elapsed_s}
+      done      — {ok, docs, chunks, elapsed_s}
+      idle      — emitted when no ingest is running (use for polling to confirm state)
+    """
+    async def _generate() -> AsyncGenerator[str, None]:
+        last_step = ""
+        for _ in range(360):          # max 3-minute stream
+            state = dict(_ingest_state)
+            elapsed = round(time.time() - state["started_at"]) if state["started_at"] else 0
+            if state["running"]:
+                step = state.get("step", "running")
+                if step != last_step:
+                    last_step = step
+                    yield _sse("progress", {"step": step, "message": step, "elapsed_s": elapsed})
+                else:
+                    yield _sse("progress", {"step": step, "message": step, "elapsed_s": elapsed})
+            elif state["last_result"]:
+                res = state["last_result"]
+                yield _sse("done", {
+                    "ok": res.get("ok", False),
+                    "docs": res.get("docs", 0),
+                    "chunks": res.get("chunks", 0),
+                    "elapsed_s": round(state["finished_at"] - state["started_at"])
+                    if state["finished_at"] and state["started_at"] else 0,
+                })
+                return
+            else:
+                yield _sse("idle", {"message": "No ingest running"})
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ── Document management ────────────────────────────────────────────────────
+
+@app.delete("/api/docs/{filename:path}")
+async def api_docs_delete(filename: str):
+    """Delete a document from the knowledge base by relative path.
+
+    filename — relative path under DOCS_SOURCE_PATH (e.g. banking/policy.txt).
+    Triggers BM25 cache invalidation.  Re-ingest via POST /api/ingest to rebuild
+    the vector store without the deleted document.
+    """
+    base = Path(settings.docs_source_path)
+    # Prevent path traversal
+    target = (base / filename).resolve()
+    if not str(target).startswith(str(base.resolve())):
+        raise HTTPException(400, "Invalid path")
+    if not target.exists():
+        raise HTTPException(404, f"File not found: {filename}")
+    if not target.is_file():
+        raise HTTPException(400, "Path is not a file")
+
+    target.unlink()
+    logger.info("Document deleted: %s", target)
+
+    try:
+        from src.retrieval.retriever import invalidate_bm25_cache
+        invalidate_bm25_cache()
+    except Exception:
+        pass
+
+    return {"ok": True, "deleted": filename}
+
+
+# ── URL scrape-and-ingest ──────────────────────────────────────────────────
+
+class ScrapeRequest(BaseModel):
+    url: str
+    domain: str = "banking"
+    language: str = "id"
+    auto_ingest: bool = True
+
+    @field_validator("domain")
+    @classmethod
+    def _check_domain(cls, v: str) -> str:
+        if v not in {"banking", "telco", "government"}:
+            raise ValueError("domain must be banking | telco | government")
+        return v
+
+
+@app.post("/api/docs/scrape")
+async def api_docs_scrape(body: ScrapeRequest):
+    """Fetch a URL, extract its text, save as a .txt document, and optionally re-ingest."""
+    import re as _re
+    import httpx
+    from bs4 import BeautifulSoup
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            resp = await client.get(body.url, headers={"User-Agent": "ClouderaRAG/1.0"})
+            resp.raise_for_status()
+    except Exception as exc:
+        raise HTTPException(400, f"Failed to fetch URL: {exc}")
+
+    soup = BeautifulSoup(resp.content, "html.parser")
+    # Remove script/style/nav/footer tags
+    for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
+        tag.decompose()
+    text = soup.get_text(separator="\n")
+    # Collapse blank lines
+    text = _re.sub(r"\n{3,}", "\n\n", text).strip()
+
+    if len(text) < 100:
+        raise HTTPException(400, "Scraped content too short — page may require JavaScript")
+
+    # Build filename from URL slug
+    from urllib.parse import urlparse as _urlparse
+    slug = _urlparse(body.url).path.strip("/").replace("/", "_")[:60] or "scraped"
+    slug = _re.sub(r"[^a-zA-Z0-9_-]", "_", slug)
+    if body.language == "en" and not slug.endswith("_en"):
+        slug += "_en"
+    filename = f"{slug}.txt"
+
+    dest_dir = Path(settings.docs_source_path) / body.domain
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / filename
+    dest.write_text(f"Source: {body.url}\n\n{text}", encoding="utf-8")
+    logger.info("Scraped URL saved: %s (%d chars)", dest, len(text))
+
+    ingest_triggered = False
+    if body.auto_ingest:
+        with _ingest_lock:
+            already = _ingest_state["running"]
+        if not already:
+            with _ingest_lock:
+                _ingest_state.update({"running": True, "started_at": time.time(),
+                                      "finished_at": None, "last_result": None})
+            def _run():
+                try:
+                    from src.retrieval.document_loader import load_documents
+                    from src.retrieval.chunking import chunk_documents
+                    from src.retrieval.embeddings import get_embeddings
+                    from src.retrieval.vector_store import build_vector_store
+                    docs = load_documents()
+                    chunks = chunk_documents(docs)
+                    build_vector_store(chunks, get_embeddings())
+                    with _ingest_lock:
+                        _ingest_state.update({"running": False, "finished_at": time.time(),
+                                              "last_result": {"ok": True, "docs": len(docs), "chunks": len(chunks)}})
+                except Exception as exc:
+                    logger.exception("Scrape ingest failed")
+                    with _ingest_lock:
+                        _ingest_state.update({"running": False, "finished_at": time.time(),
+                                              "last_result": {"ok": False, "error": str(exc)}})
+            threading.Thread(target=_run, daemon=True, name="scrape-ingest").start()
+            ingest_triggered = True
+
+    return {
+        "ok": True, "saved_as": filename, "domain": body.domain,
+        "language": body.language, "chars": len(text),
+        "ingest_triggered": ingest_triggered,
+    }
+
+
+# ── CSV / Excel → new queryable table ─────────────────────────────────────
+
+@app.post("/api/docs/upload-table")
+async def api_upload_table(
+    file: UploadFile = File(...),
+    table_name: str = Form(...),
+    overwrite: bool = Form(False),
+):
+    """Upload a CSV or Excel file and register it as a new DuckDB-queryable table.
+
+    The file is saved as a Parquet file under DUCKDB_PARQUET_DIR so the
+    DuckDB adapter auto-discovers it on next query.  Only available when
+    QUERY_ENGINE=duckdb.
+    """
+    if settings.query_engine != "duckdb":
+        raise HTTPException(400, "Table upload is only supported when QUERY_ENGINE=duckdb")
+
+    import re as _re
+    if not _re.match(r"^[a-z][a-z0-9_]{0,59}$", table_name):
+        raise HTTPException(400, "table_name must be lowercase letters/digits/underscores, max 60 chars")
+
+    fname = Path(file.filename or "upload")
+    ext = fname.suffix.lower()
+    if ext not in {".csv", ".xlsx"}:
+        raise HTTPException(400, "Only .csv and .xlsx files are supported")
+
+    data = await file.read()
+    import pandas as pd
+    import io
+
+    try:
+        if ext == ".csv":
+            df = pd.read_csv(io.BytesIO(data))
+        else:
+            df = pd.read_excel(io.BytesIO(data), engine="openpyxl")
+    except Exception as exc:
+        raise HTTPException(400, f"Failed to parse file: {exc}")
+
+    # Sanitize column names
+    df.columns = [_re.sub(r"[^a-z0-9_]", "_", c.lower().strip()) for c in df.columns]
+
+    parquet_dir = Path(settings.duckdb_parquet_dir)
+    parquet_dir.mkdir(parents=True, exist_ok=True)
+    dest = parquet_dir / f"{table_name}.parquet"
+
+    if dest.exists() and not overwrite:
+        raise HTTPException(409, f"Table '{table_name}' already exists. Pass overwrite=true to replace.")
+
+    df.to_parquet(dest, index=False)
+    logger.info("Table uploaded: %s (%d rows, %d cols) -> %s", table_name, len(df), len(df.columns), dest)
+
+    # Invalidate DuckDB connection cache so the new table is discovered
+    try:
+        from src.connectors.duckdb_adapter import reset_connection
+        reset_connection()
+    except Exception:
+        pass
+
+    return {
+        "ok": True, "table_name": table_name, "rows": len(df),
+        "columns": list(df.columns), "parquet_path": str(dest),
+    }
+
+
+# ── Metrics ────────────────────────────────────────────────────────────────
+
+@app.get("/metrics", response_class=HTMLResponse)
+async def metrics_page():
+    """Serve the MLflow/inference metrics dashboard."""
+    p = _STATIC / "metrics.html"
+    if not p.exists():
+        return HTMLResponse("<h1>metrics.html not found</h1>", status_code=404)
+    return HTMLResponse(p.read_text(encoding="utf-8"))
+
+
+@app.get("/api/metrics")
+async def api_metrics(limit: int = 100):
+    """Return recent inference records and session summary."""
+    from src.utils.metrics import get_recent_runs, get_summary
+    return {
+        "summary": get_summary(),
+        "runs": get_recent_runs(limit=min(limit, _RING_SIZE)),
+    }
+
+
+_RING_SIZE = 500  # matches src/utils/metrics.py _RING_SIZE
+
+# ── LLM provider comparison ────────────────────────────────────────────────
+
+class CompareRequest(BaseModel):
+    question: str
+    domain: str = _DEFAULT_DOMAIN
+    language: str = "id"
+    provider_a: str = ""
+    model_a: str = ""
+    base_url_a: str = ""
+    api_key_a: str = ""
+    provider_b: str = ""
+    model_b: str = ""
+    base_url_b: str = ""
+    api_key_b: str = ""
+
+
+@app.post("/api/compare")
+async def api_compare(body: CompareRequest):
+    """Run the same question against two LLM provider configs and return both answers.
+
+    Used by the provider comparison panel in the Data Explorer.
+    Runs both providers in parallel via ThreadPoolExecutor.
+    """
+    import concurrent.futures
+    from src.orchestration.answer_builder import prepare_answer, finalize_answer
+    from src.llm.inference_client import get_llm_client
+    from src.llm.base import BaseLLMClient
+
+    domain = body.domain if body.domain in DOMAIN_CONFIG else _DEFAULT_DOMAIN
+    domain_tables = DOMAIN_CONFIG[domain]["tables"]
+
+    # Build an ad-hoc LLM client from explicit provider config
+    def _make_client(provider: str, model: str, base_url: str, api_key: str) -> BaseLLMClient:
+        if not provider:
+            return get_llm_client()  # use configured default
+        import os as _os
+        # Temporarily inject env vars for this thread
+        saved = {k: _os.environ.get(k) for k in ("LLM_PROVIDER", "LLM_MODEL_ID", "LLM_BASE_URL", "LLM_API_KEY")}
+        _os.environ["LLM_PROVIDER"] = provider
+        if model:     _os.environ["LLM_MODEL_ID"]  = model
+        if base_url:  _os.environ["LLM_BASE_URL"]  = base_url
+        if api_key:   _os.environ["LLM_API_KEY"]   = api_key
+        try:
+            client = get_llm_client()
+        finally:
+            for k, v in saved.items():
+                if v is None: _os.environ.pop(k, None)
+                else: _os.environ[k] = v
+        return client
+
+    def _run_one(label: str, provider: str, model: str, base_url: str, api_key: str) -> dict:
+        t0 = time.monotonic()
+        try:
+            client = _make_client(provider, model, base_url, api_key)
+            prep = prepare_answer(body.question, domain=domain, domain_tables=domain_tables, language=body.language)
+            from src.orchestration.answer_builder import _build_messages
+            messages = _build_messages(prep)
+            resp = client.chat(messages, temperature=0.2, max_tokens=1024)
+            result = finalize_answer(prep, resp.content)
+            return {
+                "label": label, "ok": True,
+                "answer": resp.content,
+                "mode": prep.mode,
+                "latency_ms": round((time.monotonic() - t0) * 1000),
+                "input_tokens": resp.input_tokens,
+                "output_tokens": resp.output_tokens,
+                "model": resp.model or model or "unknown",
+            }
+        except Exception as exc:
+            return {"label": label, "ok": False, "error": str(exc),
+                    "latency_ms": round((time.monotonic() - t0) * 1000)}
+
+    loop = asyncio.get_event_loop()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        fut_a = pool.submit(_run_one, "A", body.provider_a, body.model_a, body.base_url_a, body.api_key_a)
+        fut_b = pool.submit(_run_one, "B", body.provider_b, body.model_b, body.base_url_b, body.api_key_b)
+        result_a = await loop.run_in_executor(None, fut_a.result)
+        result_b = await loop.run_in_executor(None, fut_b.result)
+
+    return {"a": result_a, "b": result_b, "question": body.question}
+
+
 @app.get("/api/logs")
 async def api_logs(level: str = "DEBUG", limit: int = 200):
     """Return recent in-memory log entries for the troubleshooting panel.
@@ -1100,8 +1468,12 @@ async def api_chat(body: ChatRequest, request: Request):
 
     domain = body.domain if body.domain in DOMAIN_CONFIG else _DEFAULT_DOMAIN
     domain_tables = DOMAIN_CONFIG[domain]["tables"]
+    # "all" domain: pass None so retrieve() skips domain filtering
+    retrieval_domain: str | None = None if domain == "all" else domain
     return StreamingResponse(
-        _chat_sse(body.question, body.history, domain=domain, domain_tables=domain_tables, language=body.language),
+        _chat_sse(body.question, body.history, domain=domain,
+                  retrieval_domain=retrieval_domain,
+                  domain_tables=domain_tables, language=body.language),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -1115,6 +1487,7 @@ async def _chat_sse(
     question: str,
     history: list[dict],
     domain: str = _DEFAULT_DOMAIN,
+    retrieval_domain: str | None = _DEFAULT_DOMAIN,
     domain_tables: list[str] | None = None,
     language: str = "id",
 ) -> AsyncGenerator[str, None]:
@@ -1126,11 +1499,12 @@ async def _chat_sse(
       done   — citations payload, marks end of stream
       error  — error message if pipeline fails
     """
+    _t_start = time.monotonic()
     loop = asyncio.get_event_loop()
     try:
         # Phase 1 — classify + retrieve (blocking, run in thread pool)
         prep = await loop.run_in_executor(
-            None, prepare_answer, question, history, 5, domain, domain_tables, language
+            None, prepare_answer, question, history, 5, retrieval_domain, domain_tables, language
         )
         yield _sse("mode", {"mode": prep.mode})
 
@@ -1224,6 +1598,26 @@ async def _chat_sse(
             "output_tokens": estimated_output,
             "total_tokens":  estimated_input + estimated_output,
         }
+
+        with _stats_lock:
+            _session_stats["total_requests"] += 1
+            _session_stats["input_tokens"]   += usage["input_tokens"]
+            _session_stats["output_tokens"]  += usage["output_tokens"]
+            _session_stats["total_tokens"]   += usage["total_tokens"]
+
+        # Fire-and-forget MLflow + in-memory metrics logging
+        _log_inference(
+            domain=domain,
+            language=language,
+            mode=result.mode,
+            provider=settings._live_provider,
+            model=settings.llm_model_id,
+            latency_ms=round((time.monotonic() - _t_start) * 1000),
+            input_tokens=usage["input_tokens"],
+            output_tokens=usage["output_tokens"],
+            doc_citations=len(result.doc_citations or []),
+            has_sql=result.sql_citation is not None,
+        )
 
         yield _sse("done", {
             "doc_citations": doc_cits,

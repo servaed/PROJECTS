@@ -222,6 +222,7 @@
       <a class="topbar-link" href="/explorer">🗄 Data Explorer</a>
       <a class="topbar-link active" href="/upload">↑ Upload</a>
       <a class="topbar-link" href="/setup">◎ Status</a>
+      <a class="topbar-link" href="/metrics">📊 Metrics</a>
       <a class="topbar-link" href="/configure">⚙ Settings</a>
       <button class="topbar-link theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
     </nav>
@@ -239,16 +240,16 @@
       <div class="dropzone" id="dropzone"
            ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)"
            onclick="document.getElementById('file-input').click()">
-        <input type="file" id="file-input" accept=".txt,.pdf,.docx,.md"
-               onchange="onFileSelected(this.files[0])" onclick="event.stopPropagation()"/>
+        <input type="file" id="file-input" accept=".txt,.pdf,.docx,.md" multiple
+               onchange="onFilesSelected(this.files)" onclick="event.stopPropagation()"/>
         <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        <div class="dz-label">Drop file here or click to browse</div>
-        <div class="dz-sub">Supported formats: .txt, .pdf, .docx, .md</div>
-        <div class="dz-types">Max recommended size: 10 MB</div>
+        <div class="dz-label">Drop files here or click to browse</div>
+        <div class="dz-sub">Supported formats: .txt, .pdf, .docx, .md · Multiple files allowed</div>
+        <div class="dz-types">Max recommended size: 10 MB per file</div>
       </div>
       <div class="file-preview" id="file-preview">
         <div class="file-icon" id="preview-icon">📄</div>
@@ -336,10 +337,93 @@
       <div class="progress-detail" id="progress-detail">Embedding documents and building FAISS index…</div>
     </div>
 
+    <!-- Bulk file queue -->
+    <div id="queue-card" class="card" style="margin-top:16px;display:none;">
+      <div class="card-title">Upload Queue</div>
+      <div class="upload-list" id="queue-list"></div>
+    </div>
+
     <!-- Recent uploads (session) -->
     <div id="recent-card" class="card" style="margin-top:24px;display:none;">
       <div class="card-title">Uploaded This Session</div>
       <div class="upload-list" id="upload-list"></div>
+    </div>
+
+    <!-- ── URL Scrape Card ────────────────────────────── -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;">
+        <span>🌐 Scrape from URL</span>
+      </div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:14px;">Enter a public URL to fetch its text content, save it as a document, and optionally re-ingest.</p>
+      <div class="form-row" style="margin-bottom:12px;">
+        <div class="form-group" style="flex:2;min-width:260px;">
+          <label class="form-label">URL</label>
+          <input type="url" id="scrape-url" placeholder="https://example.com/policy-page"
+                 style="padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:13px;font-family:var(--mono);width:100%;">
+        </div>
+        <div class="form-group" style="flex:1;min-width:120px;">
+          <label class="form-label">Domain</label>
+          <select id="scrape-domain" style="padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:13px;">
+            <option value="banking">Banking</option>
+            <option value="telco">Telco</option>
+            <option value="government">Government</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1;min-width:100px;">
+          <label class="form-label">Language</label>
+          <select id="scrape-lang" style="padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:13px;">
+            <option value="id">Bahasa ID</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="doScrape()" style="padding:11px 22px;border-radius:var(--radius-sm);border:none;background:var(--teal);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">
+        🌐 Fetch &amp; Save
+      </button>
+      <div class="status-box" id="scrape-status"></div>
+    </div>
+
+    <!-- ── CSV / Excel Table Import Card ─────────────── -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-title">📊 Import CSV / Excel as New Table</div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:14px;">Upload a .csv or .xlsx file to register it as a new queryable DuckDB table. Only available when QUERY_ENGINE=duckdb.</p>
+      <div class="form-row" style="margin-bottom:12px;align-items:flex-end;">
+        <div class="form-group" style="flex:2;">
+          <label class="form-label">File (.csv or .xlsx)</label>
+          <input type="file" id="table-file" accept=".csv,.xlsx"
+                 style="padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:13px;width:100%;">
+        </div>
+        <div class="form-group" style="flex:1;min-width:140px;">
+          <label class="form-label">Table name</label>
+          <input type="text" id="table-name" placeholder="my_table"
+                 style="padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:13px;font-family:var(--mono);width:100%;">
+        </div>
+        <div class="form-group" style="flex:0 0 auto;align-items:flex-end;">
+          <label class="toggle-row" style="cursor:pointer;font-size:12px;gap:6px;color:var(--t2);">
+            <input type="checkbox" id="table-overwrite"> Overwrite if exists
+          </label>
+        </div>
+      </div>
+      <button onclick="doTableImport()" style="padding:11px 22px;border-radius:var(--radius-sm);border:none;background:var(--indigo);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">
+        📊 Import Table
+      </button>
+      <div class="status-box" id="table-status"></div>
+    </div>
+
+    <!-- ── Document Management ───────────────────────── -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span>📁 Knowledge Base Documents</span>
+        <span id="doc-count" style="font-size:11px;background:var(--s3);padding:1px 8px;border-radius:10px;color:var(--t2);font-weight:500;margin-left:auto;"></span>
+        <button onclick="loadDocs()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);cursor:pointer;color:var(--t2);">↻ Refresh</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <button onclick="filterDocs('')" data-f="" class="doc-filter active" style="padding:4px 12px;border-radius:20px;border:1px solid var(--orange);background:var(--o-dim);color:var(--o-text);font-size:12px;cursor:pointer;">All</button>
+        <button onclick="filterDocs('banking')" data-f="banking" class="doc-filter" style="padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--s2);color:var(--t2);font-size:12px;cursor:pointer;">Banking</button>
+        <button onclick="filterDocs('telco')" data-f="telco" class="doc-filter" style="padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--s2);color:var(--t2);font-size:12px;cursor:pointer;">Telco</button>
+        <button onclick="filterDocs('government')" data-f="government" class="doc-filter" style="padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--s2);color:var(--t2);font-size:12px;cursor:pointer;">Government</button>
+      </div>
+      <div id="doc-list" class="upload-list"><div style="font-size:13px;color:var(--t3);">Loading…</div></div>
     </div>
   </div>
 
@@ -361,32 +445,59 @@
 
   // ── File selection ─────────────────────────────────────────────────────────
   var FILE_ICONS = { pdf: '📄', docx: '📝', txt: '📃', md: '📋' };
+  var _fileQueue = [];
 
   function onDragOver(e) { e.preventDefault(); document.getElementById('dropzone').classList.add('drag-over'); }
   function onDragLeave() { document.getElementById('dropzone').classList.remove('drag-over'); }
   function onDrop(e) {
     e.preventDefault();
     document.getElementById('dropzone').classList.remove('drag-over');
-    var f = e.dataTransfer.files[0];
-    if (f) onFileSelected(f);
+    onFilesSelected(e.dataTransfer.files);
   }
 
-  function onFileSelected(f) {
-    if (!f) return;
-    _file = f;
-    var ext = f.name.split('.').pop().toLowerCase();
-    document.getElementById('preview-icon').textContent = FILE_ICONS[ext] || '📄';
-    document.getElementById('preview-name').textContent = f.name;
-    document.getElementById('preview-size').textContent = formatSize(f.size) + ' · ' + ext.toUpperCase();
-    document.getElementById('file-preview').classList.add('visible');
-    document.getElementById('upload-btn').disabled = false;
+  function onFilesSelected(files) {
+    if (!files || !files.length) return;
+    if (files.length === 1) {
+      _file = files[0];
+      var ext = _file.name.split('.').pop().toLowerCase();
+      document.getElementById('preview-icon').textContent = FILE_ICONS[ext] || '📄';
+      document.getElementById('preview-name').textContent = _file.name;
+      document.getElementById('preview-size').textContent = formatSize(_file.size) + ' · ' + ext.toUpperCase();
+      document.getElementById('file-preview').classList.add('visible');
+      document.getElementById('upload-btn').disabled = false;
+      _fileQueue = [];
+      document.getElementById('queue-card').style.display = 'none';
+    } else {
+      _file = null;
+      document.getElementById('file-preview').classList.remove('visible');
+      _fileQueue = Array.from(files);
+      renderQueue();
+      document.getElementById('upload-btn').disabled = false;
+    }
     hideStatus();
+  }
+
+  function renderQueue() {
+    var card = document.getElementById('queue-card');
+    var list = document.getElementById('queue-list');
+    card.style.display = '';
+    list.innerHTML = _fileQueue.map(function(f, i) {
+      var ext = f.name.split('.').pop().toLowerCase();
+      return '<div class="upload-item" id="q-' + i + '">' +
+        '<div class="upload-item-icon">' + (FILE_ICONS[ext] || '📄') + '</div>' +
+        '<div class="upload-item-info"><div class="upload-item-name">' + escHtml(f.name) + '</div>' +
+        '<div class="upload-item-meta">' + formatSize(f.size) + ' · ' + ext.toUpperCase() + '</div></div>' +
+        '<span id="q-status-' + i + '" style="font-size:11px;color:var(--t3);">Pending</span>' +
+        '</div>';
+    }).join('');
   }
 
   function clearFile() {
     _file = null;
+    _fileQueue = [];
     document.getElementById('file-input').value = '';
     document.getElementById('file-preview').classList.remove('visible');
+    document.getElementById('queue-card').style.display = 'none';
     document.getElementById('upload-btn').disabled = true;
     hideStatus();
   }
@@ -409,45 +520,197 @@
   }
 
   // ── Upload ─────────────────────────────────────────────────────────────────
-  function doUpload() {
-    if (!_file) return;
+  function uploadOne(f, idx) {
     var autoIngest = document.getElementById('auto-ingest').checked;
+    var statusEl = document.getElementById('q-status-' + idx);
+    if (statusEl) statusEl.textContent = '⟳ Uploading…';
+    var fd = new FormData();
+    fd.append('file', f);
+    fd.append('domain', _domain);
+    fd.append('language', _language);
+    // Only auto-ingest on the last file to avoid rebuilding FAISS on every file
+    var isLast = idx === _fileQueue.length - 1;
+    fd.append('auto_ingest', (autoIngest && isLast) ? 'true' : 'false');
+    return fetch('/api/docs/upload', { method: 'POST', body: fd })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (statusEl) statusEl.textContent = data.ok ? '✓ Done' : '✗ Error';
+        if (data.ok) {
+          addToRecent(data);
+          if (data.ingest_triggered) { _ingestStart = Date.now(); showIngestProgress(); pollIngest(); }
+        }
+        return data;
+      });
+  }
+
+  function doUpload() {
     var btn = document.getElementById('upload-btn');
     btn.disabled = true;
-    btn.textContent = 'Uploading…';
     hideStatus();
 
+    if (_fileQueue.length > 1) {
+      // Bulk sequential upload
+      btn.textContent = 'Uploading 0/' + _fileQueue.length + '…';
+      var chain = Promise.resolve();
+      var ok = 0, fail = 0;
+      _fileQueue.forEach(function(f, i) {
+        chain = chain.then(function() {
+          btn.textContent = 'Uploading ' + (i + 1) + '/' + _fileQueue.length + '…';
+          return uploadOne(f, i).then(function(d) { if (d.ok) ok++; else fail++; });
+        });
+      });
+      chain.then(function() {
+        btn.textContent = 'Upload & Ingest';
+        btn.disabled = false;
+        showStatus(fail ? 'info' : 'success',
+          ok + ' file(s) uploaded' + (fail ? ', ' + fail + ' failed' : ''), '');
+        loadDocs();
+      });
+      return;
+    }
+
+    if (!_file) { btn.disabled = false; return; }
+    btn.textContent = 'Uploading…';
     var fd = new FormData();
     fd.append('file', _file);
     fd.append('domain', _domain);
     fd.append('language', _language);
-    fd.append('auto_ingest', autoIngest ? 'true' : 'false');
+    fd.append('auto_ingest', document.getElementById('auto-ingest').checked ? 'true' : 'false');
 
     fetch('/api/docs/upload', { method: 'POST', body: fd })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         btn.textContent = 'Upload & Ingest';
-        if (!data.ok) {
-          showStatus('error', 'Upload failed', data.error || 'Unknown error');
-          btn.disabled = false;
-          return;
-        }
-        showStatus('success', 'File uploaded successfully',
-          'Saved as: ' + data.saved_as + ' · ' + formatSize(data.size_bytes));
+        if (!data.ok) { showStatus('error', 'Upload failed', data.error || ''); btn.disabled = false; return; }
+        showStatus('success', 'File uploaded', 'Saved as: ' + data.saved_as + ' · ' + formatSize(data.size_bytes));
         addToRecent(data);
         clearFile();
         btn.disabled = false;
-        if (data.ingest_triggered) {
-          _ingestStart = Date.now();
-          showIngestProgress();
-          pollIngest();
-        }
+        if (data.ingest_triggered) { _ingestStart = Date.now(); showIngestProgress(); pollIngest(); }
+        loadDocs();
       })
       .catch(function(err) {
         btn.textContent = 'Upload & Ingest';
         btn.disabled = false;
         showStatus('error', 'Network error', err.message);
       });
+  }
+
+  // ── URL Scrape ─────────────────────────────────────────────────────────────
+  function doScrape() {
+    var url = document.getElementById('scrape-url').value.trim();
+    if (!url) { alert('Enter a URL first.'); return; }
+    showStatusEl('scrape-status', 'info', 'Fetching…', url);
+    fetch('/api/docs/scrape', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        url: url,
+        domain: document.getElementById('scrape-domain').value,
+        language: document.getElementById('scrape-lang').value,
+        auto_ingest: true,
+      }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        showStatusEl('scrape-status', 'success', 'Saved: ' + d.saved_as,
+          d.chars + ' characters · ingest ' + (d.ingest_triggered ? 'started' : 'skipped'));
+        document.getElementById('scrape-url').value = '';
+        if (d.ingest_triggered) { _ingestStart = Date.now(); showIngestProgress(); pollIngest(); }
+        loadDocs();
+      } else {
+        showStatusEl('scrape-status', 'error', 'Scrape failed', d.detail || d.error || '');
+      }
+    })
+    .catch(function(err) { showStatusEl('scrape-status', 'error', 'Network error', err.message); });
+  }
+
+  // ── Table Import ───────────────────────────────────────────────────────────
+  function doTableImport() {
+    var fileInput = document.getElementById('table-file');
+    var tableName = document.getElementById('table-name').value.trim();
+    if (!fileInput.files.length) { alert('Select a CSV or XLSX file first.'); return; }
+    if (!tableName) { alert('Enter a table name first.'); return; }
+    showStatusEl('table-status', 'info', 'Importing…', tableName);
+    var fd = new FormData();
+    fd.append('file', fileInput.files[0]);
+    fd.append('table_name', tableName);
+    fd.append('overwrite', document.getElementById('table-overwrite').checked ? 'true' : 'false');
+    fetch('/api/docs/upload-table', { method: 'POST', body: fd })
+      .then(function(r) { return r.ok ? r.json() : r.json().then(function(e) { throw new Error(e.detail || 'Error'); }); })
+      .then(function(d) {
+        showStatusEl('table-status', 'success', 'Table created: ' + d.table_name,
+          d.rows + ' rows · ' + d.columns.length + ' columns: ' + d.columns.slice(0,5).join(', ') + (d.columns.length > 5 ? '…' : ''));
+        fileInput.value = '';
+        document.getElementById('table-name').value = '';
+      })
+      .catch(function(err) { showStatusEl('table-status', 'error', 'Import failed', err.message); });
+  }
+
+  // ── Document management ────────────────────────────────────────────────────
+  var _allDocs = [];
+  var _docFilter = '';
+
+  function loadDocs() {
+    fetch('/api/docs/list')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        _allDocs = d.docs || [];
+        document.getElementById('doc-count').textContent = _allDocs.length + ' files';
+        renderDocs();
+      })
+      .catch(function() {});
+  }
+
+  function filterDocs(f) {
+    _docFilter = f;
+    document.querySelectorAll('.doc-filter').forEach(function(el) {
+      var active = el.getAttribute('data-f') === f;
+      el.style.background = active ? 'var(--o-dim)' : 'var(--s2)';
+      el.style.borderColor = active ? 'var(--orange)' : 'var(--border)';
+      el.style.color = active ? 'var(--o-text)' : 'var(--t2)';
+    });
+    renderDocs();
+  }
+
+  function renderDocs() {
+    var list = document.getElementById('doc-list');
+    var docs = _docFilter ? _allDocs.filter(function(d) { return d.domain === _docFilter; }) : _allDocs;
+    if (!docs.length) { list.innerHTML = '<div style="font-size:13px;color:var(--t3);padding:8px 0;">No documents found.</div>'; return; }
+    var DOMAIN_COLORS = { banking: 'var(--o-text)', telco: 'var(--indigo)', government: 'var(--teal)' };
+    list.innerHTML = docs.map(function(doc) {
+      var color = DOMAIN_COLORS[doc.domain] || 'var(--t2)';
+      return '<div class="upload-item">' +
+        '<div class="upload-item-icon">' + (doc.file_type === 'PDF' ? '📄' : doc.file_type === 'DOCX' ? '📝' : '📃') + '</div>' +
+        '<div class="upload-item-info">' +
+        '<div class="upload-item-name" title="' + escHtml(doc.path) + '">' + escHtml(doc.name) + '</div>' +
+        '<div class="upload-item-meta">' + doc.file_type + ' · ' + formatSize(doc.size_bytes) + ' · ' + (doc.language === 'en' ? 'English' : 'Bahasa Indonesia') + '</div>' +
+        '</div>' +
+        '<span style="font-size:11px;font-weight:600;color:' + color + ';padding:2px 8px;border-radius:10px;background:' + color.replace(')', ',0.1)').replace('var(', 'rgba(').replace('--o-text,0.1)', '249,103,2,0.08)').replace('--indigo,0.1)', '92,107,192,0.08)').replace('--teal,0.1)', '0,121,107,0.08)') + '">' + doc.domain + '</span>' +
+        '<button onclick="deleteDoc(\'' + escHtml(doc.path) + '\')" title="Delete" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--t3);padding:4px;border-radius:50%;transition:color 0.12s;" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--t3)\'">🗑</button>' +
+        '</div>';
+    }).join('');
+  }
+
+  function deleteDoc(path) {
+    if (!confirm('Delete "' + path + '"?\n\nRe-ingest to remove it from the vector store.')) return;
+    fetch('/api/docs/' + encodeURIComponent(path), { method: 'DELETE' })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.ok) { loadDocs(); showStatus('info', 'Deleted: ' + path, 'Click Re-ingest in Status page to rebuild the vector store.'); }
+        else showStatus('error', 'Delete failed', d.detail || '');
+      })
+      .catch(function(err) { showStatus('error', 'Delete failed', err.message); });
+  }
+
+  // ── Status helpers ─────────────────────────────────────────────────────────
+  function showStatusEl(id, type, title, detail) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'status-box visible ' + type;
+    el.innerHTML = '<div class="status-title">' + escHtml(title) + '</div>' +
+      (detail ? '<div class="status-detail">' + escHtml(detail) + '</div>' : '');
   }
 
   // ── Ingest polling ─────────────────────────────────────────────────────────
@@ -521,6 +784,9 @@
   function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  loadDocs();
 </script>
 </body>
 </html>

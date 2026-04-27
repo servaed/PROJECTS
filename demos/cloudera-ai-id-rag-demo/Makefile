@@ -14,10 +14,13 @@ help:
 	@echo "    make dev              Start local dev server on port 8080 (hot-reload)"
 	@echo "    make seed             Seed Parquet files + ingest documents into FAISS"
 	@echo "    make reset-vs         Delete vector store (forces re-ingestion on next start)"
+	@echo "    make demo-reset       Full demo factory-reset: clear VS, reseed, reingest"
+	@echo "    make reingest         Rebuild FAISS vector store without reseeding data"
 	@echo ""
 	@echo "  Testing"
 	@echo "    make test             Run full pytest suite"
 	@echo "    make test-fast        Run tests, stop on first failure"
+	@echo "    make eval             Run full 36+multi-turn evaluation (needs running server)"
 	@echo ""
 
 # ── Development ────────────────────────────────────────────────────────────────
@@ -37,12 +40,31 @@ reset-vs:
 	rm -rf data/vector_store/
 	@echo "Vector store removed."
 
+reingest:
+	@echo "Rebuilding FAISS vector store from existing documents…"
+	python -m src.retrieval.document_loader
+	@echo "Done. Vector store rebuilt."
+
+demo-reset:
+	@echo "=== Full demo factory reset ==="
+	@echo "[1/3] Clearing vector store…"
+	rm -rf data/vector_store/
+	@echo "[2/3] Re-seeding Parquet data tables…"
+	python data/sample_tables/seed_parquet.py
+	@echo "[3/3] Re-ingesting documents into FAISS…"
+	python -m src.retrieval.document_loader
+	@echo "=== Demo reset complete. Run 'make dev' to start the server. ==="
+
 # ── Testing ────────────────────────────────────────────────────────────────────
 test:
 	pytest tests/ -v
 
 test-fast:
 	pytest tests/ -v -x
+
+eval:
+	@echo "Running full evaluation (requires server on port 8080)…"
+	python eval_all.py
 
 # ── Cleanup ────────────────────────────────────────────────────────────────────
 clean:

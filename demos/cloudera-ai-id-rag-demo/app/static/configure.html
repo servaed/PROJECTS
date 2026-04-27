@@ -242,6 +242,7 @@
     <a class="icon-btn" href="/explorer">🗄 Data Explorer</a>
     <a class="icon-btn" href="/upload">↑ Upload</a>
     <a class="icon-btn" href="/setup">◎ Status</a>
+    <a class="icon-btn" href="/metrics">📊 Metrics</a>
     <a class="icon-btn active" href="/configure">⚙ Settings</a>
     <button class="icon-btn theme-btn" id="themeBtn" title="Toggle theme"></button>
   </div>
@@ -270,6 +271,25 @@
   </p>
 
   <div id="banner" class="banner"></div>
+
+  <!-- ── Quick-start profiles ──────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header">
+      <span class="card-icon">⚡</span>
+      <div>
+        <div class="card-title">Quick-start Profiles</div>
+        <div class="card-sub">Load a provider preset — then fill in your credentials and save</div>
+      </div>
+    </div>
+    <div style="padding:16px 20px;display:flex;flex-wrap:wrap;gap:8px;" id="profileBtns">
+      <button type="button" class="icon-btn" onclick="loadProfile('cloudera')" title="Cloudera AI Inference Service">☁ Cloudera CAII</button>
+      <button type="button" class="icon-btn" onclick="loadProfile('openai')"   title="OpenAI API (GPT-4o)">✦ OpenAI GPT-4o</button>
+      <button type="button" class="icon-btn" onclick="loadProfile('azure')"    title="Azure OpenAI">⬡ Azure OpenAI</button>
+      <button type="button" class="icon-btn" onclick="loadProfile('bedrock')"  title="Amazon Bedrock (Claude)">◆ AWS Bedrock</button>
+      <button type="button" class="icon-btn" onclick="loadProfile('anthropic')" title="Anthropic API (Claude)">◈ Anthropic Claude</button>
+      <button type="button" class="icon-btn" onclick="loadProfile('ollama')"   title="Ollama (local)">⬡ Ollama (local)</button>
+    </div>
+  </div>
 
   <form id="configForm" autocomplete="off">
 
@@ -666,6 +686,68 @@
 
 <script>
 'use strict';
+
+// ── Quick-start profiles ──────────────────────────────────────────────────
+var PROFILES = {
+  cloudera: {
+    LLM_PROVIDER: 'cloudera',
+    LLM_MODEL_ID: 'meta-llama-3-8b-instruct',
+    LLM_BASE_URL: '',   // set to your Cloudera AI Inference endpoint
+    LLM_API_KEY:  '',
+  },
+  openai: {
+    LLM_PROVIDER: 'openai',
+    LLM_MODEL_ID: 'gpt-4o',
+    LLM_BASE_URL: '',
+    LLM_API_KEY:  '',
+  },
+  azure: {
+    LLM_PROVIDER: 'azure',
+    LLM_MODEL_ID: 'gpt-4o',
+    AZURE_OPENAI_ENDPOINT:   '',
+    AZURE_OPENAI_DEPLOYMENT: 'gpt-4o',
+    AZURE_OPENAI_API_VERSION: '2024-02-01',
+    AZURE_OPENAI_API_KEY:    '',
+  },
+  bedrock: {
+    LLM_PROVIDER: 'bedrock',
+    LLM_MODEL_ID: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+    LLM_BASE_URL: '',
+    LLM_API_KEY:  '',
+  },
+  anthropic: {
+    LLM_PROVIDER: 'anthropic',
+    LLM_MODEL_ID: 'claude-3-5-sonnet-20241022',
+    LLM_BASE_URL: '',
+    LLM_API_KEY:  '',
+  },
+  ollama: {
+    LLM_PROVIDER: 'local',
+    LLM_MODEL_ID: 'llama3',
+    LLM_BASE_URL: 'http://localhost:11434/v1',
+    LLM_API_KEY:  'no-key',
+  },
+};
+
+function loadProfile(name) {
+  var p = PROFILES[name];
+  if (!p) return;
+  // Set provider dropdown first so onProviderChange() shows the right fields
+  var provSel = document.getElementById('LLM_PROVIDER');
+  if (provSel && p.LLM_PROVIDER) {
+    provSel.value = p.LLM_PROVIDER;
+    provSel.dispatchEvent(new Event('change'));
+  }
+  // Fill each field by its env-var id
+  Object.entries(p).forEach(function(kv) {
+    var key = kv[0], val = kv[1];
+    if (key === 'LLM_PROVIDER') return; // already handled above
+    var el = document.getElementById(key);
+    if (el && val !== '' && !el.readOnly) el.value = val;
+  });
+  showBanner('Profile "' + name + '" loaded. Fill in your credentials below and click Save Configuration.', 'warn');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 // ── Theme ─────────────────────────────────────────────────────────────────
 var THEME_KEY = 'cld-theme';

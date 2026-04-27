@@ -1,12 +1,12 @@
 """Question router — classifies incoming questions and dispatches retrieval.
 
-Routes to: "dokumen" | "data" | "gabungan"
+Routes to: "document" | "data" | "combined"
 
 Classification strategy (in order):
   1. Keyword heuristics — fast, reliable for clear-cut cases
   2. LLM classification — for ambiguous questions
 
-Falls back to "dokumen" on any LLM error to prevent accidental SQL execution.
+Falls back to "document" on any LLM error to prevent accidental SQL execution.
 """
 
 from __future__ import annotations
@@ -20,17 +20,19 @@ from src.config.logging import get_logger
 
 logger = get_logger(__name__)
 
-AnswerMode = Literal["dokumen", "data", "gabungan"]
+AnswerMode = Literal["document", "data", "combined"]
 
+# Maps LLM output words (may be Indonesian or English) to internal English mode strings.
 _MODE_MAP: dict[str, AnswerMode] = {
-    "dokumen": "dokumen",
-    "data": "data",
-    "gabungan": "gabungan",
-    # tolerant aliases
-    "document": "dokumen",
+    # Indonesian words returned by the Bahasa Indonesia router prompt
+    "dokumen":  "document",
+    "gabungan": "combined",
+    # English aliases (direct or from models that answer in English)
+    "document": "document",
+    "combined": "combined",
+    "data":     "data",
     "structured": "data",
-    "combined": "gabungan",
-    "sql": "data",
+    "sql":      "data",
 }
 
 # Strip <think>...</think> blocks produced by reasoning models (e.g. DeepSeek, QwQ).
@@ -133,10 +135,10 @@ def _keyword_classify(question: str) -> AnswerMode | None:
         logger.debug("Show-verb match -> data: %s", question[:60])
         return "data"
 
-    # Tier 2 — gabungan comparison patterns
+    # Tier 2 — combined comparison patterns
     for pat in _GABUNGAN_PATTERNS:
         if pat.search(question):
-            return "gabungan"
+            return "combined"
 
     policy_words = bool(_POLICY_WORDS.search(question))
     data_match   = any(pat.search(question) for pat in _DATA_PATTERNS)
@@ -147,7 +149,7 @@ def _keyword_classify(question: str) -> AnswerMode | None:
 
     # Tier 4 — pure document (policy/procedure without data aggregation)
     if policy_words and not data_match:
-        return "dokumen"
+        return "document"
 
     return None  # ambiguous — let LLM decide
 
@@ -162,7 +164,7 @@ def _extract_mode(text: str) -> AnswerMode:
 
     Tries exact lookup first, then scans for any known keyword in the text.
     Precedence: gabungan > data > dokumen (most -> least specific).
-    Falls back to "dokumen" if nothing matches.
+    Falls back to "document" if nothing matches.
     """
     cleaned = _strip_thinking(text).lower().strip()
 
@@ -171,19 +173,22 @@ def _extract_mode(text: str) -> AnswerMode:
     if exact:
         return exact
 
-    # Keyword scan — model added punctuation, explanation, or extra text
+    # Keyword scan — model added punctuation, explanation, or extra text.
+    # Check Indonesian words first (router prompt is in Bahasa Indonesia).
     for keyword in ("gabungan", "combined", "data", "structured", "sql", "dokumen", "document"):
         if keyword in cleaned:
             return _MODE_MAP[keyword]
 
-    return "dokumen"
+    return "document"
 
 
-def classify_question(question: str) -> AnswerMode:
+def classify_question(question: str, history: list[dict] | None = None) -> AnswerMode:
     """Classify the question into a routing mode using the LLM.
 
     Keyword heuristics run first; LLM is called only for ambiguous questions.
-    Returns "dokumen" as safe default on any ambiguity or LLM error.
+    history — last N conversation turns, used to resolve follow-up questions that
+              are ambiguous without context (e.g. "how about for telco?").
+    Returns "document" as safe default on any ambiguity or LLM error.
     """
     # Fast path — no LLM call needed
     heuristic = _keyword_classify(question)
@@ -194,8 +199,8 @@ def classify_question(question: str) -> AnswerMode:
     # Slow path — LLM classification for ambiguous questions
     try:
         llm = get_llm_client()
-        messages = build_router_prompt(question)
-        response = llm.chat(messages, temperature=0.0, max_tokens=1024)
+        messages = build_router_prompt(question, history=history)
+        response = llm.chat(messages, temperature=0.0, max_tokens=10)
         mode = _extract_mode(response.content)
         logger.info(
             "Classified '%s...' -> %s (llm, raw=%r)",
@@ -203,5 +208,5 @@ def classify_question(question: str) -> AnswerMode:
         )
         return mode
     except Exception as exc:
-        logger.warning("Router classification failed: %s — defaulting to 'dokumen'", exc)
-        return "dokumen"
+        logger.warning("Router classification failed: %s -- defaulting to 'document'", exc)
+        return "document"

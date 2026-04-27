@@ -62,7 +62,15 @@ class AnthropicClient(BaseLLMClient):
             "temperature": temperature,
         }
         if system_text:
-            kwargs["system"] = system_text
+            # Prompt caching: mark the system block as cacheable (5-min TTL).
+            # Cache hits cut cost ~90% and first-token latency ~30% for repeated calls.
+            kwargs["system"] = [
+                {
+                    "type": "text",
+                    "text": system_text,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ]
         return kwargs
 
     # ── BaseLLMClient interface ────────────────────────────────────────────
@@ -73,11 +81,20 @@ class AnthropicClient(BaseLLMClient):
         logger.debug("Anthropic request: model=%s, messages=%d", self._model, len(messages))
         kwargs = self._build_kwargs(messages, temperature, max_tokens)
         response = self._client.messages.create(**kwargs)
+        usage = response.usage
+        cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+        cache_written = getattr(usage, "cache_creation_input_tokens", 0) or 0
+        if cache_read or cache_written:
+            logger.debug(
+                "Anthropic cache: read=%d written=%d (saved ~%.0f%% of input cost)",
+                cache_read, cache_written,
+                100 * cache_read / max(usage.input_tokens + cache_read, 1),
+            )
         return LLMResponse(
             content=response.content[0].text,
             model=response.model,
-            input_tokens=response.usage.input_tokens,
-            output_tokens=response.usage.output_tokens,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
         )
 
     def stream_chat(
@@ -87,6 +104,14 @@ class AnthropicClient(BaseLLMClient):
         kwargs = self._build_kwargs(messages, temperature, max_tokens)
         with self._client.messages.stream(**kwargs) as stream:
             yield from stream.text_stream
+            # Log cache stats after stream completes (usage available via get_final_usage)
+            try:
+                usage = stream.get_final_usage()
+                cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+                if cache_read:
+                    logger.debug("Anthropic stream cache: read=%d tokens", cache_read)
+            except Exception:
+                pass
 
     def is_available(self) -> bool:
         return bool(settings.anthropic_api_key)

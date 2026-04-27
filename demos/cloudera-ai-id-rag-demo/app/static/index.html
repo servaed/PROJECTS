@@ -245,6 +245,21 @@
     @keyframes slideUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     @keyframes spin     { to{transform:rotate(360deg)} }
     @keyframes dotpulse { 0%,100%{opacity:0.8;transform:scale(1)} 50%{opacity:0.2;transform:scale(0.65)} }
+    @keyframes modePop  { 0%{opacity:0;transform:scale(0.8) translateY(4px)} 60%{transform:scale(1.06) translateY(0)} 100%{opacity:1;transform:scale(1)} }
+    @keyframes glow     { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 10px var(--mode-glow,rgba(0,0,0,0.1))} }
+
+    /* Mobile sidebar */
+    .mobile-menu-btn { display: none; }
+    @media (max-width: 640px) {
+      :root { --sidebar-w: 240px; }
+      .mobile-menu-btn { display: flex !important; }
+      .sidebar-mobile-panel {
+        position: fixed; left: 0; top: 0; bottom: 0;
+        width: var(--sidebar-w); z-index: 50;
+        transform: translateX(-100%); transition: transform 0.25s ease;
+      }
+      .sidebar-mobile-panel.open { transform: translateX(0); }
+    }
 
     .slide-up { animation: slideUp 0.22s ease forwards; }
     .cursor   {
@@ -379,9 +394,9 @@
 
   // ── Mode config ────────────────────────────────────────────────────
   const MODES = {
-    dokumen:  { label: 'Document RAG',    color: 'var(--teal)',   dim: 'var(--t-dim)', icon: '◈' },
+    document: { label: 'Document RAG',    color: 'var(--teal)',   dim: 'var(--t-dim)', icon: '◈' },
     data:     { label: 'Structured Data', color: 'var(--indigo)', dim: 'var(--i-dim)', icon: '⬡' },
-    gabungan: { label: 'Combined',        color: 'var(--orange)', dim: 'var(--o-dim)', icon: '⬡' },
+    combined: { label: 'Combined',        color: 'var(--orange)', dim: 'var(--o-dim)', icon: '⬡' },
   };
   const getMode = (m) => MODES[m] || { label: m || '', color: 'var(--t2)', dim: 'var(--border-soft)', icon: '·' };
 
@@ -504,6 +519,19 @@
         borderBottom:'1px solid var(--topbar-bd)',
         gap:'10px', zIndex:10,
       }}>
+        <!-- Mobile menu toggle -->
+        <button
+          className="mobile-menu-btn"
+          onClick=${props.onToggleSidebar}
+          style=${{
+            width:'34px', height:'34px', borderRadius:'8px',
+            border:'1px solid var(--border)', background:'var(--s2)',
+            alignItems:'center', justifyContent:'center', cursor:'pointer',
+            fontSize:'1rem', flexShrink:0, color:'var(--t2)',
+          }}
+          title="Toggle sidebar"
+        >☰</button>
+
         <!-- Logo + product name -->
         <div style=${{ display:'flex', alignItems:'center', gap:'10px', flexShrink:0 }}>
           <a href="/" style=${{ display:'flex', alignItems:'center' }}><${CldLogo} height=${20}/></a>
@@ -537,6 +565,19 @@
                   }}
                 >${props.isAutoPaused ? '▶ Resume' : '⏸'} ${props.autoPlayIdx+1}/${props.autoPlayTotal}</button>
                 <button
+                  onClick=${props.onRestartAutoPlay}
+                  title="Restart demo from question 1 (clears history)"
+                  style=${{
+                    height:'32px', padding:'0 10px', borderRadius:'8px',
+                    border:'1px solid var(--border)', background:'var(--s2)',
+                    color:'var(--t3)', fontSize:'0.78rem',
+                    cursor:'pointer', transition:'all 0.15s', flexShrink:0,
+                    display:'flex', alignItems:'center', gap:'4px',
+                  }}
+                  onMouseEnter=${function(e){ e.currentTarget.style.background='var(--o-dim)'; e.currentTarget.style.color='var(--o-text)'; e.currentTarget.style.borderColor='var(--orange)'; }}
+                  onMouseLeave=${function(e){ e.currentTarget.style.background='var(--s2)'; e.currentTarget.style.color='var(--t3)'; e.currentTarget.style.borderColor='var(--border)'; }}
+                >⟳ Q1</button>
+                <button
                   onClick=${props.onStopAutoPlay}
                   title="Stop demo"
                   style=${{
@@ -567,6 +608,7 @@
           ${[
             { href:'/explorer', label:'🗄 Data Explorer' },
             { href:'/upload',   label:'↑ Upload' },
+            { href:'/metrics',  label:'📊 Metrics' },
             { href:'/setup',    label:'◎ Status' },
             { href:'/configure',label:'⚙ Settings' },
           ].map(function(link) {
@@ -633,6 +675,7 @@
       banking:    { icon:'🏦', label:'Banking' },
       telco:      { icon:'📡', label:'Telco' },
       government: { icon:'🏛', label:'Gov' },
+      all:        { icon:'◉',  label:'All' },
     };
 
     return html`
@@ -837,7 +880,7 @@
           ${props.onFullReset && html`
             <button
               onClick=${props.onFullReset}
-              title="Reset to Banking / Bahasa Indonesia, clear chat history (Ctrl+Shift+R)"
+              title="Restart demo from Q1 — resets domain, language, and chat history (Ctrl+Shift+R)"
               style=${{
                 width:'100%', padding:'5px 10px', borderRadius:'7px',
                 border:'1px solid var(--border)', background:'transparent',
@@ -866,7 +909,32 @@
         background:m.dim, border:'1px solid '+m.color+'30',
         color:m.color, fontSize:'0.67rem', fontWeight:700,
         letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:'8px',
+        animation:'modePop 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards',
       }}>${m.icon} ${m.label}</div>`;
+  }
+
+  // ── Grounding confidence badge ──────────────────────────────────────────
+  function GroundingBadge(props) {
+    var msg = props.msg;
+    if (!msg || msg.isStreaming || msg.error) return null;
+    var hasDocs = msg.docCitations && msg.docCitations.length > 0;
+    var hasSql  = msg.sqlCitation != null;
+    var mode    = msg.mode;
+    var level, color, bg, label;
+    if (!mode) return null;
+    if (hasDocs || hasSql) {
+      level = 'grounded'; color = 'var(--ok)'; bg = 'rgba(52,168,83,0.08)'; label = 'Grounded';
+    } else if (mode === 'document' || mode === 'combined') {
+      level = 'low'; color = 'var(--t3)'; bg = 'var(--s2)'; label = 'No sources';
+    } else {
+      return null;
+    }
+    return html`
+      <span style=${{
+        fontSize:'0.62rem', fontWeight:700, letterSpacing:'0.04em', textTransform:'uppercase',
+        padding:'1px 7px', borderRadius:'10px', background:bg, color:color, marginLeft:'6px',
+        verticalAlign:'middle',
+      }}>${level === 'grounded' ? '✓' : '·'} ${label}</span>`;
   }
 
   // ── Relevance badge: score → gold/silver/bronze indicator ────────────
@@ -1161,7 +1229,10 @@
     }
     return html`
       <div className="slide-up" style=${{ marginBottom:'20px' }}>
-        <${ModeBadge} mode=${msg.mode}/>
+        <div style=${{ display:'flex', alignItems:'center', gap:'2px', flexWrap:'wrap' }}>
+          <${ModeBadge} mode=${msg.mode}/>
+          <${GroundingBadge} msg=${msg}/>
+        </div>
         <div style=${{
           background:'var(--msg-a-bg)',
           border:'1px solid '+(msg.isStreaming ? 'var(--orange)' : 'var(--msg-a-bd)'),
@@ -1283,6 +1354,7 @@
       banking:    { icon:'🏦', name:'Banking',    desc:'UMKM credit policy, KYC procedures, OJK regulations, branch performance & customer data.' },
       telco:      { icon:'📡', name:'Telco',      desc:'Customer SLA policy, spectrum regulations, churn risk scores, ARPU & network utilisation.' },
       government: { icon:'🏛', name:'Government', desc:'Public service standards, budget regulations, population data, APBD absorption & IKM scores.' },
+      all:        { icon:'◉',  name:'All Domains', desc:'Cross-domain queries spanning Banking, Telco, and Government data and documents simultaneously.' },
     };
     var d = domainInfo[props.domain] || domainInfo.banking;
     var topSamples = (props.samples || []).slice(0, 3);
@@ -1493,7 +1565,7 @@
           >${props.disabled ? html`<div className="spin"/>` : html`<${IcoSend}/>`}</button>
         </div>
         <div style=${{ fontSize:'0.62rem', color:'var(--t3)', textAlign:'center', marginTop:'6px' }}>
-          Enter to send · Shift+Enter for new line · Ctrl+K clear · Ctrl+Shift+D demo
+          Enter to send · Shift+Enter for new line · Ctrl+K clear · Ctrl+Shift+D demo · Ctrl+Shift+R restart
         </div>
       </div>`;
   }
@@ -1576,6 +1648,7 @@
       {id:'banking',label:'Banking'},{id:'telco',label:'Telco'},{id:'government',label:'Government'}
     ]);
     const [showSetupOverlay, setShowSetupOverlay] = useState(false);
+    const [sidebarOpen, setSidebarOpen]       = useState(false);
     const [isAutoPlaying, setIsAutoPlaying]   = useState(false);
     const [isAutoPaused,  setIsAutoPaused]    = useState(false);
     const [autoPlayIdx,   setAutoPlayIdx]     = useState(0);
@@ -1725,6 +1798,18 @@
       setIsAutoPaused(false);
     }
 
+    function restartAutoPlay() {
+      // Stop any running demo, clear history, restart from question 1.
+      autoPlayRef.current   = false;
+      autoPausedRef.current = false;
+      setIsAutoPlaying(false);
+      setIsAutoPaused(false);
+      dispatch({ type:'RESET' });
+      try { localStorage.removeItem(_SS_KEY); } catch(err) {}
+      // Small delay so the RESET render settles before starting playback.
+      setTimeout(startAutoPlay, 80);
+    }
+
     // ── Keyboard shortcuts ────────────────────────────────────────────
     useEffect(function() {
       function onKeyDown(e) {
@@ -1740,14 +1825,12 @@
           dispatch({ type:'RESET' });
           try { localStorage.removeItem(_SS_KEY); } catch(err) {}
         }
-        // Ctrl+Shift+R — full demo reset
+        // Ctrl+Shift+R — full demo restart (reset to banking/id and restart autoplay)
         if (e.ctrlKey && e.shiftKey && e.key === 'R') {
           e.preventDefault();
-          stopAutoPlay();
           setDomain('banking');
           setLanguage('id');
-          dispatch({ type:'RESET' });
-          try { localStorage.removeItem(_SS_KEY); } catch(err) {}
+          restartAutoPlay();
         }
         // Escape — stop demo if playing
         if (e.key === 'Escape' && isAutoPlaying) {
@@ -1785,10 +1868,14 @@
           onPauseAutoPlay=${pauseAutoPlay}
           onResumeAutoPlay=${resumeAutoPlay}
           onStopAutoPlay=${stopAutoPlay}
+          onRestartAutoPlay=${restartAutoPlay}
+          onToggleSidebar=${function(){ setSidebarOpen(function(v){ return !v; }); }}
         />
 
         <!-- Body: sidebar + main -->
-        <div style=${{ flex:1, display:'flex', overflow:'hidden' }}>
+        <div style=${{ flex:1, display:'flex', overflow:'hidden', position:'relative' }}>
+          ${sidebarOpen && html`<div style=${{ position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',zIndex:40 }} onClick=${function(){setSidebarOpen(false);}}/>`}
+          <div className=${'sidebar-mobile-panel' + (sidebarOpen ? ' open' : '')} style=${{ height:'100%' }}>
           <${Sidebar}
             status=${status}
             samples=${samples}
@@ -1814,6 +1901,7 @@
               try { localStorage.removeItem(_SS_KEY); } catch(e) {}
             }}
           />
+          </div>
           <!-- Main: chat + input -->
           <div style=${{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <${ChatWindow} msgs=${msgs} isLoading=${loading} domain=${domain} samples=${samples} onPick=${function(p) { if (!isAutoPlaying && !loading) setPrefill(p); }}/>

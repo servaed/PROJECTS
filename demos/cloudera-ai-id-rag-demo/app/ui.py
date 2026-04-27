@@ -443,9 +443,9 @@ def render_status() -> None:
 def render_mode_badge(mode: str) -> None:
     """Render a pill badge showing the answer mode."""
     badge_styles = {
-        "dokumen": ("🗂️", "#00A591", "#E6F7F5", "Document RAG"),
-        "data":    ("🗄️", "#6366F1", "#EEF2FF", "Structured Data"),
-        "gabungan":("🔀", "#F96702", "#FFF7F0", "Combined"),
+        "document": ("🗂️", "#00A591", "#E6F7F5", "Document RAG"),
+        "data":     ("🗄️", "#6366F1", "#EEF2FF", "Structured Data"),
+        "combined": ("🔀", "#F96702", "#FFF7F0", "Combined"),
     }
     icon, border, bg, label_text = badge_styles.get(
         mode, ("❓", "#6B7280", "#F3F4F6", mode)

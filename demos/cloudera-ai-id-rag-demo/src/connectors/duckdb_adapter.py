@@ -92,3 +92,20 @@ def execute_read_query(sql: str) -> list[dict]:
 def get_parquet_dir() -> pathlib.Path:
     """Return the resolved Parquet directory path (used by health checks)."""
     return pathlib.Path(settings.duckdb_parquet_dir).resolve()
+
+
+def reset_connection() -> None:
+    """Close and discard the cached DuckDB connection.
+
+    Call after uploading a new Parquet file so the next query rebuilds the
+    connection and discovers the new table automatically.
+    """
+    global _conn
+    with _lock:
+        if _conn is not None:
+            try:
+                _conn.close()
+            except Exception:
+                pass
+            _conn = None
+    logger.info("DuckDB connection reset — will rebuild on next query")

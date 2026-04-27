@@ -12,6 +12,7 @@ stream the synthesis token-by-token via st.write_stream.
 
 from __future__ import annotations
 
+import concurrent.futures
 from collections.abc import Generator
 from dataclasses import dataclass, field
 
@@ -88,13 +89,48 @@ def _extract_data_question(question: str) -> str:
         extracted = _strip_thinking(response.content).strip()
         if extracted and len(extracted) > 5:
             logger.debug(
-                "Data extraction: '%s...' → '%s...'",
+                "Data extraction: '%s...' -> '%s...'",
                 question[:50], extracted[:50],
             )
             return extracted
     except Exception as exc:
         logger.warning("Data question extraction failed: %s — using original", exc)
     return question
+
+
+# ── SQL helpers ────────────────────────────────────────────────────────────
+
+
+def _generate_sql_with_retry(
+    question: str,
+    domain_tables: list[str] | None,
+    max_retries: int = 1,
+) -> "QueryResult | None":
+    """Try SQL generation, retry once with a simplified rephrase on failure.
+
+    On the first attempt the question is used verbatim.  On the retry a brief
+    prefix is prepended to nudge the LLM toward a simpler aggregation phrasing,
+    which reduces TIDAK_DAPAT_DIJAWAB errors on policy-heavy combined questions.
+    """
+    attempts = [question]
+    if max_retries > 0:
+        # Simple rephrase: strip comparative/conditional framing
+        rephrased = f"Tampilkan data: {question}" if len(question) > 30 else question
+        if rephrased != question:
+            attempts.append(rephrased)
+
+    for i, q in enumerate(attempts):
+        try:
+            sql, _ = generate_sql(q, approved_tables=domain_tables)
+            result = run_query(sql)
+            if i > 0:
+                logger.info("SQL retry %d succeeded for: %.60s", i, question)
+            return result
+        except SqlGuardrailError as exc:
+            logger.warning("SQL guardrail (attempt %d): %s", i + 1, exc)
+        except Exception as exc:
+            logger.error("SQL generation/execution (attempt %d): %s", i + 1, exc)
+    return None
 
 
 # ── Phase 1 ────────────────────────────────────────────────────────────────
@@ -116,44 +152,48 @@ def prepare_answer(
     This is fast enough to run inside a spinner so the user sees retrieval
     progress before the (slower) streaming synthesis begins.
     """
-    mode = classify_question(question)
+    mode = classify_question(question, history=history)
     doc_chunks: list[RetrievedChunk] = []
     query_result: QueryResult | None = None
     sql_question = question
 
-    if mode == "gabungan":
+    if mode == "combined":
         # Extract the pure data component once — reused for both SQL gen and
         # the second retrieval pass below.
         sql_question = _extract_data_question(question)
 
-    if mode in ("dokumen", "gabungan"):
-        # Gabungan retrieval uses two passes then deduplicates:
-        #   Pass 1 — original question  → retrieves policy/standard chunks
-        #   Pass 2 — data-only question → retrieves quantitative metric chunks
-        # This ensures both the "target" side (policy) and the "actual" side
-        # (data-flavoured text) are represented in the context.
-        doc_top_k = top_k + 2 if mode == "gabungan" else top_k
-        doc_chunks = retrieve(question, top_k=doc_top_k, domain=domain, language=language)
+    if mode == "combined":
+        # Run doc retrieval (two-pass) and SQL generation in parallel — they are
+        # independent so there is no reason to wait for one before starting the other.
+        doc_top_k = top_k + 2
 
-        if mode == "gabungan" and sql_question != question:
-            extra = retrieve(sql_question, top_k=top_k, domain=domain, language=language)
-            # Deduplicate by (source_path, chunk_index) — keep first occurrence
-            seen: set[tuple] = {(c.source_path, c.chunk_index) for c in doc_chunks}
-            for chunk in extra:
-                key = (chunk.source_path, chunk.chunk_index)
-                if key not in seen:
-                    doc_chunks.append(chunk)
-                    seen.add(key)
-            doc_chunks = doc_chunks[: doc_top_k + top_k]   # cap total
+        def _retrieve_docs() -> list[RetrievedChunk]:
+            chunks = retrieve(question, top_k=doc_top_k, domain=domain, language=language)
+            if sql_question != question:
+                extra = retrieve(sql_question, top_k=top_k, domain=domain, language=language)
+                seen: set[tuple] = {(c.source_path, c.chunk_index) for c in chunks}
+                for chunk in extra:
+                    key = (chunk.source_path, chunk.chunk_index)
+                    if key not in seen:
+                        chunks.append(chunk)
+                        seen.add(key)
+                chunks = chunks[: doc_top_k + top_k]
+            return chunks
 
-    if mode in ("data", "gabungan"):
-        try:
-            sql, _ = generate_sql(sql_question, approved_tables=domain_tables)
-            query_result = run_query(sql)
-        except SqlGuardrailError as exc:
-            logger.warning("SQL guardrail blocked query: %s", exc)
-        except Exception as exc:
-            logger.error("SQL generation/execution failed: %s", exc)
+        def _run_sql() -> QueryResult | None:
+            return _generate_sql_with_retry(sql_question, domain_tables)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            doc_future = pool.submit(_retrieve_docs)
+            sql_future = pool.submit(_run_sql)
+            doc_chunks   = doc_future.result()
+            query_result = sql_future.result()
+
+    elif mode == "document":
+        doc_chunks = retrieve(question, top_k=top_k, domain=domain, language=language)
+
+    elif mode == "data":
+        query_result = _generate_sql_with_retry(sql_question, domain_tables)
 
     return AnswerPrep(
         mode=mode,
@@ -239,11 +279,11 @@ def answer_question(
 def _get_fallback(prep: AnswerPrep) -> str | None:
     """Return a language-appropriate fallback string if no retrieval results are available."""
     lang = prep.language
-    if prep.mode == "dokumen" and not prep.doc_chunks:
+    if prep.mode == "document" and not prep.doc_chunks:
         return get_answer_not_found(lang)
     if prep.mode == "data" and (prep.query_result is None or not prep.query_result.succeeded):
         return get_answer_sql_failed(lang)
-    if prep.mode == "gabungan":
+    if prep.mode == "combined":
         no_docs = not prep.doc_chunks
         no_data = prep.query_result is None or not prep.query_result.succeeded
         if no_docs and no_data:
@@ -255,7 +295,7 @@ def _build_messages(prep: AnswerPrep) -> list[dict]:
     """Build the LLM prompt messages from retrieved context."""
     lang = prep.language
 
-    if prep.mode == "dokumen":
+    if prep.mode == "document":
         context = _format_doc_context(prep.doc_chunks)
         return build_document_prompt(context, prep.question, history=prep.history, language=lang)
 

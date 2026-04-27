@@ -1,0 +1,37 @@
+# CML Job definitions for cloudera-ai-id-rag-demo
+#
+# Import into Cloudera Machine Learning via:
+#   Jobs > Import > Paste this YAML
+# Or use the CML API v2 to create jobs programmatically.
+#
+# Reference: https://docs.cloudera.com/machine-learning/cloud/jobs-pipelines/topics/ml-creating-a-job.html
+
+jobs:
+  - name: "Nightly Document Re-ingestion"
+    script: "data/cml_jobs/nightly_reingest.py"
+    type: "manual"
+    schedule: "0 2 * * *"            # 02:00 UTC daily — adjust to your timezone
+    cpu: 4
+    memory: 8
+    runtime_identifier: "docker.io/cloudera/cdsw:2.0.45-b65"
+    environment:
+      # Inherits all Application-level environment variables automatically.
+      # Override specific values here if the job needs different settings.
+      LOG_LEVEL: "INFO"
+      # MLFLOW_TRACKING_URI: "mlruns"   # Uncomment to enable MLflow logging
+    timeout: 1800                     # 30-minute timeout (first run downloads embedding model)
+    notifications:
+      - user_emails: []               # Add email addresses for job failure alerts
+        success: false
+        failure: true
+
+  - name: "Weekly Data Reseed"
+    script: "data/sample_tables/seed_parquet.py"
+    type: "manual"
+    schedule: "0 3 * * 0"            # 03:00 UTC every Sunday
+    cpu: 2
+    memory: 4
+    runtime_identifier: "docker.io/cloudera/cdsw:2.0.45-b65"
+    environment:
+      LOG_LEVEL: "INFO"
+    timeout: 600

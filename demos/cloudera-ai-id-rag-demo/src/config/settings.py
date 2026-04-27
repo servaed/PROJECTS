@@ -131,6 +131,20 @@ class Settings(BaseSettings):
     sql_approved_tables: str = "msme_credit,customer,branch"
     sql_max_rows: int = Field(default=500, ge=1, le=1000)
 
+    # ── Reranker ─────────────────────────────────────────────────────────
+    # Cross-encoder reranking improves answer quality by re-scoring retrieved
+    # chunks against the exact question before LLM synthesis.
+    # Set RERANKER_ENABLED=false to disable (saves ~200ms per request on CPU).
+    reranker_enabled: bool = True
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    reranker_top_k: int = 5        # keep top-K chunks after reranking
+
+    # ── MLflow experiment tracking ────────────────────────────────────────
+    # Set MLFLOW_TRACKING_URI to enable (e.g. "mlruns" for local file store,
+    # or an MLflow server URL for remote tracking).  Empty = disabled.
+    mlflow_tracking_uri: str = ""
+    mlflow_experiment_name: str = "cloudera-rag-demo"
+
     # ── Application ───────────────────────────────────────────────────────
     app_port: int = 8080
     app_title: str = "Asisten Enterprise Cloudera AI"

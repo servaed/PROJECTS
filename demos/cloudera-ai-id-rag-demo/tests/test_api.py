@@ -207,7 +207,7 @@ def test_status_llm_not_ok_when_unconfigured():
 
 # ── POST /api/chat ─────────────────────────────────────────────────────────
 
-def _make_prep(mode: str = "dokumen"):
+def _make_prep(mode: str = "document"):
     """Build a minimal AnswerPrep-like object for mocking."""
     prep = MagicMock()
     prep.mode = mode
@@ -227,7 +227,7 @@ def test_chat_sse_emits_mode_token_done():
     """A successful /api/chat request must emit mode → token(s) → done."""
     from app import api as api_module
 
-    prep  = _make_prep("dokumen")
+    prep  = _make_prep("document")
     result = _make_result()
 
     with patch("app.api.prepare_answer", return_value=prep), \
@@ -307,12 +307,12 @@ def test_samples_path_traversal_domain_falls_back():
 
 
 def test_samples_sorted_by_difficulty():
-    """Samples must be ordered dokumen → data → gabungan."""
+    """Samples must be ordered document -> data -> combined."""
     client = _make_app_client()
     resp = client.get("/api/samples?domain=banking")
     assert resp.status_code == 200
     modes = [s["mode"] for s in resp.json()]
-    order = {"dokumen": 0, "data": 1, "gabungan": 2}
+    order = {"document": 0, "data": 1, "combined": 2}
     assert modes == sorted(modes, key=lambda m: order.get(m, 99))
 
 
@@ -397,7 +397,7 @@ def test_chat_sse_emits_error_on_stream_synthesis_failure():
     """If stream_synthesis raises mid-stream, an error SSE event must be emitted."""
     from app import api as api_module
 
-    prep = _make_prep("dokumen")
+    prep = _make_prep("document")
     result = _make_result()
 
     def _bad_stream(_):
@@ -419,7 +419,7 @@ def test_chat_sse_returns_usage_in_done_event():
     """The done SSE event must include a usage field with token estimates."""
     from app import api as api_module
 
-    prep = _make_prep("dokumen")
+    prep = _make_prep("document")
     result = _make_result()
 
     with patch("app.api.prepare_answer", return_value=prep), \
@@ -440,7 +440,7 @@ def test_chat_sse_returns_usage_in_done_event():
 # ── E2E pipeline smoke test ───────────────────────────────────────────────────
 
 def test_e2e_dokumen_pipeline(monkeypatch):
-    """Full prepare_answer -> stream_synthesis -> finalize_answer pipeline for dokumen mode."""
+    """Full prepare_answer -> stream_synthesis -> finalize_answer pipeline for document mode."""
     from unittest.mock import MagicMock, patch
     from src.orchestration.answer_builder import prepare_answer, stream_synthesis, finalize_answer
     from src.retrieval.retriever import RetrievedChunk
@@ -454,7 +454,7 @@ def test_e2e_dokumen_pipeline(monkeypatch):
         ingest_timestamp="2026-04-17T00:00:00",
     )
 
-    with patch("src.orchestration.router.classify_question", return_value="dokumen"), \
+    with patch("src.orchestration.router.classify_question", return_value="document"), \
          patch("src.orchestration.answer_builder.retrieve", return_value=[fake_chunk]), \
          patch("src.orchestration.answer_builder.get_llm_client") as mock_llm_factory:
 
@@ -463,14 +463,14 @@ def test_e2e_dokumen_pipeline(monkeypatch):
         mock_llm_factory.return_value = mock_llm
 
         prep = prepare_answer("What are the MSME credit requirements?", top_k=1, domain="banking")
-        assert prep.mode == "dokumen"
+        assert prep.mode == "document"
         assert len(prep.doc_chunks) == 1
 
         tokens = list(stream_synthesis(prep))
         assert len(tokens) > 0
 
         result = finalize_answer(prep, "".join(tokens))
-        assert result.mode == "dokumen"
+        assert result.mode == "document"
         assert len(result.doc_citations) == 1
         assert result.doc_citations[0].title == "Credit Policy"
 

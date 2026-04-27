@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from src.config.logging import get_logger
 from src.retrieval.embeddings import get_embeddings
 from src.retrieval.vector_store import load_vector_store
+from src.retrieval.reranker import rerank
 
 logger = get_logger(__name__)
 
@@ -165,6 +166,7 @@ def retrieve(
     language: str | None = None,
     max_score: float = _MAX_SCORE,
     use_hybrid: bool = True,
+    use_reranker: bool = True,
 ) -> list[RetrievedChunk]:
     """Retrieve the top-k most relevant chunks using hybrid BM25 + FAISS search.
 
@@ -218,7 +220,7 @@ def retrieve(
                     "Hybrid retrieved %d chunks (domain=%s, language=%s) for: %.60s",
                     len(chunks), domain or "any", language or "any", question,
                 )
-                return chunks
+                return rerank(question, chunks, top_k) if use_reranker else chunks
         except Exception as exc:
             logger.warning("BM25 hybrid search failed (%s) — falling back to FAISS only", exc)
 
@@ -249,4 +251,4 @@ def retrieve(
         "FAISS retrieved %d chunks (domain=%s, language=%s, max_score=%.2f) for: %.60s",
         len(chunks), domain or "any", language or "any", max_score, question,
     )
-    return chunks
+    return rerank(question, chunks, top_k) if use_reranker else chunks

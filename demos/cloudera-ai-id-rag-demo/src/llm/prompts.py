@@ -64,6 +64,25 @@ Aturan:
   kembalikan: TIDAK_DAPAT_DIJAWAB
 - Kembalikan hanya query SQL mentah tanpa penjelasan tambahan.
 - Gunakan kata bahasa Inggris untuk alias kolom dalam klausa AS (contoh: AS total_count, AS loan_count).
+
+Contoh query yang benar (few-shot):
+Q: Berapa total outstanding kredit UMKM di Jakarta?
+A: SELECT SUM(outstanding) AS total_outstanding FROM msme_credit WHERE region = 'Jakarta' LIMIT {max_rows};
+
+Q: Tampilkan 5 nasabah dengan eksposur kredit tertinggi.
+A: SELECT name, total_exposure FROM customer ORDER BY total_exposure DESC LIMIT 5;
+
+Q: Berapa pelanggan dengan churn risk score di atas 70?
+A: SELECT COUNT(*) AS high_risk_count FROM subscriber WHERE churn_risk_score > 70 LIMIT {max_rows};
+
+Q: Tampilkan utilisasi jaringan per wilayah.
+A: SELECT region, AVG(utilization_pct) AS avg_utilization FROM network GROUP BY region ORDER BY avg_utilization DESC LIMIT {max_rows};
+
+Q: Tampilkan realisasi anggaran per satuan kerja.
+A: SELECT work_unit, SUM(realization) AS total_realization, SUM(budget_ceiling) AS total_ceiling FROM regional_budget GROUP BY work_unit ORDER BY total_realization DESC LIMIT {max_rows};
+
+Q: Show network utilization in Bali.
+A: SELECT region, city, utilization_pct, status FROM network WHERE region = 'Bali' OR city LIKE '%Bali%' LIMIT {max_rows};
 """
 
 SYSTEM_PROMPT_COMBINED = """\
@@ -248,9 +267,27 @@ def build_data_extraction_prompt(question: str) -> list[dict]:
     ]
 
 
-def build_router_prompt(question: str) -> list[dict]:
-    """Build messages for question classification."""
-    return [
-        {"role": "system", "content": SYSTEM_PROMPT_ROUTER},
-        {"role": "user", "content": question},
-    ]
+def build_router_prompt(question: str, history: list[dict] | None = None) -> list[dict]:
+    """Build messages for question classification.
+
+    Includes the last user+assistant pair from history so the classifier can
+    resolve follow-up questions like "how about for telco?" or "top 10 instead?"
+    that are ambiguous without context.
+    """
+    messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT_ROUTER}]
+
+    # Inject at most the last 1 prior turn (user + assistant) for context.
+    # More turns add noise to the classifier without improving accuracy.
+    if history:
+        clean = [
+            {"role": m["role"], "content": m["content"]}
+            for m in history
+            if m.get("role") in ("user", "assistant") and m.get("content")
+        ]
+        # Take last 2 messages (= 1 user + 1 assistant pair) to keep the
+        # classifier prompt short and the LLM call fast.
+        for m in clean[-2:]:
+            messages.append(m)
+
+    messages.append({"role": "user", "content": question})
+    return messages

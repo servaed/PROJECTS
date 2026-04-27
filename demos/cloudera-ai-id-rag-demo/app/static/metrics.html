@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cloudera AI — Inference Metrics</title>
+  <script>
+    (function(){
+      var t = localStorage.getItem('cld-theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F9FA; --surface: #FFFFFF; --s2: #F1F3F4; --s3: #E8EAED;
+      --border: #DADCE0;
+      --orange: #F96702; --o-dim: rgba(249,103,2,0.08); --o-text: #C94F00;
+      --teal: #00796B; --t-dim: rgba(0,121,107,0.08);
+      --indigo: #5C6BC0; --i-dim: rgba(92,107,192,0.08);
+      --green: #34A853; --g-dim: rgba(52,168,83,0.08);
+      --red: #EA4335;
+      --t1: #202124; --t2: #5F6368; --t3: #9AA0A6;
+      --font: 'Google Sans', system-ui, sans-serif;
+      --display: 'Google Sans Display', 'Google Sans', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --logo-filter: brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%);
+    }
+    [data-theme="dark"] {
+      --bg: #0D1117; --surface: #161C27; --s2: #1C2538; --s3: #232E44;
+      --border: rgba(255,255,255,0.08);
+      --o-text: #F96702; --teal: #00A591; --indigo: #818CF8;
+      --t1: #E8EDF5; --t2: #8E9BB5; --t3: #4A5470;
+    }
+    html, body { min-height: 100%; font-family: var(--font); background: var(--bg); color: var(--t1); }
+
+    .topbar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 24px; height: 64px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .topbar img { height: 20px; filter: var(--logo-filter); }
+    .topbar-title { font-family: var(--display); font-size: 0.95rem; font-weight: 700; color: var(--t1); letter-spacing: -0.01em; }
+    .topbar-title span { color: var(--orange); }
+    .topbar-sep { width: 1px; height: 20px; background: var(--border); }
+    .topbar-links { display: flex; gap: 4px; margin-left: auto; }
+    .topbar-link {
+      display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px;
+      font-size: 0.8rem; font-weight: 500; color: var(--t2); text-decoration: none;
+      border: 1px solid var(--border); background: var(--s2); cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .topbar-link:hover { background: var(--s3); color: var(--t1); }
+    .topbar-link.active { background: var(--o-dim); color: var(--o-text); border-color: rgba(249,103,2,0.3); }
+
+    .page { max-width: 1100px; margin: 32px auto; padding: 0 24px 60px; }
+
+    /* ── Summary stat cards ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .stat-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--t2); }
+    .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--t1); font-family: var(--mono); line-height: 1.2; }
+    .stat-sub { font-size: 0.7rem; color: var(--t3); }
+
+    /* ── Mini charts (canvas) ── */
+    .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 700px) { .chart-row { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    }
+    .chart-title { font-size: 0.8rem; font-weight: 600; margin-bottom: 12px; color: var(--t1); }
+
+    /* ── Run table ── */
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .table-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--s2); }
+    .table-title { font-size: 0.85rem; font-weight: 600; }
+    .refresh-btn {
+      margin-left: auto; padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--t2); font-size: 0.75rem; cursor: pointer;
+      font-family: var(--font); transition: all 0.15s;
+    }
+    .refresh-btn:hover { background: var(--s3); color: var(--t1); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    th { background: var(--s2); padding: 8px 12px; text-align: left; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--t2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--t1); font-family: var(--mono); font-size: 0.75rem; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--s2); }
+    .mode-doc  { color: var(--teal); }
+    .mode-data { color: var(--indigo); }
+    .mode-comb { color: var(--orange); }
+    .badge { padding: 1px 7px; border-radius: 10px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }
+    .badge-grounded { background: var(--g-dim); color: var(--green); }
+    .badge-partial  { background: var(--o-dim); color: var(--o-text); }
+
+    .mlflow-banner {
+      padding: 12px 16px; background: var(--i-dim); border: 1px solid rgba(92,107,192,0.25);
+      border-radius: 8px; font-size: 0.82rem; color: var(--t1); margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .empty-state { padding: 40px; text-align: center; color: var(--t3); font-size: 0.85rem; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/"><img src="/static/cloudera-logo.png" alt="Cloudera"/></a>
+  <div class="topbar-sep"></div>
+  <div class="topbar-title">Enterprise <span>Assistant</span> — Metrics</div>
+  <nav class="topbar-links">
+    <a class="topbar-link" href="/">💬 Chat</a>
+    <a class="topbar-link" href="/explorer">🗄 Explorer</a>
+    <a class="topbar-link" href="/upload">↑ Upload</a>
+    <a class="topbar-link" href="/setup">◎ Status</a>
+    <a class="topbar-link" href="/configure">⚙ Settings</a>
+    <a class="topbar-link active" href="/metrics">📊 Metrics</a>
+    <button class="topbar-link" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">☀</button>
+  </nav>
+</div>
+
+<div class="page">
+  <div id="mlflow-banner" class="mlflow-banner" style="display:none;">
+    <span style="font-size:1.2rem;">⬡</span>
+    <span>MLflow tracking is <strong>enabled</strong>. Runs are also logged to: <span id="mlflow-uri" style="font-family:var(--mono);font-size:0.8rem;"></span></span>
+    <a id="mlflow-link" href="#" target="_blank" style="margin-left:auto;font-size:0.78rem;color:var(--indigo);text-decoration:none;">Open MLflow UI ↗</a>
+  </div>
+
+  <!-- Summary stats -->
+  <div class="stat-grid" id="stat-grid">
+    <div class="stat-card"><div class="stat-label">Total Requests</div><div class="stat-value" id="s-requests">—</div><div class="stat-sub">this session</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Latency</div><div class="stat-value" id="s-latency">—</div><div class="stat-sub">ms per request</div></div>
+    <div class="stat-card"><div class="stat-label">Input Tokens</div><div class="stat-value" id="s-input">—</div><div class="stat-sub">cumulative</div></div>
+    <div class="stat-card"><div class="stat-label">Output Tokens</div><div class="stat-value" id="s-output">—</div><div class="stat-sub">cumulative</div></div>
+    <div class="stat-card"><div class="stat-label">Total Tokens</div><div class="stat-value" id="s-total">—</div><div class="stat-sub">in + out</div></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="chart-row">
+    <div class="chart-card">
+      <div class="chart-title">Mode Distribution</div>
+      <canvas id="chart-mode" height="120"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Latency (last 20 requests, ms)</div>
+      <canvas id="chart-latency" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- Recent runs table -->
+  <div class="table-card">
+    <div class="table-head">
+      <span class="table-title">Recent Inference Runs</span>
+      <button class="refresh-btn" onclick="load()">↻ Refresh</button>
+    </div>
+    <div id="table-body"></div>
+  </div>
+</div>
+
+<script>
+  function toggleTheme() {
+    var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('cld-theme', t);
+    document.getElementById('themeBtn').textContent = t === 'dark' ? '☀' : '☾';
+  }
+  document.getElementById('themeBtn').textContent =
+    document.documentElement.getAttribute('data-theme') === 'dark' ? '☀' : '☾';
+
+  function fmt(n) { return (n || 0).toLocaleString(); }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function load() {
+    fetch('/api/metrics?limit=100')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var s = d.summary || {};
+        document.getElementById('s-requests').textContent = fmt(s.total_runs);
+        document.getElementById('s-latency').textContent  = fmt(s.avg_latency_ms);
+        document.getElementById('s-input').textContent    = fmt(s.total_input_tokens);
+        document.getElementById('s-output').textContent   = fmt(s.total_output_tokens);
+        document.getElementById('s-total').textContent    = fmt(s.total_tokens);
+
+        if (s.mlflow_enabled && s.mlflow_uri) {
+          document.getElementById('mlflow-banner').style.display = 'flex';
+          document.getElementById('mlflow-uri').textContent = s.mlflow_uri;
+          document.getElementById('mlflow-link').href = s.mlflow_uri.startsWith('http') ? s.mlflow_uri : '#';
+        }
+
+        renderTable(d.runs || []);
+        renderCharts(d.runs || []);
+      })
+      .catch(function(err) {
+        document.getElementById('table-body').innerHTML =
+          '<div class="empty-state">Failed to load metrics: ' + esc(err.message) + '</div>';
+      });
+  }
+
+  function renderTable(runs) {
+    if (!runs.length) {
+      document.getElementById('table-body').innerHTML = '<div class="empty-state">No inference runs yet — ask the assistant a question to start tracking.</div>';
+      return;
+    }
+    var modeClass = { document:'mode-doc', data:'mode-data', combined:'mode-comb' };
+    var html = '<table><thead><tr><th>#</th><th>Time</th><th>Domain</th><th>Lang</th><th>Mode</th><th>Provider</th><th>Model</th><th>Latency</th><th>In tokens</th><th>Out tokens</th><th>Sources</th></tr></thead><tbody>';
+    runs.forEach(function(r, i) {
+      var ts = new Date(r.ts * 1000).toLocaleTimeString();
+      var mc = modeClass[r.mode] || '';
+      var sources = [];
+      if (r.doc_citations > 0) sources.push(r.doc_citations + ' docs');
+      if (r.has_sql) sources.push('SQL');
+      var srcBadge = sources.length ? '<span class="badge badge-grounded">' + esc(sources.join('+')) + '</span>' : '<span style="color:var(--t3)">—</span>';
+      html += '<tr>' +
+        '<td style="color:var(--t3)">' + (i + 1) + '</td>' +
+        '<td>' + esc(ts) + '</td>' +
+        '<td>' + esc(r.domain) + '</td>' +
+        '<td>' + esc(r.language) + '</td>' +
+        '<td class="' + mc + '">' + esc(r.mode) + '</td>' +
+        '<td>' + esc(r.provider) + '</td>' +
+        '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(r.model) + '">' + esc((r.model||'').split('/').pop().slice(0,24)) + '</td>' +
+        '<td>' + fmt(r.latency_ms) + 'ms</td>' +
+        '<td>' + fmt(r.input_tokens) + '</td>' +
+        '<td>' + fmt(r.output_tokens) + '</td>' +
+        '<td>' + srcBadge + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('table-body').innerHTML = html;
+  }
+
+  function renderCharts(runs) {
+    renderModeChart(runs);
+    renderLatencyChart(runs);
+  }
+
+  function renderModeChart(runs) {
+    var canvas = document.getElementById('chart-mode');
+    var ctx = canvas.getContext('2d');
+    var counts = { document: 0, data: 0, combined: 0 };
+    runs.forEach(function(r) { if (counts.hasOwnProperty(r.mode)) counts[r.mode]++; });
+    var total = runs.length || 1;
+    var colors = { document: '#00796B', data: '#5C6BC0', combined: '#F96702' };
+    var labels = Object.keys(counts);
+    var W = canvas.offsetWidth || 280; var H = 120;
+    canvas.width = W; canvas.height = H;
+    ctx.clearRect(0, 0, W, H);
+    var barW = Math.floor((W - 40) / labels.length) - 8;
+    labels.forEach(function(l, i) {
+      var pct = counts[l] / total;
+      var barH = Math.max(4, Math.round(pct * (H - 30)));
+      var x = 20 + i * (barW + 8);
+      var y = H - 20 - barH;
+      ctx.fillStyle = colors[l];
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW, barH, 4);
+      ctx.fill();
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--t2').trim() || '#666';
+      ctx.font = '10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(l.slice(0, 4), x + barW / 2, H - 4);
+      ctx.fillText(counts[l], x + barW / 2, y - 4);
+    });
+  }
+
+  function renderLatencyChart(runs) {
+    var canvas = document.getElementById('chart-latency');
+    var ctx = canvas.getContext('2d');
+    var recent = runs.slice(0, 20).reverse();
+    if (!recent.length) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
+    var W = canvas.offsetWidth || 280; var H = 120;
+    canvas.width = W; canvas.height = H;
+    ctx.clearRect(0, 0, W, H);
+    var maxLat = Math.max.apply(null, recent.map(function(r){return r.latency_ms;})) || 1;
+    var step = (W - 30) / (recent.length - 1 || 1);
+    ctx.beginPath();
+    ctx.strokeStyle = '#F96702';
+    ctx.lineWidth = 2;
+    recent.forEach(function(r, i) {
+      var x = 15 + i * step;
+      var y = H - 18 - Math.round((r.latency_ms / maxLat) * (H - 28));
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(249,103,2,0.15)';
+    ctx.lineTo(15 + (recent.length - 1) * step, H - 18);
+    ctx.lineTo(15, H - 18);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--t3').trim() || '#aaa';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'right';
+    ctx.fillText(fmt(maxLat) + 'ms', W - 4, 14);
+    ctx.fillText('0', W - 4, H - 6);
+  }
+
+  // Auto-refresh every 15s
+  load();
+  setInterval(load, 15000);
+</script>
+</body>
+</html>

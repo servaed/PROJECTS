@@ -96,9 +96,9 @@ for domain in DOMAINS:
                 issues.append("empty/short answer")
             if fallback:
                 issues.append("fallback response")
-            if expected_mode in ("data", "gabungan") and not r["sql_citation"]:
+            if expected_mode in ("data", "combined") and not r["sql_citation"]:
                 issues.append("no SQL citation")
-            if expected_mode in ("dokumen", "gabungan") and r["doc_citations"] == 0:
+            if expected_mode in ("document", "combined") and r["doc_citations"] == 0:
                 issues.append("no doc citations")
             status = "FAIL" if issues else "OK"
             flag = "OK" if status == "OK" else "FAIL"
@@ -136,3 +136,119 @@ if fails:
         print(f"       Issues: {'; '.join(r['issues'])}")
 else:
     print("\nAll questions passed.")
+
+# ── Multi-turn conversation eval ───────────────────────────────────────────
+# Tests that follow-up questions resolve correctly with prior history.
+# Each scenario is a list of (question, domain, language, expected_mode) turns;
+# each turn receives the accumulated history from previous turns.
+
+MULTI_TURN_SCENARIOS = [
+    # Banking — ID: drill-down follow-up after a data query
+    [
+        ("Berapa total outstanding kredit UMKM di Jakarta?", "banking", "id", "data"),
+        ("Bagaimana dengan di Bandung?", "banking", "id", "data"),
+    ],
+    # Banking — EN: follow-up from dokumen to gabungan
+    [
+        ("What are the credit restructuring conditions per bank policy?", "banking", "en", "document"),
+        ("Which customers in Bandung meet those conditions?", "banking", "en", "combined"),
+    ],
+    # Banking — ID: vague pronoun follow-up ("them" / "mereka")
+    [
+        ("Tampilkan 5 nasabah dengan eksposur kredit tertinggi.", "banking", "id", "data"),
+        ("Apakah mereka memenuhi syarat restrukturisasi?", "banking", "id", "combined"),
+    ],
+    # Telco — ID: comparative follow-up
+    [
+        ("Tampilkan utilisasi jaringan per wilayah.", "telco", "id", "data"),
+        ("Wilayah mana yang melampaui batas SLA ketersediaan?", "telco", "id", "combined"),
+    ],
+    # Telco — EN: policy follow-up after data
+    [
+        ("How many subscribers have churn risk above 70?", "telco", "en", "data"),
+        ("Do they qualify for the retention program?", "telco", "en", "combined"),
+    ],
+    # Government — ID: budget drill-down
+    [
+        ("Tampilkan realisasi anggaran per satuan kerja.", "government", "id", "data"),
+        ("Satuan kerja mana yang berisiko kena penalti APBD?", "government", "id", "combined"),
+    ],
+    # Government — EN: service standard follow-up
+    [
+        ("What is the processing time standard for electronic ID cards?", "government", "en", "document"),
+        ("Which services are currently below that standard?", "government", "en", "combined"),
+    ],
+    # Banking — ID: top-N refinement ("top 10 instead")
+    [
+        ("Tampilkan 5 nasabah dengan total eksposur kredit tertinggi.", "banking", "id", "data"),
+        ("Sekarang tampilkan 10 nasabah teratas.", "banking", "id", "data"),
+    ],
+    # Telco — ID: language carry-over (ask about previous answer in English)
+    [
+        ("Berapa pelanggan dengan churn risk score di atas 70?", "telco", "id", "data"),
+        ("What is the retention eligibility criteria for those subscribers?", "telco", "en", "document"),
+    ],
+    # Government — EN: follow-up drill into a specific service
+    [
+        ("Show budget realization per work unit.", "government", "en", "data"),
+        ("What is the APBD regulation on the penalty threshold?", "government", "en", "document"),
+    ],
+]
+
+print("\n" + "="*70)
+print("MULTI-TURN CONVERSATION EVAL")
+print("="*70)
+mt_results = []
+mt_total = 0
+for scenario_idx, scenario in enumerate(MULTI_TURN_SCENARIOS, 1):
+    history = []
+    print(f"\nScenario {scenario_idx}:", flush=True)
+    for turn_idx, (question, domain, language, expected_mode) in enumerate(scenario, 1):
+        mt_total += 1
+        print(f"  Turn {turn_idx}: [{domain}/{language}] [{expected_mode}] {question[:70]}", flush=True)
+        r = ask(question, domain, language=language)
+        mode_ok = r["mode"] == expected_mode
+        has_answer = len((r["answer"] or "").strip()) > 20
+        fallback = any(kw in (r["answer"] or "").lower() for kw in [
+            "not found", "cannot be answered", "no relevant documents",
+            "no data", "sql query failed",
+        ])
+        issues = []
+        if not mode_ok:
+            issues.append(f"mode={r['mode']} expected={expected_mode}")
+        if not has_answer:
+            issues.append("empty/short answer")
+        if fallback:
+            issues.append("fallback response")
+        status = "FAIL" if issues else "OK"
+        print(f"    [{status}] mode={r['mode']} t={r['elapsed']}s", flush=True)
+        if issues:
+            print(f"    ISSUES: {'; '.join(issues)}", flush=True)
+        print(f"    A: {short(r['answer'])}", flush=True)
+        # Build history for next turn
+        history.append({"role": "user", "content": question})
+        history.append({"role": "assistant", "content": r["answer"] or ""})
+        mt_results.append({
+            "scenario": scenario_idx, "turn": turn_idx,
+            "domain": domain, "lang": language,
+            "expected_mode": expected_mode, "question": question,
+            "status": status, "issues": issues, **r,
+        })
+
+mt_ok = sum(1 for r in mt_results if r["status"] == "OK")
+mt_fail = sum(1 for r in mt_results if r["status"] == "FAIL")
+print(f"\nMulti-turn PASS: {mt_ok}/{mt_total}   FAIL: {mt_fail}/{mt_total}")
+
+mt_fails = [r for r in mt_results if r["status"] == "FAIL"]
+if mt_fails:
+    print("Multi-turn FAILURES:")
+    for r in mt_fails:
+        print(f"  Scenario {r['scenario']} Turn {r['turn']}: [{r['domain']}/{r['lang']}]")
+        print(f"    Q: {r['question'][:80]}")
+        print(f"    Issues: {'; '.join(r['issues'])}")
+else:
+    print("All multi-turn scenarios passed.")
+
+grand_ok   = ok + mt_ok
+grand_total = total + mt_total
+print(f"\nGRAND TOTAL: {grand_ok}/{grand_total} passed")

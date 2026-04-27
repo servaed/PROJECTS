@@ -87,6 +87,12 @@ class BedrockClient(BaseLLMClient):
 
         return "\n\n".join(system_parts), converse
 
+    # Bedrock prompt caching is only available for Anthropic Claude models.
+    _CLAUDE_MODEL_PREFIXES = ("anthropic.claude", "us.anthropic.claude", "eu.anthropic.claude")
+
+    def _supports_cache(self) -> bool:
+        return any(self._model.startswith(p) for p in self._CLAUDE_MODEL_PREFIXES)
+
     def _base_kwargs(
         self,
         messages: list[dict],
@@ -103,7 +109,15 @@ class BedrockClient(BaseLLMClient):
             },
         }
         if system_text:
-            kwargs["system"] = [{"text": system_text}]
+            if self._supports_cache():
+                # Prompt caching: cachePoint after the system text block signals
+                # Bedrock to cache everything up to this point for 5 minutes.
+                kwargs["system"] = [
+                    {"text": system_text},
+                    {"cachePoint": {"type": "default"}},
+                ]
+            else:
+                kwargs["system"] = [{"text": system_text}]
         return kwargs
 
     # ── BaseLLMClient interface ────────────────────────────────────────────
@@ -117,6 +131,13 @@ class BedrockClient(BaseLLMClient):
 
         content = response["output"]["message"]["content"][0]["text"]
         usage = response.get("usage", {})
+        cache_read = usage.get("cacheReadInputTokenCount", 0) or 0
+        cache_written = usage.get("cacheWriteInputTokenCount", 0) or 0
+        if cache_read or cache_written:
+            logger.debug(
+                "Bedrock cache: read=%d written=%d",
+                cache_read, cache_written,
+            )
         return LLMResponse(
             content=content,
             model=self._model,
