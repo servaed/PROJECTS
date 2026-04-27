@@ -114,19 +114,22 @@
       display: flex; align-items: center; gap: 14px;
       margin-bottom: 40px;
     }
-    .logo-mark {
-      height: 28px; width: auto;
-      flex-shrink: 0; display: flex; align-items: center;
+    /* Cloudera wordmark — white on dark presentation background */
+    .cld-logo {
+      height: 26px; width: auto; display: block;
+      filter: brightness(0) invert(1);
     }
-    .logo-mark svg { height: 28px; width: auto; }
-    .logo-sep {
-      width: 1px; height: 20px; background: rgba(255,255,255,0.15); flex-shrink: 0;
+    /* Subdued footer version */
+    .cld-logo-sm {
+      height: 11px; width: auto; display: block;
+      filter: brightness(0) invert(1); opacity: 0.4;
     }
-    .logo-text {
-      font-family: var(--display); font-size: 1rem; font-weight: 700;
-      color: var(--t1); letter-spacing: -0.01em;
-    }
-    .logo-text span { color: var(--orange); }
+    /* Card icon SVG — unicolor, inherits parent color */
+    .card-icon { margin-bottom: 6px; color: var(--t2); line-height: 0; }
+    .card-icon svg { width: 26px; height: 26px; display: block; }
+    /* Step icon (Slide 8) */
+    .step-icon { font-size: 1.5rem; margin-bottom: 10px; color: var(--t2); line-height: 0; }
+    .step-icon svg { width: 28px; height: 28px; display: block; }
 
     /* ── Cards ─────────────────────────────────────────────────────────────── */
     .card-grid { display: grid; gap: 16px; }
@@ -259,10 +262,9 @@
       transition: width 0.4s ease;
     }
     .slide-logo {
-      display: flex; align-items: center; gap: 5px;
+      display: flex; align-items: center; gap: 6px;
       font-size: 0.68rem; color: var(--t3); flex-shrink: 0;
     }
-    .slide-logo svg { height: 12px; width: auto; opacity: 0.45; }
 
     /* ── Navigation ────────────────────────────────────────────────────────── */
     .nav-btn {
@@ -325,14 +327,7 @@
   <!-- ── SLIDE 1: Cover ─────────────────────────────────────────────────── -->
   <section class="slide active bg-cover" id="s1">
     <div class="logo-bar anim anim-1">
-      <div class="logo-mark">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none">
-          <path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/>
-          <path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 12 19 12 18 12 17 C 12 8 20 1 30 1 C 36 1 42 4 46 9 C 49 4 55 1 62 1 C 71 1 78 8 78 17 C 78 18 78 19 77 20 C 78 22 78 24 78 26 C 78 35 71 42 62 42 L 16 42 C 15 42 14 42 14 42 Z"/>
-        </svg>
-      </div>
-      <div class="logo-sep"></div>
-      <div class="logo-text">Cloudera <span>AI</span></div>
+      <img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo"/>
     </div>
     <div class="anim anim-2" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
       <span class="pill pill-orange">🏦 Banking</span>
@@ -357,7 +352,7 @@
     <div class="slide-footer anim anim-6">
       <span class="slide-num">01 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:11%"></div></div>
-      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
     </div>
   </section>
 
@@ -368,22 +363,22 @@
     <p class="lead" style="margin-bottom:28px;">Enterprise knowledge is scattered — locked in policy documents, buried in databases, and siloed across departments. Getting a simple answer can take days.</p>
     <div class="card-grid card-grid-2" style="gap:14px;">
       <div class="card" style="--card-accent:#EA4335;">
-        <div class="card-icon">😩</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
         <div class="card-title">"Which policy applies to this customer?"</div>
         <div class="card-body">A relationship manager reads through 50-page policy PDFs to verify credit restructuring eligibility — while the customer waits on the phone.</div>
       </div>
       <div class="card" style="--card-accent:#EA4335;">
-        <div class="card-icon">🔍</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
         <div class="card-title">"Is our network SLA actually being met?"</div>
         <div class="card-body">A telco manager asks IT for a report. Three days later they get a spreadsheet — too late to act on the churn risk they were worried about.</div>
       </div>
       <div class="card" style="--card-accent:#EA4335;">
-        <div class="card-icon">⚠</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
         <div class="card-title">"Are we at risk of the APBD penalty?"</div>
         <div class="card-body">A government budget officer manually cross-references budget reports against regulation documents to assess absorption risk — monthly, by hand.</div>
       </div>
       <div class="card" style="--card-accent:var(--orange);">
-        <div class="card-icon">💡</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg></div>
         <div class="card-title">The real cost is not just time.</div>
         <div class="card-body">Delayed decisions, compliance gaps, inconsistent policy application, and frustrated employees — all because answers are hard to find.</div>
       </div>
@@ -391,7 +386,7 @@
     <div class="slide-footer">
       <span class="slide-num">02 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:22%"></div></div>
-      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
     </div>
   </section>
 
@@ -404,7 +399,7 @@
     <div style="display:flex;flex-direction:column;gap:16px;">
       <!-- Scenario 1 -->
       <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:18px 22px;display:flex;gap:20px;align-items:flex-start;">
-        <div style="font-size:1.4rem;flex-shrink:0;">🏦</div>
+        <div style="flex-shrink:0;color:var(--t2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg></div>
         <div>
           <div style="font-size:0.75rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Banking — Credit Officer</div>
           <div style="font-size:0.9rem;color:var(--t1);margin-bottom:6px;">
@@ -415,7 +410,7 @@
       </div>
       <!-- Scenario 2 -->
       <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:18px 22px;display:flex;gap:20px;align-items:flex-start;">
-        <div style="font-size:1.4rem;flex-shrink:0;">📡</div>
+        <div style="flex-shrink:0;color:var(--t2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg></div>
         <div>
           <div style="font-size:0.75rem;font-weight:700;color:var(--indigo);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Telco — Network Operations</div>
           <div style="font-size:0.9rem;color:var(--t1);margin-bottom:6px;">
@@ -426,7 +421,7 @@
       </div>
       <!-- Scenario 3 -->
       <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:18px 22px;display:flex;gap:20px;align-items:flex-start;">
-        <div style="font-size:1.4rem;flex-shrink:0;">🏛</div>
+        <div style="flex-shrink:0;color:var(--t2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block"><polyline points="22 8 12 2 2 8"/><line x1="6" y1="12" x2="6" y2="20"/><line x1="10" y1="12" x2="10" y2="20"/><line x1="14" y1="12" x2="14" y2="20"/><line x1="18" y1="12" x2="18" y2="20"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
         <div>
           <div style="font-size:0.75rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Government — Budget Controller</div>
           <div style="font-size:0.9rem;color:var(--t1);margin-bottom:6px;">
@@ -440,7 +435,7 @@
     <div class="slide-footer">
       <span class="slide-num">03 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:33%"></div></div>
-      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
     </div>
   </section>
 
@@ -451,7 +446,7 @@
     <p class="lead" style="margin-bottom:28px;">No need to log into different systems. Ask naturally — the AI figures out which source to check.</p>
     <div class="card-grid card-grid-3">
       <div class="card card-teal">
-        <div class="card-icon">📋</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
         <span class="pill pill-teal" style="align-self:flex-start;margin-bottom:8px;">Policy Questions</span>
         <div class="card-title">Answers from your documents</div>
         <div class="card-body" style="margin-top:8px;">
@@ -460,7 +455,7 @@
         </div>
       </div>
       <div class="card card-indigo">
-        <div class="card-icon">📊</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
         <span class="pill pill-indigo" style="align-self:flex-start;margin-bottom:8px;">Data Questions</span>
         <div class="card-title">Answers from your live data</div>
         <div class="card-body" style="margin-top:8px;">
@@ -469,7 +464,7 @@
         </div>
       </div>
       <div class="card card-orange">
-        <div class="card-icon">⚡</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <span class="pill pill-orange" style="align-self:flex-start;margin-bottom:8px;">Insight Questions</span>
         <div class="card-title">Policy + data, fused together</div>
         <div class="card-body" style="margin-top:8px;">
@@ -487,7 +482,7 @@
     <div class="slide-footer">
       <span class="slide-num">04 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:44%"></div></div>
-      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
     </div>
   </section>
 
@@ -547,7 +542,7 @@
     <div class="slide-footer">
       <span class="slide-num">05 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:55%"></div></div>
-      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
     </div>
   </section>
 
@@ -558,32 +553,32 @@
     <p class="lead" style="margin-bottom:24px;">This is not a point solution. It is built end-to-end on Cloudera — which means it inherits enterprise-grade security, governance, and scale from day one.</p>
     <div class="card-grid card-grid-3" style="gap:12px;">
       <div class="card card-orange">
-        <div class="card-icon">🔒</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
         <div class="card-title">Your Data Never Leaves Your Control</div>
         <div class="card-body">Run the AI model on Cloudera's own infrastructure with Cloudera AI Inference — no data sent to public cloud LLMs unless you choose to. Full data sovereignty.</div>
       </div>
       <div class="card card-teal">
-        <div class="card-icon">⚙</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
         <div class="card-title">Zero New Infrastructure</div>
         <div class="card-body">Deploys as a Cloudera AI Workbench Application — on the platform your team already uses. No new servers, no new vendors, no new contracts.</div>
       </div>
       <div class="card card-indigo">
-        <div class="card-icon">📈</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
         <div class="card-title">Connects to Your Existing Data</div>
         <div class="card-body">Reads from your Cloudera Data Warehouse (CDW) directly. No copying, no syncing, no ETL pipeline — live data, always current.</div>
       </div>
       <div class="card card-green">
-        <div class="card-icon">📂</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
         <div class="card-title">Works with Your Document Store</div>
         <div class="card-body">Documents stored in Ozone or S3? The assistant reads from there natively. No migration required — just point it at your existing storage.</div>
       </div>
       <div class="card card-yellow">
-        <div class="card-icon">🕐</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
         <div class="card-title">Query Historical Data</div>
         <div class="card-body">Using Cloudera's Iceberg tables, you can ask "what did the data look like 6 months ago?" — a powerful capability for auditors and compliance teams.</div>
       </div>
       <div class="card card-orange">
-        <div class="card-icon">🔍</div>
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
         <div class="card-title">Full Observability & Cost Tracking</div>
         <div class="card-body">Every AI interaction is logged — what was asked, which source answered it, how fast, at what cost. Management-ready dashboards built in.</div>
       </div>
@@ -591,7 +586,7 @@
     <div class="slide-footer">
       <span class="slide-num">06 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:66%"></div></div>
-      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
     </div>
   </section>
 
@@ -602,7 +597,7 @@
     <div class="three-col" style="gap:20px;margin-top:4px;">
       <div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-          <span style="font-size:1.8rem;">🏦</span>
+          <span style="color:var(--t2);line-height:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg></span>
           <div>
             <div style="font-size:0.95rem;font-weight:700;color:var(--t1);">Banking & Finance</div>
             <div style="font-size:0.72rem;color:var(--t2);">OJK compliance · UMKM credit · KYC</div>
@@ -618,7 +613,7 @@
       </div>
       <div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-          <span style="font-size:1.8rem;">📡</span>
+          <span style="color:var(--t2);line-height:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg></span>
           <div>
             <div style="font-size:0.95rem;font-weight:700;color:var(--t1);">Telecommunications</div>
             <div style="font-size:0.72rem;color:var(--t2);">SLA compliance · churn · network ops</div>
@@ -634,7 +629,7 @@
       </div>
       <div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-          <span style="font-size:1.8rem;">🏛</span>
+          <span style="color:var(--t2);line-height:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block"><polyline points="22 8 12 2 2 8"/><line x1="6" y1="12" x2="6" y2="20"/><line x1="10" y1="12" x2="10" y2="20"/><line x1="14" y1="12" x2="14" y2="20"/><line x1="18" y1="12" x2="18" y2="20"/><line x1="2" y1="20" x2="22" y2="20"/></svg></span>
           <div>
             <div style="font-size:0.95rem;font-weight:700;color:var(--t1);">Government & Public Sector</div>
             <div style="font-size:0.72rem;color:var(--t2);">APBD · public service · regulation</div>
@@ -656,7 +651,7 @@
     <div class="slide-footer">
       <span class="slide-num">07 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:77%"></div></div>
-      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
     </div>
   </section>
 
@@ -668,19 +663,19 @@
     <div class="three-col" style="gap:16px;margin-bottom:28px;">
       <div style="background:var(--s2);border:1px solid rgba(0,165,145,0.4);border-radius:14px;padding:22px;position:relative;">
         <div style="position:absolute;top:-12px;left:20px;background:var(--teal);color:#fff;font-size:0.7rem;font-weight:700;padding:3px 12px;border-radius:10px;text-transform:uppercase;letter-spacing:0.08em;">Step 1</div>
-        <div style="font-size:1.6rem;margin-bottom:10px;">🗂</div>
+        <div style="margin-bottom:12px;color:var(--t2);line-height:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
         <div style="font-size:0.9rem;font-weight:700;color:var(--t1);margin-bottom:8px;">Connect your content</div>
         <div style="font-size:0.78rem;color:var(--t2);line-height:1.6;">Upload your policy documents, regulations, and procedures. Point it at your existing Cloudera data warehouse. Takes an afternoon.</div>
       </div>
       <div style="background:var(--s2);border:1px solid rgba(0,165,145,0.6);border-radius:14px;padding:22px;position:relative;">
         <div style="position:absolute;top:-12px;left:20px;background:var(--teal);color:#fff;font-size:0.7rem;font-weight:700;padding:3px 12px;border-radius:10px;text-transform:uppercase;letter-spacing:0.08em;">Step 2</div>
-        <div style="font-size:1.6rem;margin-bottom:10px;">✅</div>
+        <div style="margin-bottom:12px;color:var(--t2);line-height:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
         <div style="font-size:0.9rem;font-weight:700;color:var(--t1);margin-bottom:8px;">Test with your team</div>
         <div style="font-size:0.78rem;color:var(--t2);line-height:1.6;">Ask your real questions. Validate the answers against what your subject-matter experts know. Refine — no engineers needed for content changes.</div>
       </div>
       <div style="background:var(--s2);border:1px solid rgba(249,103,2,0.5);border-radius:14px;padding:22px;position:relative;">
         <div style="position:absolute;top:-12px;left:20px;background:var(--orange);color:#fff;font-size:0.7rem;font-weight:700;padding:3px 12px;border-radius:10px;text-transform:uppercase;letter-spacing:0.08em;">Step 3</div>
-        <div style="font-size:1.6rem;margin-bottom:10px;">🚀</div>
+        <div style="margin-bottom:12px;color:var(--t2);line-height:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
         <div style="font-size:0.9rem;font-weight:700;color:var(--t1);margin-bottom:8px;">Deploy to your organisation</div>
         <div style="font-size:0.78rem;color:var(--t2);line-height:1.6;">Roll out to your teams on Cloudera AI Workbench — with your SSO/LDAP login, your data governance policies, and your security controls already in place.</div>
       </div>
@@ -694,21 +689,14 @@
     <div class="slide-footer">
       <span class="slide-num">08 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:88%"></div></div>
-      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
     </div>
   </section>
 
   <!-- ── SLIDE 9: Call to Action ────────────────────────────────────────── -->
   <section class="slide bg-cover" id="s9">
     <div class="logo-bar">
-      <div class="logo-mark">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none">
-          <path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/>
-          <path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 12 19 12 18 12 17 C 12 8 20 1 30 1 C 36 1 42 4 46 9 C 49 4 55 1 62 1 C 71 1 78 8 78 17 C 78 18 78 19 77 20 C 78 22 78 24 78 26 C 78 35 71 42 62 42 L 16 42 C 15 42 14 42 14 42 Z"/>
-        </svg>
-      </div>
-      <div class="logo-sep"></div>
-      <div class="logo-text">Cloudera <span>AI</span></div>
+      <img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo"/>
     </div>
     <h1 style="max-width:700px;margin-bottom:16px;">
       Let's Run It Live<br/>
@@ -721,10 +709,10 @@
     </p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:32px;">
       <a href="/" style="padding:14px 28px;border-radius:10px;background:var(--orange);color:#fff;font-weight:700;font-size:0.95rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(249,103,2,0.4);">
-        💬 Open the Live Demo
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Open the Live Demo
       </a>
       <div style="padding:14px 22px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.06);color:var(--t2);font-size:0.85rem;display:flex;align-items:center;gap:8px;">
-        📧 Eduard Bangga · Cloudera Presales Indonesia
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;flex-shrink:0;opacity:0.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Eduard Bangga · Solutions Engineer
       </div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -735,7 +723,7 @@
     <div class="slide-footer">
       <span class="slide-num">09 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
-      <span class="slide-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56" fill="none"><path fill="#F96702" d="M 14 48 C 6 48 0 42 0 34 C 0 27 5 21 12 19.5 C 11 8 20 0 31 0 C 37 0 43 3 47 8 C 50 3 56 0 63 0 C 72 0 79 7 79 16 C 79 17 79 18 78 19 C 79 20 80 22 80 24 C 80 33 73 40 64 40 L 14 48 Z"/></svg>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
     </div>
   </section>
 
