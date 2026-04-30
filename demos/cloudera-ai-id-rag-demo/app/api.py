@@ -928,6 +928,213 @@ class FollowupRequest(BaseModel):
     language: str = "id"
 
 
+# ── Agent: Planner + Executor + Synthesizer ───────────────────────────────
+
+_AGENT_PLAN_SYSTEM = """\
+You are a research planner for an enterprise AI assistant.
+Given a user question, create a focused research plan with 2-4 steps.
+
+Available tools:
+- "docs": Search internal policy/regulation/procedure documents
+- "data": Query structured database tables (banking, telco, government)
+
+Output ONLY a valid JSON array — no other text, no markdown fences:
+[{"type":"docs"|"data","query":"specific search string","label":"Short description"},...]
+
+Rules:
+- Maximum 4 steps, minimum 2
+- Each query must be specific and self-contained
+- Use "docs" for policy/procedure/regulation/eligibility questions
+- Use "data" for numbers, counts, rankings, current metrics
+- If the question needs policy AND data: include both types
+- Keep labels concise (< 8 words)"""
+
+
+def _plan_research(question: str, domain: str, language: str) -> list[dict]:
+    """Ask the LLM to produce a 2-4 step research plan as JSON."""
+    from src.llm.inference_client import get_llm_client
+    lang_hint = "in Bahasa Indonesia" if language == "id" else "in English"
+    user_msg = (
+        f"Domain context: {domain}. Language: {lang_hint}.\n\nQuestion: {question}"
+    )
+    try:
+        llm = get_llm_client()
+        resp = llm.chat(
+            [{"role": "system", "content": _AGENT_PLAN_SYSTEM},
+             {"role": "user",   "content": user_msg}],
+            temperature=0.2, max_tokens=400,
+        )
+        raw = resp.content.strip()
+        # Strip markdown fences if the LLM added them
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        plan = json.loads(raw.strip())
+        # Validate structure
+        steps = []
+        for s in plan[:4]:
+            if isinstance(s, dict) and "type" in s and "query" in s:
+                steps.append({
+                    "type":  s["type"] if s["type"] in ("docs", "data") else "docs",
+                    "query": str(s.get("query", ""))[:300],
+                    "label": str(s.get("label", s.get("query", "")[:40]))[:60],
+                })
+        return steps if len(steps) >= 1 else [{"type": "docs", "query": question, "label": "Search documents"}]
+    except Exception as exc:
+        logger.warning("Agent planner failed (%s) — falling back to single doc step", exc)
+        return [{"type": "docs", "query": question, "label": "Search documents"}]
+
+
+_AGENT_SYNTH_SYSTEM = """\
+You are an enterprise AI assistant that synthesizes research results into a clear answer.
+You have been given a question and the results of several research steps.
+Write a comprehensive, well-structured answer using ALL the provided research.
+Cite which step each fact comes from using [Step N] markers.
+{lang_rule}"""
+
+
+async def _agent_sse(
+    question: str,
+    history: list[dict],
+    domain: str,
+    retrieval_domain: str | None,
+    domain_tables: list[str] | None,
+    language: str,
+    style: str,
+) -> AsyncGenerator[str, None]:
+    """Three-phase agent: Plan → Execute steps → Synthesize."""
+    from src.retrieval.retriever import retrieve
+    from src.orchestration.answer_builder import _generate_sql_with_retry, _format_doc_context, _format_sql_summary
+    from src.llm.inference_client import get_llm_client
+    from src.llm.prompts import _lang_rule, _style_rule
+    from src.orchestration.citations import build_document_citations, build_sql_citation
+    import dataclasses
+
+    loop = asyncio.get_event_loop()
+    _t_start = time.monotonic()
+
+    try:
+        # ── Phase 1: Plan ──────────────────────────────────────────────
+        yield _sse("agent_thinking", {"label": "Planning research approach…"})
+        steps = await loop.run_in_executor(None, _plan_research, question, domain, language)
+        yield _sse("agent_plan", {"steps": steps})
+
+        # ── Phase 2: Execute each step ─────────────────────────────────
+        step_results: list[dict] = []
+        all_doc_chunks = []
+        all_sql_results = []
+
+        for i, step in enumerate(steps):
+            yield _sse("agent_step_start", {"index": i, "type": step["type"],
+                                            "query": step["query"], "label": step["label"]})
+            t_step = time.monotonic()
+
+            if step["type"] == "docs":
+                chunks = await loop.run_in_executor(
+                    None, retrieve, step["query"], 3, retrieval_domain, language
+                )
+                result_text = _format_doc_context(chunks)
+                summary = f"{len(chunks)} chunks"
+                all_doc_chunks.extend(chunks)
+            else:  # data
+                qr = await loop.run_in_executor(
+                    None, _generate_sql_with_retry, step["query"], domain_tables
+                )
+                result_text = _format_sql_summary(qr) if qr else "_No data retrieved._"
+                row_count = qr.row_count if qr and qr.succeeded else 0
+                summary = f"{row_count} rows"
+                if qr and qr.succeeded:
+                    all_sql_results.append(qr)
+
+            elapsed_ms = int((time.monotonic() - t_step) * 1000)
+            step_results.append({"step": step, "index": i, "result": result_text})
+            yield _sse("agent_step_done", {"index": i, "summary": summary, "latency_ms": elapsed_ms})
+
+        # ── Phase 3: Synthesize ────────────────────────────────────────
+        yield _sse("agent_synthesis", {})
+
+        # Build synthesis context
+        research_context = "\n\n".join(
+            f"[Step {r['index']+1} — {r['step']['label']}]\n{r['result']}"
+            for r in step_results
+        )
+        sr = _style_rule(style)
+        system = _AGENT_SYNTH_SYSTEM.format(lang_rule=_lang_rule(language))
+        if sr:
+            system += f"\n{sr}"
+
+        messages = [{"role": "system", "content": system}]
+        messages.extend(history[-(5*2):] if history else [])
+        messages.append({"role": "user", "content":
+            f"Research results:\n{research_context}\n\nQuestion: {question}"})
+
+        llm = get_llm_client()
+        full_text = ""
+        token_q: queue.Queue = queue.Queue()
+
+        def _produce():
+            try:
+                for tok in llm.stream_chat(messages):
+                    token_q.put(tok)
+            except Exception as exc:
+                token_q.put(("__error__", str(exc)))
+            finally:
+                token_q.put(None)
+
+        thread = threading.Thread(target=_produce, daemon=True)
+        thread.start()
+        while True:
+            try:
+                item = token_q.get(timeout=30)
+            except queue.Empty:
+                break
+            if item is None:
+                break
+            if isinstance(item, tuple) and item[0] == "__error__":
+                yield _sse("error", {"message": item[1]})
+                break
+            full_text += item
+            yield _sse("token", {"text": item})
+        thread.join(timeout=5)
+
+        # Build citations from accumulated chunks/results
+        doc_cits = build_document_citations(all_doc_chunks) if all_doc_chunks else []
+        sql_cit  = build_sql_citation(all_sql_results[0]) if all_sql_results else None
+
+        total_ms = int((time.monotonic() - _t_start) * 1000)
+        yield _sse("done", {
+            "doc_citations": [dataclasses.asdict(c) for c in doc_cits] if doc_cits else [],
+            "sql_citation":  dataclasses.asdict(sql_cit) if sql_cit else None,
+            "latency_ms": total_ms,
+        })
+
+    except Exception as exc:
+        logger.exception("Agent pipeline error")
+        yield _sse("error", {"message": str(exc)})
+
+
+@app.post("/api/agent/chat", tags=["chat"])
+async def api_agent_chat(body: ChatRequest, request: Request):
+    """Agentic chat: Plan → Execute → Synthesize with visible step trace."""
+    client_ip = request.client.host if request.client else "unknown"
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+    domain = body.domain if body.domain in DOMAIN_CONFIG else _DEFAULT_DOMAIN
+    domain_tables = DOMAIN_CONFIG[domain]["tables"]
+    retrieval_domain: str | None = None if domain == "all" else domain
+
+    return StreamingResponse(
+        _agent_sse(body.question, body.history, domain=domain,
+                   retrieval_domain=retrieval_domain,
+                   domain_tables=domain_tables, language=body.language,
+                   style=body.style),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
+    )
+
+
 @app.post("/api/followup", tags=["chat"])
 async def api_followup(body: FollowupRequest):
     """Generate 3 contextual follow-up question suggestions via a lightweight LLM call."""

@@ -333,10 +333,6 @@
     /* ══ NEW VISUAL SYSTEM ═══════════════════════════════════════════ */
 
     /* ── Keyframes ──────────────────────────────────────────────────── */
-    @keyframes meshDrift1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(24px,18px) scale(1.1)} }
-    @keyframes meshDrift2 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-18px,22px) scale(0.93)} 66%{transform:translate(14px,-12px) scale(1.05)} }
-    @keyframes meshDrift3 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-22px,-16px) scale(1.07)} }
-    @keyframes logoPulse  { 0%,100%{opacity:0.38} 50%{opacity:0.6} }
     @keyframes shimmer    { from{background-position:-200% 0} to{background-position:200% 0} }
     @keyframes traceIn    { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
     @keyframes pillFade   { 0%{opacity:0;transform:translateY(4px)} 100%{opacity:1;transform:translateY(0)} }
@@ -466,6 +462,50 @@
 
     /* ── Latency stage timing ───────────────────────────────────────── */
     .stage-time { font-size:0.58rem; font-family:var(--mono); color:var(--t3); margin-left:3px; }
+
+    /* ── Agent mode ──────────────────────────────────────────────────── */
+    .agent-toggle {
+      padding:0 14px; height:32px; border-radius:8px;
+      border:1px solid var(--border); background:var(--s2);
+      color:var(--t2); font-size:0.78rem; font-weight:600;
+      cursor:pointer; display:flex; align-items:center; gap:6px;
+      transition:all 0.15s; flex-shrink:0; font-family:var(--font);
+    }
+    .agent-toggle.agent-on { border-color:rgba(129,140,248,0.6); background:var(--i-dim); color:var(--indigo); }
+    .agent-toggle svg { width:13px; height:13px; }
+    .agent-panel {
+      background:var(--s2); border:1px solid var(--border);
+      border-radius:10px; overflow:hidden; margin-bottom:10px;
+    }
+    .agent-panel-header {
+      display:flex; align-items:center; gap:8px; padding:9px 13px;
+      cursor:pointer; user-select:none;
+      font-size:0.72rem; font-weight:600; color:var(--indigo);
+    }
+    .agent-steps { display:flex; flex-direction:column; }
+    .agent-step {
+      display:flex; align-items:flex-start; gap:10px;
+      padding:8px 13px; border-top:1px solid var(--border); font-size:0.74rem;
+    }
+    .agent-step-icon { width:18px; height:18px; border-radius:50%; flex-shrink:0; margin-top:1px;
+      display:flex; align-items:center; justify-content:center; font-size:0.6rem; font-weight:700; }
+    .asi-pending { background:var(--s3); color:var(--t3); }
+    .asi-running { background:var(--i-dim); color:var(--indigo); animation:dotpulse 1s ease-in-out infinite; }
+    .asi-done    { background:var(--t-dim); color:var(--teal); }
+    .agent-step-body { flex:1; min-width:0; }
+    .agent-step-label { font-weight:600; color:var(--t1); }
+    .agent-step-query { color:var(--t3); font-size:0.67rem; font-family:var(--mono); margin-top:1px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .agent-step-meta  { color:var(--teal); font-size:0.65rem; font-family:var(--mono); margin-top:2px; }
+    .agent-step-type  { font-size:0.6rem; font-weight:700; text-transform:uppercase; padding:1px 5px;
+      border-radius:5px; flex-shrink:0; align-self:center; }
+    .ast-docs { background:var(--t-dim); color:var(--teal); }
+    .ast-data { background:var(--i-dim); color:var(--indigo); }
+    .agent-synth-row {
+      display:flex; align-items:center; gap:7px; padding:8px 13px;
+      border-top:1px solid var(--border);
+      font-size:0.72rem; font-weight:600; color:var(--orange);
+    }
 
     /* ── Welcome prompt type pill ───────────────────────────────────── */
     .prompt-pill {
@@ -653,6 +693,12 @@
       case 'USER':        return [...msgs, { id:a.id, role:'user', content:a.content }];
       case 'ASSISTANT':   return [...msgs, { id:a.id, role:'assistant', content:'', mode:null, isStreaming:true, docCitations:[], sqlCitation:null, usage:null, error:null, question:a.question||'', suggestions:[] }];
       case 'PERSONA_MSG': return [...msgs, { id:a.id, role:'assistant', content:a.content, mode:null, isStreaming:false, docCitations:[], sqlCitation:null, usage:null, error:null, question:'', suggestions:[], isPersonaGreeting:true }];
+      // Agent cases
+      case 'AGENT_ASSISTANT': return [...msgs, { id:a.id, role:'assistant', content:'', mode:'agent', isStreaming:true, docCitations:[], sqlCitation:null, usage:null, error:null, question:a.question||'', suggestions:[], isAgent:true, agentPhase:'planning', agentSteps:[] }];
+      case 'AGENT_PLAN':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{agentSteps:a.steps.map(function(s){return Object.assign({},s,{status:'pending'});}), agentPhase:'executing'}) : m);
+      case 'AGENT_STEP_START':return msgs.map(m => m.id===a.id ? Object.assign({},m,{agentSteps:m.agentSteps.map(function(s,i){return i===a.index?Object.assign({},s,{status:'running'}):s;})}) : m);
+      case 'AGENT_STEP_DONE': return msgs.map(m => m.id===a.id ? Object.assign({},m,{agentSteps:m.agentSteps.map(function(s,i){return i===a.index?Object.assign({},s,{status:'done',summary:a.summary,latency_ms:a.latency_ms}):s;})}) : m);
+      case 'AGENT_SYNTH':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{agentPhase:'synthesizing'}) : m);
       case 'MODE':        return msgs.map(m => m.id===a.id ? Object.assign({},m,{mode:a.mode, _routerMs:a._routerMs||null}) : m);
       case 'TOKEN':       return msgs.map(m => m.id===a.id ? Object.assign({},m,{content:m.content+a.text, isThinking:false, _retrieveMs:a._retrieveMs!=null?(a._retrieveMs):m._retrieveMs}) : m);
       case 'THINKING':    return msgs.map(m => m.id===a.id ? Object.assign({},m,{isThinking:a.active}) : m);
@@ -1315,6 +1361,86 @@
       </div>`;
   }
 
+  // ── Agent Research Panel ─────────────────────────────────────────
+  function AgentResearch({ msg }) {
+    const [open, setOpen] = useState(true);
+    if (!msg || !msg.isAgent) return null;
+
+    var phase = msg.agentPhase;
+    var steps = msg.agentSteps || [];
+    var phaseLabel =
+      phase === 'planning'    ? 'Planning research…' :
+      phase === 'executing'   ? 'Executing research steps…' :
+      phase === 'synthesizing'? 'Synthesizing answer…' : 'Research complete';
+    var doneCount = steps.filter(function(s){ return s.status === 'done'; }).length;
+    var totalMs   = steps.reduce(function(a,s){ return a + (s.latency_ms||0); }, 0);
+
+    return html`
+      <div className="agent-panel">
+        <div className="agent-panel-header" onClick=${function(){ setOpen(!open); }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span style=${{ flex:1 }}>
+            ${phase === 'done' || !msg.isStreaming
+              ? 'Research — ' + steps.length + ' steps · ' + (totalMs/1000).toFixed(1) + 's'
+              : phaseLabel}
+          </span>
+          ${steps.length > 0 && html`
+            <span style=${{ fontSize:'0.62rem', fontFamily:'var(--mono)', color:'var(--t3)', fontWeight:400 }}>
+              ${doneCount}/${steps.length}
+            </span>
+          `}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style=${{ transform: open ? 'rotate(90deg)' : 'rotate(0)', transition:'transform 0.15s', width:'11px', height:'11px', flexShrink:0 }}>
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+
+        ${open && html`
+          <div className="agent-steps">
+            ${phase === 'planning' && html`
+              <div className="agent-step" style=${{ color:'var(--t3)', fontStyle:'italic' }}>
+                <div className="agent-step-icon asi-running">·</div>
+                <div className="agent-step-body">
+                  <div className="agent-step-label">Analyzing question…</div>
+                </div>
+              </div>`}
+
+            ${steps.map(function(s, i) {
+              var iconClass = s.status === 'done' ? 'asi-done' : s.status === 'running' ? 'asi-running' : 'asi-pending';
+              var icon      = s.status === 'done' ? '✓' : s.status === 'running' ? '·' : String(i+1);
+              return html`
+                <div key=${i} className="agent-step">
+                  <div className=${'agent-step-icon ' + iconClass}>${icon}</div>
+                  <div className="agent-step-body">
+                    <div style=${{ display:'flex', alignItems:'center', gap:'7px' }}>
+                      <span className="agent-step-label">${s.label}</span>
+                      <span className=${'agent-step-type ' + (s.type==='docs'?'ast-docs':'ast-data')}>
+                        ${s.type === 'docs' ? '◈ docs' : '⬡ data'}
+                      </span>
+                    </div>
+                    <div className="agent-step-query" title=${s.query}>${s.query}</div>
+                    ${s.status === 'done' && s.summary && html`
+                      <div className="agent-step-meta">
+                        ${s.summary}${s.latency_ms ? ' · ' + s.latency_ms + 'ms' : ''}
+                      </div>`}
+                  </div>
+                </div>`;
+            })}
+
+            ${(phase === 'synthesizing' || (msg.isStreaming && doneCount === steps.length && steps.length > 0)) && html`
+              <div className="agent-synth-row">
+                <div className="spin" style=${{ width:'10px', height:'10px', borderWidth:'1.5px', flexShrink:0 }}/>
+                Synthesizing comprehensive answer…
+              </div>`}
+          </div>
+        `}
+      </div>`;
+  }
+
   // ── Pipeline trace — real-time processing steps ────────────────────
   // Derives stage completion purely from existing message state fields.
   function PipelineTrace({ msg }) {
@@ -1854,7 +1980,9 @@
             </button>
           `}
         </div>
-        <${PipelineTrace} msg=${msg}/>
+        ${msg.isAgent
+          ? html`<${AgentResearch} msg=${msg}/>`
+          : html`<${PipelineTrace} msg=${msg}/>`}
         <div className=${accentClass} style=${{
           background:'var(--msg-a-bg)',
           border:'1px solid '+(msg.isStreaming ? 'var(--orange)' : 'var(--msg-a-bd)'),
@@ -1985,22 +2113,23 @@
     }
 
     return html`
-      <div style=${{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'24px', padding:'40px', overflowY:'auto', position:'relative' }}>
-
-        <!-- Animated gradient mesh blobs -->
-        <div style=${{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
-          <div style=${{ position:'absolute', top:'-8%', left:'10%', width:'50%', height:'55%', borderRadius:'50%', background:'radial-gradient(circle, rgba(249,103,2,0.07) 0%, transparent 65%)', animation:'meshDrift1 14s ease-in-out infinite', filter:'blur(2px)' }}/>
-          <div style=${{ position:'absolute', bottom:'2%', right:'8%', width:'42%', height:'50%', borderRadius:'50%', background:'radial-gradient(circle, rgba(0,165,145,0.055) 0%, transparent 65%)', animation:'meshDrift2 18s ease-in-out infinite', filter:'blur(2px)' }}/>
-          <div style=${{ position:'absolute', top:'28%', right:'18%', width:'32%', height:'38%', borderRadius:'50%', background:'radial-gradient(circle, rgba(129,140,248,0.05) 0%, transparent 65%)', animation:'meshDrift3 11s ease-in-out infinite', filter:'blur(2px)' }}/>
-        </div>
+      <div style=${{
+        flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+        gap:'24px', padding:'40px', overflowY:'auto', position:'relative',
+        backgroundImage: [
+          'radial-gradient(ellipse 55% 45% at 20% 25%, rgba(249,103,2,0.06), transparent)',
+          'radial-gradient(ellipse 50% 40% at 80% 75%, rgba(0,165,145,0.05), transparent)',
+          'radial-gradient(ellipse 40% 35% at 65% 30%, rgba(129,140,248,0.04), transparent)',
+        ].join(','),
+      }}>
 
         <!-- Content -->
-        <div style=${{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'24px', width:'100%', maxWidth:'560px' }}>
+        <div style=${{ display:'flex', flexDirection:'column', alignItems:'center', gap:'24px', width:'100%', maxWidth:'560px' }}>
 
           <!-- Logo + domain heading -->
           <div style=${{ textAlign:'center' }}>
             <img src="/static/cloudera-logo.png" alt="Cloudera" className="cld-logo"
-              style=${{ height:'28px', margin:'0 auto 20px', animation:'logoPulse 3.5s ease-in-out infinite' }}/>
+              style=${{ height:'28px', margin:'0 auto 20px', opacity:0.5 }}/>
             <div style=${{ fontFamily:'var(--display)', fontSize:'1.8rem', fontWeight:800, letterSpacing:'-0.035em', lineHeight:1.12, marginBottom:'10px', color:'var(--t1)' }}>
               <span style=${{ color:d.color }}>${d.name}</span> Enterprise Assistant
             </div>
@@ -2111,7 +2240,7 @@
     if (!props.msgs.length) return html`<${Welcome} domain=${props.domain} samples=${props.samples} onPick=${props.onPick}/>`;
 
     return html`
-      <div ref=${props.scrollRef} style=${{ flex:1, overflowY:'auto', padding:'28px 36px', background:'var(--bg)' }}>
+      <div ref=${props.scrollRef} style=${{ flex:1, overflowY:'auto', overflowX:'hidden', padding:'28px 36px', background:'var(--bg)', position:'relative' }}>
         ${props.msgs.map(function(m) {
           return m.role === 'user'
             ? html`<${UserMsg}      key=${m.id} msg=${m}/>`
@@ -2214,8 +2343,22 @@
             }}
           >${props.disabled ? html`<div className="spin"/>` : html`<${IcoSend}/>`}</button>
         </div>
-        <div style=${{ fontSize:'0.62rem', color:'var(--t3)', textAlign:'center', marginTop:'6px' }}>
-          Enter to send · Shift+Enter for new line · Ctrl+K clear · Ctrl+Shift+D demo · Ctrl+Shift+R restart
+        <div style=${{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'6px' }}>
+          <div style=${{ fontSize:'0.62rem', color:'var(--t3)' }}>
+            Enter to send · Shift+Enter new line · Ctrl+K clear
+          </div>
+          <button
+            className=${'agent-toggle' + (props.agentMode ? ' agent-on' : '')}
+            onClick=${props.onToggleAgent}
+            title=${props.agentMode ? 'Agent mode ON — multi-step research. Click to disable.' : 'Enable Agent mode — breaks complex questions into research steps'}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            ${props.agentMode ? 'Agent ON' : 'Agent'}
+          </button>
         </div>
       </div>`;
   }
@@ -2302,9 +2445,11 @@
     const [topbarScrolled, setTopbarScrolled] = useState(false);
     const [citPanelMsg,  setCitPanelMsg]      = useState(null);
     const chatScrollRef = useRef(null);
-    const [persona, setPersona]         = useState(null);   // active Persona object | null
-    const [answerStyle, setAnswerStyle] = useState('analyst');  // analyst | executive | compliance
+    const [persona, setPersona]         = useState(null);
+    const [answerStyle, setAnswerStyle] = useState('analyst');
     const answerStyleRef = useRef('analyst');
+    const [agentMode, setAgentMode]     = useState(false);
+    const agentModeRef = useRef(false);
     const [isAutoPlaying, setIsAutoPlaying]   = useState(false);
     const [isAutoPaused,  setIsAutoPaused]    = useState(false);
     const [autoPlayIdx,   setAutoPlayIdx]     = useState(0);
@@ -2331,6 +2476,7 @@
     useEffect(function() { domainRef.current = domain; }, [domain]);
     useEffect(function() { languageRef.current = language; }, [language]);
     useEffect(function() { answerStyleRef.current = answerStyle; }, [answerStyle]);
+    useEffect(function() { agentModeRef.current = agentMode; }, [agentMode]);
 
     // Persona selection: set domain + language + greeting message
     function selectPersona(p) {
@@ -2402,8 +2548,13 @@
         .filter(function(m) { return m.content; })
         .map(function(m) { return { role:m.role, content:m.content }; });
 
-      dispatch({ type:'USER',      id:uid, content:question });
-      dispatch({ type:'ASSISTANT', id:aid, question:question });
+      dispatch({ type:'USER', id:uid, content:question });
+      var isAgent = agentModeRef.current;
+      if (isAgent) {
+        dispatch({ type:'AGENT_ASSISTANT', id:aid, question:question });
+      } else {
+        dispatch({ type:'ASSISTANT', id:aid, question:question });
+      }
       setLoading(true);
 
       var gotDone = false;
@@ -2412,11 +2563,19 @@
       var _tFirstToken = null;
       async function run() {
         try {
-          for await (var ev of ssePost('/api/chat', {
+          var endpoint = isAgent ? '/api/agent/chat' : '/api/chat';
+          for await (var ev of ssePost(endpoint, {
             question:question, history:history,
             domain:domainRef.current, language:languageRef.current,
             style:answerStyleRef.current,
           })) {
+            // Agent-specific events
+            if (ev.event==='agent_thinking') { /* shows in AgentResearch via agentPhase */ }
+            if (ev.event==='agent_plan')      { dispatch({ type:'AGENT_PLAN',       id:aid, steps:ev.data.steps }); setLoading(false); }
+            if (ev.event==='agent_step_start'){ dispatch({ type:'AGENT_STEP_START', id:aid, index:ev.data.index }); }
+            if (ev.event==='agent_step_done') { dispatch({ type:'AGENT_STEP_DONE',  id:aid, index:ev.data.index, summary:ev.data.summary, latency_ms:ev.data.latency_ms }); }
+            if (ev.event==='agent_synthesis') { dispatch({ type:'AGENT_SYNTH',      id:aid }); }
+
             if (ev.event==='mode') {
               _mode = ev.data.mode; _tMode = Date.now();
               var routerMs = _tMode - t0;
@@ -2650,6 +2809,8 @@
               disabled=${loading || isAutoPlaying}
               prefill=${prefill}
               onPrefillDone=${function() { setPrefill(null); }}
+              agentMode=${agentMode}
+              onToggleAgent=${function() { setAgentMode(function(v){ agentModeRef.current = !v; return !v; }); }}
             />
           </div>
 
