@@ -63,7 +63,7 @@
       padding: 0 24px; background: var(--topbar-bg);
       border-bottom: 1px solid var(--topbar-bd);
     }
-    .topbar img { height: 20px; filter: var(--logo-filter); }
+    .topbar img { height: 20px; filter: var(--logo-filter); display: block; }
     .topbar-div { width: 1px; height: 20px; background: var(--border); }
     .topbar-title {
       font-family: var(--display); font-size: 0.95rem; font-weight: 700;
@@ -99,6 +99,61 @@
     [data-theme="dark"] .banner.ok  { color: #81c784; }
     [data-theme="dark"] .banner.err { color: #ef9a9a; }
     [data-theme="dark"] .banner.warn { color: #ffe082; }
+
+    /* ── Saved profiles ─────────────────────────────────────────────────── */
+    .profiles-list { padding: 12px 20px; display: flex; flex-direction: column; gap: 8px; }
+    .profile-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: 9px;
+      border: 1px solid var(--border); background: var(--s2);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .profile-card:hover { border-color: var(--orange); background: var(--o-dim); }
+    .profile-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .profile-name { font-size: 0.83rem; font-weight: 600; color: var(--t1); }
+    .profile-meta { font-size: 0.7rem; color: var(--t3); margin-top: 1px; font-family: var(--mono); }
+    .profile-actions { margin-left: auto; display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-activate {
+      padding: 4px 14px; border-radius: 6px; border: 1px solid var(--orange);
+      background: var(--o-dim); color: var(--o-text);
+      font-size: 0.74rem; font-weight: 600; cursor: pointer;
+      transition: all 0.15s; font-family: var(--font);
+    }
+    .btn-activate:hover { background: var(--orange); color: #fff; }
+    .btn-del {
+      width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--t3); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; transition: all 0.15s; font-family: var(--font);
+    }
+    .btn-del:hover { border-color: var(--err); color: var(--err); background: rgba(234,67,53,0.08); }
+    .profiles-empty {
+      padding: 24px 20px; text-align: center;
+      font-size: 0.8rem; color: var(--t3);
+    }
+    .save-profile-row {
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .save-profile-row input {
+      flex: 1; width: auto; padding: 7px 11px;
+      font-size: 0.78rem; font-family: var(--font);
+    }
+    .btn-save-profile {
+      padding: 6px 16px; border-radius: 7px; border: none;
+      background: var(--orange); color: #fff;
+      font-size: 0.78rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s; font-family: var(--font);
+      white-space: nowrap;
+    }
+    .btn-save-profile:hover { opacity: 0.88; }
+    .btn-cancel-save {
+      padding: 6px 12px; border-radius: 7px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--t2); font-size: 0.78rem; cursor: pointer;
+      transition: all 0.15s; font-family: var(--font);
+    }
+    .btn-cancel-save:hover { background: var(--s3); color: var(--t1); }
 
     /* ── Section card ────────────────────────────────────────────────────── */
     .card {
@@ -238,20 +293,20 @@
   <div class="topbar-div"></div>
   <div class="topbar-title" id="topbarTitle">Enterprise <span>Assistant</span> — Settings</div>
   <div class="topbar-right">
-    <a class="icon-btn" href="/">💬 Chat</a>
-    <a class="icon-btn" href="/explorer">🗄 Data Explorer</a>
-    <a class="icon-btn" href="/upload">↑ Upload</a>
-    <a class="icon-btn" href="/setup">◎ Status</a>
-    <a class="icon-btn" href="/metrics">📊 Metrics</a>
-    <a class="icon-btn" href="/presentation">🖼 Slides</a>
-    <a class="icon-btn active" href="/configure">⚙ Settings</a>
+    <a class="icon-btn" href="/">Chat</a>
+    <a class="icon-btn" href="/explorer">Data Explorer</a>
+    <a class="icon-btn" href="/upload">Upload</a>
+    <a class="icon-btn" href="/metrics">Metrics</a>
+    <a class="icon-btn" href="/presentation">Slides</a>
+    <a class="icon-btn" href="/setup">Status</a>
+    <a class="icon-btn active" href="/configure">Settings</a>
     <button class="icon-btn theme-btn" id="themeBtn" title="Toggle theme"></button>
   </div>
 </div>
 
 <!-- ── First-run banner (shown only when ?setup=1) ──────────────────────── -->
 <div id="setupBanner" style="display:none;background:linear-gradient(135deg,#F96702 0%,#e55a00 100%);color:#fff;padding:20px 32px;align-items:center;gap:16px;flex-wrap:wrap;">
-  <div style="font-size:1.5rem;">⚙</div>
+  <svg style="width:22px;height:22px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
   <div style="flex:1;min-width:200px;">
     <div style="font-weight:700;font-size:1rem;margin-bottom:2px;">Selamat datang! Configure your LLM to get started</div>
     <div style="font-size:0.83rem;opacity:0.9;">Select your provider, enter credentials, then click <strong>Save Configuration</strong>. The assistant will be ready immediately.</div>
@@ -283,12 +338,43 @@
       </div>
     </div>
     <div style="padding:16px 20px;display:flex;flex-wrap:wrap;gap:8px;" id="profileBtns">
-      <button type="button" class="icon-btn" onclick="loadProfile('cloudera')" title="Cloudera AI Inference Service">☁ Cloudera CAII</button>
-      <button type="button" class="icon-btn" onclick="loadProfile('openai')"   title="OpenAI API (GPT-4o)">✦ OpenAI GPT-4o</button>
+      <button type="button" class="icon-btn" onclick="loadProfile('cloudera')" title="Cloudera AI Inference Service">☁ Cloudera AI Inference (CAII)</button>
+      <button type="button" class="icon-btn" onclick="loadProfile('openai')"   title="OpenAI-compatible API">✦ OpenAI Compatible</button>
       <button type="button" class="icon-btn" onclick="loadProfile('azure')"    title="Azure OpenAI">⬡ Azure OpenAI</button>
       <button type="button" class="icon-btn" onclick="loadProfile('bedrock')"  title="Amazon Bedrock (Claude)">◆ AWS Bedrock</button>
       <button type="button" class="icon-btn" onclick="loadProfile('anthropic')" title="Anthropic API (Claude)">◈ Anthropic Claude</button>
+      <button type="button" class="icon-btn" onclick="loadProfile('gemini')"   title="Google Gemini API">◇ Google Gemini</button>
       <button type="button" class="icon-btn" onclick="loadProfile('ollama')"   title="Ollama (local)">⬡ Ollama (local)</button>
+    </div>
+  </div>
+
+  <!-- ── Saved Profiles ────────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:20px;" id="savedProfilesCard">
+    <div class="card-header">
+      <svg style="width:16px;height:16px;flex-shrink:0;color:var(--t2);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      <div style="flex:1;">
+        <div class="card-title">Saved Profiles</div>
+        <div class="card-sub">Save your LLM configurations and switch between them instantly</div>
+      </div>
+      <button type="button" class="icon-btn" onclick="toggleSaveRow()" id="addProfileBtn" title="Save current configuration as a named profile">
+        + Save as Profile
+      </button>
+    </div>
+
+    <!-- Save-name input row (hidden by default) -->
+    <div class="save-profile-row" id="saveProfileRow" style="display:none;">
+      <svg style="width:14px;height:14px;color:var(--t3);flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      <input type="text" id="profileNameInput" placeholder="Profile name  (e.g. Azure GPT-4.1 Production)"
+             onkeydown="if(event.key==='Enter'){saveCurrentProfile();}if(event.key==='Escape'){toggleSaveRow();}"/>
+      <button type="button" class="btn-save-profile" onclick="saveCurrentProfile()">Save</button>
+      <button type="button" class="btn-cancel-save" onclick="toggleSaveRow()">Cancel</button>
+    </div>
+
+    <!-- Profile list -->
+    <div id="profilesList">
+      <div class="profiles-empty" id="profilesEmpty">
+        No saved profiles yet. Configure an LLM below and click <strong>+ Save as Profile</strong>.
+      </div>
     </div>
   </div>
 
@@ -317,6 +403,7 @@
             <option value="azure">Azure OpenAI</option>
             <option value="bedrock">Amazon Bedrock</option>
             <option value="anthropic">Anthropic</option>
+            <option value="gemini">Google Gemini</option>
             <option value="local">Local (Ollama / LM Studio)</option>
           </select>
           <div class="field-hint">
@@ -619,7 +706,7 @@
     <!-- ── Storage ────────────────────────────────────────────────────────── -->
     <div class="card">
       <div class="card-header">
-        <span class="card-icon">📁</span>
+        <span class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;display:block;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
         <div>
           <div class="card-title">Storage</div>
           <div class="card-sub">Paths for source documents and the FAISS vector store</div>
@@ -721,6 +808,12 @@ var PROFILES = {
     LLM_MODEL_ID: 'claude-3-5-sonnet-20241022',
     LLM_BASE_URL: '',
     LLM_API_KEY:  '',
+  },
+  gemini: {
+    LLM_PROVIDER: 'openai',         // Gemini exposes an OpenAI-compatible endpoint
+    LLM_MODEL_ID: 'gemini-2.0-flash',
+    LLM_BASE_URL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+    LLM_API_KEY:  '',               // your Google AI Studio API key
   },
   ollama: {
     LLM_PROVIDER: 'local',
@@ -928,6 +1021,7 @@ document.getElementById('configForm').onsubmit = function(e) {
       : '';
     note.textContent = 'Last saved: ' + new Date().toLocaleTimeString();
     loadConfig();
+    loadSavedProfiles();
 
     var launchBtn = document.getElementById('launchBtn');
     launchBtn.style.display = 'inline-flex';
@@ -1034,8 +1128,147 @@ if (isSetupMode) {
   ttEl.innerHTML = 'Enterprise <span>Assistant</span> — Konfigurasi Awal';
 }
 
+// ── Saved Profiles ────────────────────────────────────────────────────────
+
+var _PROVIDER_META = {
+  cloudera:  { label: 'Cloudera CAII',  color: '#F96702' },
+  openai:    { label: 'OpenAI',         color: '#00A591' },
+  azure:     { label: 'Azure OpenAI',   color: '#0078D4' },
+  bedrock:   { label: 'AWS Bedrock',    color: '#FF9900' },
+  anthropic: { label: 'Anthropic',      color: '#818CF8' },
+  gemini:    { label: 'Google Gemini',  color: '#34A853' },
+  local:     { label: 'Local / Ollama', color: '#9AA0A6' },
+};
+
+function toggleSaveRow() {
+  var row = document.getElementById('saveProfileRow');
+  var inp = document.getElementById('profileNameInput');
+  var visible = row.style.display !== 'none';
+  row.style.display = visible ? 'none' : 'flex';
+  if (!visible) { inp.value = ''; inp.focus(); }
+}
+
+function _fmtAge(iso) {
+  if (!iso) return '';
+  var diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+function _collectFormConfig() {
+  var LLM_FIELDS = [
+    'LLM_PROVIDER', 'LLM_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL_ID',
+    'AZURE_OPENAI_ENDPOINT', 'AZURE_OPENAI_API_KEY',
+    'AZURE_OPENAI_DEPLOYMENT', 'AZURE_OPENAI_API_VERSION',
+  ];
+  var cfg = {};
+  LLM_FIELDS.forEach(function(k) {
+    var el = document.getElementById(k);
+    if (el && el.value.trim()) cfg[k] = el.value.trim();
+  });
+  return cfg;
+}
+
+function loadSavedProfiles() {
+  fetch('/api/profiles').then(function(r) { return r.json(); }).then(function(data) {
+    var profiles = data.profiles || [];
+    var list = document.getElementById('profilesList');
+    var empty = document.getElementById('profilesEmpty');
+    if (!profiles.length) {
+      empty.style.display = '';
+      // Remove any existing profile cards
+      list.querySelectorAll('.profile-card').forEach(function(el){ el.remove(); });
+      return;
+    }
+    empty.style.display = 'none';
+    list.querySelectorAll('.profile-card').forEach(function(el){ el.remove(); });
+
+    var wrap = document.createElement('div');
+    wrap.className = 'profiles-list';
+    profiles.forEach(function(p) {
+      var provider = (p.config && p.config.LLM_PROVIDER) || '';
+      var model    = (p.config && p.config.LLM_MODEL_ID) || '';
+      var meta     = _PROVIDER_META[provider] || { label: provider || 'Unknown', color: '#9AA0A6' };
+      var age      = _fmtAge(p.updated_at || p.created_at);
+
+      var card = document.createElement('div');
+      card.className = 'profile-card';
+      card.innerHTML =
+        '<div class="profile-dot" style="background:' + meta.color + '"></div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div class="profile-name">' + escHtml(p.name) + '</div>' +
+          '<div class="profile-meta">' + escHtml(meta.label) + (model ? ' · ' + escHtml(model) : '') + (age ? ' · ' + age : '') + '</div>' +
+        '</div>' +
+        '<div class="profile-actions">' +
+          '<button class="btn-activate" onclick="activateProfile(' + JSON.stringify(p.name) + ')">Activate</button>' +
+          '<button class="btn-del" title="Delete profile" onclick="deleteProfile(' + JSON.stringify(p.name) + ')">✕</button>' +
+        '</div>';
+      wrap.appendChild(card);
+    });
+    // Insert before empty message
+    list.insertBefore(wrap, empty);
+  }).catch(function() {});
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function saveCurrentProfile() {
+  var name = (document.getElementById('profileNameInput').value || '').trim();
+  if (!name) {
+    document.getElementById('profileNameInput').focus();
+    return;
+  }
+  var cfg = _collectFormConfig();
+  if (!cfg.LLM_PROVIDER) {
+    showBanner('Select a provider before saving a profile.', 'warn');
+    toggleSaveRow();
+    return;
+  }
+  fetch('/api/profiles', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: name, config: cfg }),
+  }).then(function(r) { return r.json(); }).then(function(res) {
+    if (res.ok) {
+      toggleSaveRow();
+      loadSavedProfiles();
+      showBanner('Profile "' + name + '" saved.', 'ok');
+    }
+  }).catch(function(e) {
+    showBanner('Failed to save profile: ' + e.message, 'err');
+  });
+}
+
+function activateProfile(name) {
+  fetch('/api/profiles/' + encodeURIComponent(name) + '/activate', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.ok) {
+        showBanner('Profile "' + name + '" activated and applied. Restart the app for full effect.', 'ok');
+        loadConfig();   // refresh form fields to show loaded values
+      } else {
+        showBanner('Activation failed.', 'err');
+      }
+    }).catch(function(e) {
+      showBanner('Activation error: ' + e.message, 'err');
+    });
+}
+
+function deleteProfile(name) {
+  if (!confirm('Delete profile "' + name + '"?')) return;
+  fetch('/api/profiles/' + encodeURIComponent(name), { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function() { loadSavedProfiles(); })
+    .catch(function(e) { showBanner('Delete error: ' + e.message, 'err'); });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────
 loadConfig();
+loadSavedProfiles();
 </script>
 </body>
 </html>

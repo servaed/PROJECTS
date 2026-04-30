@@ -46,7 +46,7 @@
       background: var(--surface); border-bottom: 1px solid var(--border);
       position: sticky; top: 0; z-index: 10;
     }
-    .topbar img { height: 20px; filter: var(--logo-filter); }
+    .topbar img { height: 20px; filter: var(--logo-filter); display: block; }
     .topbar-title {
       font-family: var(--display); font-size: 0.95rem; font-weight: 700;
       color: var(--t1); letter-spacing: -0.01em;
@@ -135,14 +135,36 @@
     }
     .run-btn:hover { opacity: 0.88; }
     .run-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .sql-textarea {
-      width: 100%; height: 110px; padding: 10px 12px;
-      font-family: var(--mono); font-size: 13px; line-height: 1.5;
-      background: var(--s2); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--t1); resize: vertical; outline: none;
-      transition: border-color 0.15s;
+    /* ── Enhanced SQL editor ── */
+    .sql-editor-wrap {
+      position: relative; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--s2); overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .sql-textarea:focus { border-color: var(--orange); }
+    .sql-editor-wrap:focus-within {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249,103,2,0.1);
+    }
+    .sql-editor-inner {
+      display: flex; min-height: 120px; max-height: 260px;
+    }
+    .sql-line-nums {
+      padding: 10px 8px 10px 10px; min-width: 36px; text-align: right;
+      font-family: var(--mono); font-size: 12px; line-height: 1.6;
+      color: var(--t3); background: var(--s3); border-right: 1px solid var(--border);
+      user-select: none; flex-shrink: 0;
+    }
+    .sql-textarea {
+      flex: 1; padding: 10px 12px; border: none; outline: none; resize: none;
+      font-family: var(--mono); font-size: 13px; line-height: 1.6; background: transparent;
+      color: var(--t1); overflow-y: auto; min-height: 120px;
+    }
+    .sql-hint-bar {
+      padding: 4px 12px; font-size: 11px; color: var(--t3); border-top: 1px solid var(--border);
+      background: var(--s3); display: flex; gap: 16px; font-family: var(--mono);
+    }
+    .sql-hint-bar span { opacity: 0.7; }
+    @keyframes blink-cursor { 0%,100%{opacity:1} 50%{opacity:0} }
 
     .results-area { flex: 1; overflow: auto; padding: 16px; }
     .results-meta {
@@ -164,7 +186,9 @@
       position: sticky; top: 0; white-space: nowrap;
     }
     td { padding: 7px 12px; border-bottom: 1px solid var(--border); color: var(--t1); }
-    tr:hover td { background: var(--s2); }
+    tbody tr:nth-child(even) td { background: rgba(0,0,0,0.018); }
+    [data-theme="dark"] tbody tr:nth-child(even) td { background: rgba(255,255,255,0.025); }
+    tbody tr:hover td { background: var(--o-dim) !important; }
     td.num { text-align: right; font-family: var(--mono); }
     td.null { color: var(--t3); font-style: italic; }
 
@@ -235,13 +259,13 @@
     <div class="topbar-sep"></div>
     <div class="topbar-title">Enterprise <span>Assistant</span> — Data Explorer</div>
     <nav class="topbar-links">
-      <a class="topbar-link" href="/">⊙ Chat</a>
-      <a class="topbar-link active" href="/explorer">🗄 Data Explorer</a>
-      <a class="topbar-link" href="/upload">↑ Upload</a>
-      <a class="topbar-link" href="/setup">◎ Status</a>
-      <a class="topbar-link" href="/metrics">📊 Metrics</a>
-      <a class="topbar-link" href="/presentation">🖼 Slides</a>
-      <a class="topbar-link" href="/configure">⚙ Settings</a>
+      <a class="topbar-link" href="/">Chat</a>
+      <a class="topbar-link active" href="/explorer">Data Explorer</a>
+      <a class="topbar-link" href="/upload">Upload</a>
+      <a class="topbar-link" href="/metrics">Metrics</a>
+      <a class="topbar-link" href="/presentation">Slides</a>
+      <a class="topbar-link" href="/setup">Status</a>
+      <a class="topbar-link" href="/configure">Settings</a>
       <button class="topbar-link theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
     </nav>
   </div>
@@ -266,9 +290,22 @@
           <span class="editor-label">SQL Query</span>
           <button class="run-btn" id="run-btn" onclick="runQuery()">&#9654; Run</button>
         </div>
-        <textarea class="sql-textarea" id="sql-input"
-          placeholder="SELECT * FROM msme_credit LIMIT 10"
-          onkeydown="handleKey(event)"></textarea>
+        <div class="sql-editor-wrap">
+          <div class="sql-editor-inner">
+            <div class="sql-line-nums" id="line-nums">1</div>
+            <textarea class="sql-textarea" id="sql-input"
+              placeholder="SELECT * FROM msme_credit LIMIT 10"
+              onkeydown="handleKey(event)"
+              oninput="updateLineNums()"
+              onscroll="syncLineNumScroll()"
+              spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+          </div>
+          <div class="sql-hint-bar">
+            <span>Ctrl+Enter to run</span>
+            <span>Tab inserts 2 spaces</span>
+            <span id="sql-char-count">0 chars</span>
+          </div>
+        </div>
       </div>
       <div class="results-area" id="results-area">
         <div class="state-box">
@@ -374,35 +411,104 @@
 
   <!-- Iceberg Time Travel Tab -->
   <div id="tab-timetravel" class="content" style="overflow-y:auto;padding:24px;flex-direction:column;gap:20px;">
-    <div style="max-width:800px;width:100%;margin:0 auto;">
-      <h2 style="font-size:1rem;font-weight:700;margin-bottom:4px;">Iceberg Time Travel</h2>
-      <p style="font-size:0.8rem;color:var(--t2);margin-bottom:4px;">Query historical snapshots of Iceberg tables using Trino's <code style="font-family:var(--mono);font-size:0.75em;background:var(--s2);padding:1px 4px;border-radius:3px">FOR SYSTEM_TIME AS OF</code> syntax.</p>
-      <p style="font-size:0.75rem;color:var(--t3);margin-bottom:20px;">Requires <strong>QUERY_ENGINE=trino</strong>. Demonstrates Cloudera's Iceberg advantage — point-in-time analytics without data copies.</p>
-      <div id="tt-duckdb-warning" style="display:none;padding:12px 16px;background:rgba(249,171,0,0.1);border:1px solid rgba(249,171,0,0.3);border-radius:8px;font-size:0.8rem;color:#7a5200;margin-bottom:16px;">
-        &#9888; Time Travel requires QUERY_ENGINE=trino. Current engine is DuckDB (local dev mode).
-        To demo this feature, configure Trino + Iceberg on CDP CDW.
+    <div style="max-width:900px;width:100%;margin:0 auto;">
+
+      <!-- Header -->
+      <div style="margin-bottom:20px;">
+        <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:6px;color:var(--t1);">Apache Iceberg — Time Travel</h2>
+        <p style="font-size:0.82rem;color:var(--t2);line-height:1.6;max-width:700px;">
+          Apache Iceberg stores every table change as an immutable snapshot. You can query <em>any past state</em> of your data
+          without copies or backups — just point to a timestamp and run SQL.
+          This demo simulates the Q4 2025 → Q1 2026 transition to show what changes between periods.
+        </p>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+
+      <!-- Concept badges -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
+        <span style="font-size:0.72rem;padding:4px 12px;border-radius:20px;background:var(--i-dim);color:var(--indigo);font-weight:600;">Snapshot isolation</span>
+        <span style="font-size:0.72rem;padding:4px 12px;border-radius:20px;background:var(--t-dim);color:var(--teal);font-weight:600;">Zero-copy history</span>
+        <span style="font-size:0.72rem;padding:4px 12px;border-radius:20px;background:var(--o-dim);color:var(--o-text);font-weight:600;">Point-in-time analytics</span>
+        <span style="font-size:0.72rem;padding:4px 12px;border-radius:20px;background:var(--s3);color:var(--t2);font-weight:600;">GDPR rollback</span>
+      </div>
+
+      <!-- How it works explainer -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;">
+          <div style="font-size:1.2rem;margin-bottom:8px;">📸</div>
+          <div style="font-size:0.78rem;font-weight:700;color:var(--t1);margin-bottom:4px;">Every write = snapshot</div>
+          <div style="font-size:0.73rem;color:var(--t2);line-height:1.5;">INSERT / UPDATE / DELETE each create a new immutable snapshot in the Iceberg metadata tree.</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;">
+          <div style="font-size:1.2rem;margin-bottom:8px;">⏱</div>
+          <div style="font-size:0.78rem;font-weight:700;color:var(--t1);margin-bottom:4px;">Query any past state</div>
+          <div style="font-size:0.73rem;color:var(--t2);line-height:1.5;"><code style="font-family:var(--mono);font-size:0.7em;background:var(--s2);padding:1px 4px;border-radius:3px;">FOR SYSTEM_TIME AS OF</code> on Trino/Spark gives you the exact data at any timestamp.</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;">
+          <div style="font-size:1.2rem;margin-bottom:8px;">🔍</div>
+          <div style="font-size:0.78rem;font-weight:700;color:var(--t1);margin-bottom:4px;">Compare periods</div>
+          <div style="font-size:0.73rem;color:var(--t2);line-height:1.5;">Run the same query against two snapshots side by side — no ETL, no copies, no data duplication.</div>
+        </div>
+      </div>
+
+      <!-- Simulate Time Travel controls -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:16px;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:14px;">Simulate Time Travel — Period Comparison</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
           <div style="flex:1;min-width:160px;">
-            <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:6px;color:var(--t2);">Table</label>
+            <label style="font-size:0.73rem;font-weight:600;display:block;margin-bottom:6px;color:var(--t2);">Table</label>
             <select id="tt-table" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;font-family:var(--mono);">
-              <option>msme_credit</option><option>subscriber</option><option>network</option>
-              <option>regional_budget</option><option>public_service</option>
+              <option value="msme_credit">msme_credit</option>
+              <option value="regional_budget">regional_budget</option>
             </select>
           </div>
-          <div style="flex:1;min-width:200px;">
-            <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:6px;color:var(--t2);">As of timestamp</label>
-            <input id="tt-timestamp" type="datetime-local" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;">
+          <div style="flex:1;min-width:160px;">
+            <label style="font-size:0.73rem;font-weight:600;display:block;margin-bottom:6px;color:var(--t2);">Period A (older)</label>
+            <select id="tt-period-a" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;">
+              <option value="q4_2025">Q4 2025 (Oct–Dec)</option>
+              <option value="q3_2025">Q3 2025 (Jul–Sep)</option>
+            </select>
           </div>
-          <div style="flex:0 0 auto;display:flex;align-items:flex-end;">
-            <button onclick="runTimeTravel()" style="padding:9px 18px;border-radius:20px;border:none;background:var(--indigo);color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;">⏱ Query</button>
+          <div style="flex:1;min-width:160px;">
+            <label style="font-size:0.73rem;font-weight:600;display:block;margin-bottom:6px;color:var(--t2);">Period B (current)</label>
+            <select id="tt-period-b" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:0.8rem;">
+              <option value="q1_2026">Q1 2026 (Jan–Mar)</option>
+              <option value="q4_2025">Q4 2025 (Oct–Dec)</option>
+            </select>
+          </div>
+          <div style="flex:0 0 auto;">
+            <button id="tt-compare-btn" onclick="runTimeTravelCompare()" style="padding:9px 20px;border-radius:20px;border:none;background:var(--indigo);color:#fff;font-size:0.84rem;font-weight:600;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">⚖ Compare</button>
           </div>
         </div>
-        <div id="tt-sql-preview" style="font-size:0.75rem;font-family:var(--mono);color:var(--t3);padding:8px 10px;background:var(--s2);border-radius:6px;"></div>
+
+        <!-- SQL preview -->
+        <div id="tt-sql-preview" style="margin-top:14px;font-size:0.72rem;font-family:var(--mono);color:var(--t3);padding:10px 12px;background:var(--s2);border-radius:6px;line-height:1.7;display:none;"></div>
       </div>
-      <div id="tt-results" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;display:none;">
-        <div id="tt-results-inner"></div>
+
+      <!-- Comparison results -->
+      <div id="tt-compare-results" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <!-- Period A -->
+          <div id="tt-col-a" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;">
+            <div id="tt-col-a-header" style="padding:10px 14px;background:var(--s2);border-bottom:1px solid var(--border);font-size:0.73rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:0.06em;">Period A</div>
+            <div id="tt-col-a-body" style="padding:14px;font-size:0.8rem;color:var(--t2);overflow-x:auto;"></div>
+          </div>
+          <!-- Period B -->
+          <div id="tt-col-b" style="background:var(--surface);border:1.5px solid var(--indigo);border-radius:10px;overflow:hidden;">
+            <div id="tt-col-b-header" style="padding:10px 14px;background:var(--i-dim);border-bottom:1px solid rgba(92,107,192,0.2);font-size:0.73rem;font-weight:700;color:var(--indigo);text-transform:uppercase;letter-spacing:0.06em;">Period B</div>
+            <div id="tt-col-b-body" style="padding:14px;font-size:0.8rem;color:var(--t2);overflow-x:auto;"></div>
+          </div>
+        </div>
+        <!-- Delta summary -->
+        <div id="tt-delta" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:0.8rem;color:var(--t2);"></div>
+      </div>
+
+      <!-- Production note -->
+      <div style="margin-top:20px;padding:12px 16px;background:var(--i-dim);border:1px solid rgba(92,107,192,0.2);border-radius:8px;border-left:3px solid var(--indigo);font-size:0.76rem;color:var(--t2);line-height:1.6;">
+        <strong style="color:var(--indigo);">Production mode:</strong>
+        Full time travel requires <strong>CDW / Trino + Apache Iceberg</strong> (<code style="font-family:var(--mono);font-size:0.7em;background:rgba(92,107,192,0.1);padding:1px 5px;border-radius:3px;">QUERY_ENGINE=trino</code>).
+        The comparison above simulates period filtering on DuckDB for demo purposes — on Iceberg, the same query uses
+        <code style="font-family:var(--mono);font-size:0.7em;background:rgba(92,107,192,0.1);padding:1px 5px;border-radius:3px;">FOR SYSTEM_TIME AS OF TIMESTAMP '2025-12-31 23:59:59'</code>
+        with zero data movement.
       </div>
     </div>
   </div>
@@ -428,8 +534,36 @@
   var _tables = [];
 
   function handleKey(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runQuery(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runQuery(); return; }
+    // Tab → insert 2 spaces
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      var ta = e.target, s = ta.selectionStart, end = ta.selectionEnd;
+      ta.value = ta.value.substring(0, s) + '  ' + ta.value.substring(end);
+      ta.selectionStart = ta.selectionEnd = s + 2;
+      updateLineNums();
+    }
   }
+
+  function updateLineNums() {
+    var ta = document.getElementById('sql-input');
+    var ln = document.getElementById('line-nums');
+    var cc = document.getElementById('sql-char-count');
+    if (!ta || !ln) return;
+    var lines = ta.value.split('\n').length;
+    var nums = [];
+    for (var i = 1; i <= Math.max(lines, 1); i++) nums.push(i);
+    ln.textContent = nums.join('\n');
+    if (cc) cc.textContent = ta.value.length + ' chars';
+  }
+
+  function syncLineNumScroll() {
+    var ta = document.getElementById('sql-input');
+    var ln = document.getElementById('line-nums');
+    if (ta && ln) ln.scrollTop = ta.scrollTop;
+  }
+
+  window.addEventListener('DOMContentLoaded', function() { updateLineNums(); });
 
   function loadTables() {
     fetch('/api/sql/tables').then(function(r) { return r.json(); }).then(function(data) {
@@ -502,7 +636,7 @@
       return;
     }
     if (!data.rows || data.rows.length === 0) {
-      area.innerHTML = '<div class="state-box"><div class="state-icon">🔍</div><div class="state-text">Query returned 0 rows</div></div>';
+      area.innerHTML = '<div class="state-box"><div class="state-icon" style="font-size:1.4rem;opacity:0.5;">&#x25CB;</div><div class="state-text">Query returned 0 rows</div></div>';
       return;
     }
     var cols = Object.keys(data.rows[0]);
@@ -568,14 +702,14 @@
 
     if (filtered.length === 0) {
       document.getElementById('docs-grid').innerHTML =
-        '<div class="state-box"><div class="state-icon">📭</div><div class="state-text">No documents match the selected filters</div></div>';
+        '<div class="state-box"><div class="state-icon" style="font-size:1.4rem;opacity:0.5;">&#x25A1;</div><div class="state-text">No documents match the selected filters</div></div>';
       return;
     }
 
-    var icons = { PDF: '📄', DOCX: '📝', TXT: '📃', MD: '📋' };
+    var fileIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;display:block;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
     var html = '';
     filtered.forEach(function(d) {
-      var icon = icons[d.file_type] || '📄';
+      var icon = fileIconSvg;
       var domainClass = 'badge-' + d.domain;
       var langLabel = d.language === 'en' ? 'EN' : 'ID';
       var size = d.size_bytes < 1024 ? d.size_bytes + ' B'

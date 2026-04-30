@@ -33,6 +33,14 @@ generate_sql(question)
 
 Never call `run_query()` with SQL that has not passed `validate_sql()`.
 
+## Few-Shot Examples in Generation Prompt
+
+Six worked domain queries are injected into the SQL generation prompt. This dramatically improves accuracy on aggregation, GROUP BY, and multi-table JOIN patterns typical of the UMKM credit, subscriber churn, and regional budget domains.
+
+## Agentic Retry Loop
+
+On `TIDAK_DAPAT_DIJAWAB` or `SqlGuardrailError`, the orchestrator auto-rephrases the question once (using the LLM) and retries SQL generation before giving up. The final fallback returns `get_answer_sql_failed(language)` to the user.
+
 ## LLM Cannot-Answer Sentinel
 
 If the LLM returns `TIDAK_DAPAT_DIJAWAB`, `validate_sql()` raises `SqlGuardrailError`.

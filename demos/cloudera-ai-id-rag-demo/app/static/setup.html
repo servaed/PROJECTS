@@ -60,7 +60,7 @@
       border-bottom: 1px solid var(--border);
       position: sticky; top: 0; z-index: 10;
     }
-    .topbar img { height: 20px; filter: var(--logo-filter); }
+    .topbar img { height: 20px; filter: var(--logo-filter); display: block; }
     .topbar-sep { width: 1px; height: 20px; background: var(--border); }
     .topbar-title {
       font-family: var(--display); font-size: 0.95rem; font-weight: 700;
@@ -341,13 +341,13 @@
     <button class="back-btn" id="ingestBtn" onclick="triggerIngest()" title="Rebuild vector store from source documents">⟳ Re-ingest</button>
     <button class="back-btn" id="logBtn" onclick="toggleLogs()">≡ Logs</button>
     <div style="width:1px;height:20px;background:var(--border);margin:0 2px;flex-shrink:0;"></div>
-    <a class="back-btn" href="/">⊙ Chat</a>
-    <a class="back-btn" href="/explorer">🗄 Data Explorer</a>
-    <a class="back-btn" href="/upload">↑ Upload</a>
-    <a class="back-btn" href="/setup" style="background:var(--o-dim);border-color:rgba(249,103,2,0.3);color:var(--o-text)">◎ Status</a>
-    <a class="back-btn" href="/metrics">📊 Metrics</a>
-    <a class="back-btn" href="/presentation">🖼 Slides</a>
-    <a class="back-btn" href="/configure">⚙ Settings</a>
+    <a class="back-btn" href="/">Chat</a>
+    <a class="back-btn" href="/explorer">Data Explorer</a>
+    <a class="back-btn" href="/upload">Upload</a>
+    <a class="back-btn" href="/metrics">Metrics</a>
+    <a class="back-btn" href="/presentation">Slides</a>
+    <a class="back-btn" href="/setup" style="background:var(--o-dim);border-color:rgba(249,103,2,0.3);color:var(--o-text)">Status</a>
+    <a class="back-btn" href="/configure">Settings</a>
     <button class="back-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☀</button>
   </div>
 </div>
@@ -369,6 +369,20 @@
   <div class="summary-bar" id="summaryBar">
     <div class="skeleton" style="width:200px;height:12px;margin:0"></div>
     <span class="countdown" id="countdown"></span>
+  </div>
+
+  <!-- ── Demo Health Check card ─────────────────────────────────────── -->
+  <div class="card" id="healthCheckCard" style="margin-bottom:20px;">
+    <div class="card-header" style="display:flex;align-items:center;gap:10px;padding:12px 20px;background:var(--s2);border-bottom:1px solid var(--border);">
+      <svg style="width:15px;height:15px;color:var(--t2);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span style="font-weight:600;font-size:0.88rem;color:var(--t1);">Demo Health Check</span>
+      <span id="selftest-badge" style="font-size:0.65rem;padding:2px 9px;border-radius:10px;font-weight:700;text-transform:uppercase;background:var(--s3);color:var(--t3);">Not run</span>
+      <button id="selftestBtn" onclick="runSelftest()" style="margin-left:auto;padding:5px 16px;border-radius:20px;border:none;background:var(--orange);color:#fff;font-size:0.75rem;font-weight:600;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">&#9654; Run Check</button>
+    </div>
+    <div style="padding:16px 20px;" id="selftest-body">
+      <div style="font-size:0.78rem;color:var(--t3);">Runs 3 test questions (document, data, combined) against the live pipeline to verify everything works before your demo.</div>
+      <div id="selftest-results" style="margin-top:12px;display:none;flex-direction:column;gap:8px;"></div>
+    </div>
   </div>
 
   <div class="cards" id="cards">
@@ -971,6 +985,44 @@ function toggleTheme() {
   var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', t);
   localStorage.setItem('cld-theme', t);
+}
+
+// ── Demo Health Check (selftest) ─────────────────────────────────────────────
+function runSelftest() {
+  var btn = document.getElementById('selftestBtn');
+  var badge = document.getElementById('selftest-badge');
+  var results = document.getElementById('selftest-results');
+  btn.disabled = true; btn.textContent = 'Running…';
+  badge.textContent = 'Running'; badge.style.background = 'rgba(251,188,4,0.15)'; badge.style.color = 'var(--warn)';
+  results.style.display = 'none';
+
+  fetch('/api/selftest', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      results.style.display = 'flex';
+      results.innerHTML = '';
+      var allPassed = data.tests && data.tests.every(function(t){ return t.passed; });
+      data.tests && data.tests.forEach(function(t) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);';
+        var icon = t.passed ? '✓' : '✗';
+        var iconColor = t.passed ? 'var(--ok)' : 'var(--err)';
+        row.innerHTML =
+          '<span style="font-size:0.9rem;font-weight:700;color:' + iconColor + ';width:16px;">' + icon + '</span>' +
+          '<span style="font-size:0.78rem;font-weight:600;color:var(--t1);flex:1;">' + t.label + '</span>' +
+          (t.latency_ms ? '<span style="font-size:0.7rem;font-family:var(--mono);color:var(--t3);">' + (t.latency_ms/1000).toFixed(1) + 's</span>' : '') +
+          (t.error ? '<span style="font-size:0.68rem;color:var(--err);">' + t.error + '</span>' : '');
+        results.appendChild(row);
+      });
+      badge.textContent = allPassed ? 'All passed' : 'Issues found';
+      badge.style.background = allPassed ? 'rgba(52,168,83,0.1)' : 'rgba(234,67,53,0.1)';
+      badge.style.color = allPassed ? 'var(--ok)' : 'var(--err)';
+      btn.disabled = false; btn.innerHTML = '&#9654; Run Check';
+    })
+    .catch(function(e) {
+      badge.textContent = 'Error'; badge.style.background = 'rgba(234,67,53,0.1)'; badge.style.color = 'var(--err)';
+      btn.disabled = false; btn.innerHTML = '&#9654; Run Check';
+    });
 }
 </script>
 </body>

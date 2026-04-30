@@ -275,6 +275,26 @@
     }
     .dot { animation: dotpulse 1.4s ease-in-out infinite; }
 
+    /* ── App topbar — matches admin .topbar exactly ─────────────────── */
+    .app-topbar {
+      height: var(--topbar-h); flex-shrink: 0;
+      display: flex; align-items: center;
+      padding: 0 24px; gap: 12px;
+      background: var(--topbar-bg);
+      border-bottom: 1px solid var(--topbar-bd);
+      z-index: 10;
+      transition: background 0.3s, backdrop-filter 0.3s;
+    }
+    .app-topbar.glassy {
+      background: rgba(248,249,250,0.82) !important;
+      backdrop-filter: blur(14px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
+    }
+    [data-theme="dark"] .app-topbar.glassy {
+      background: rgba(22,28,39,0.84) !important;
+    }
+    .app-topbar img.cld-logo { display: block; }
+
     /* ── GCP-style nav item (sidebar prompt buttons) ────────────────── */
     .nav-item {
       display: flex; align-items: center; gap: 6px;
@@ -309,6 +329,155 @@
     button { cursor: pointer; font-family: var(--font); }
     button:disabled { cursor: default; }
     textarea { font-family: var(--font); }
+
+    /* ══ NEW VISUAL SYSTEM ═══════════════════════════════════════════ */
+
+    /* ── Keyframes ──────────────────────────────────────────────────── */
+    @keyframes meshDrift1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(24px,18px) scale(1.1)} }
+    @keyframes meshDrift2 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-18px,22px) scale(0.93)} 66%{transform:translate(14px,-12px) scale(1.05)} }
+    @keyframes meshDrift3 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-22px,-16px) scale(1.07)} }
+    @keyframes logoPulse  { 0%,100%{opacity:0.38} 50%{opacity:0.6} }
+    @keyframes shimmer    { from{background-position:-200% 0} to{background-position:200% 0} }
+    @keyframes traceIn    { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes pillFade   { 0%{opacity:0;transform:translateY(4px)} 100%{opacity:1;transform:translateY(0)} }
+    @keyframes barRise    { from{transform:scaleY(0)} to{transform:scaleY(1)} }
+    @keyframes panelSlide { from{transform:translateX(100%)} to{transform:translateX(0)} }
+
+    /* ── Focus ring ─────────────────────────────────────────────────── */
+    *:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; border-radius: 4px; }
+
+    /* ── Button tactile press ───────────────────────────────────────── */
+    button:not(:disabled):active { transform: scale(0.97); transition: transform 0.06s ease; }
+
+    /* ── Skeleton shimmer ───────────────────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--s2) 25%, var(--s3) 50%, var(--s2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s ease-in-out infinite;
+      border-radius: 6px;
+    }
+
+    /* ── Message mode accent — left strip ───────────────────────────── */
+    .msg-doc  { border-left-color: var(--teal)   !important; border-left-width: 3px !important; }
+    .msg-data { border-left-color: var(--indigo) !important; border-left-width: 3px !important; }
+    .msg-comb { border-left-color: var(--orange) !important; border-left-width: 3px !important; }
+
+    /* ── Pipeline trace strip ───────────────────────────────────────── */
+    .ptrace { display:flex; align-items:center; flex-wrap:wrap; gap:0; margin-bottom:12px; }
+    .ptrace-step {
+      display:flex; align-items:center; gap:5px;
+      padding:3px 10px; border-radius:20px;
+      border:1px solid var(--border); background:var(--s2);
+      color:var(--t3); font-size:0.63rem; font-family:var(--mono); font-weight:500;
+      white-space:nowrap; animation:traceIn 0.28s ease forwards;
+      transition:border-color 0.35s, background 0.35s, color 0.35s;
+    }
+    .ptrace-step svg { width:10px; height:10px; flex-shrink:0; }
+    .ptrace-step.ps-active {
+      border-color:rgba(249,103,2,0.45); background:var(--o-dim); color:var(--orange);
+    }
+    .ptrace-step.ps-done {
+      border-color:rgba(0,165,145,0.35); background:var(--t-dim); color:var(--teal);
+    }
+    .ptrace-arrow { color:var(--border); padding:0 3px; font-size:0.65rem; flex-shrink:0; }
+
+    /* ── Citation slide panel (right side) ──────────────────────────── */
+    .cit-panel {
+      position:fixed; right:0; top:var(--topbar-h); bottom:0; width:360px; z-index:150;
+      background:var(--surface); border-left:1px solid var(--border);
+      box-shadow:-10px 0 40px rgba(0,0,0,0.12);
+      display:flex; flex-direction:column; overflow:hidden;
+      transform:translateX(100%);
+      transition:transform 0.32s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cit-panel.cit-open { transform:translateX(0); }
+    .cit-panel-header {
+      padding:16px 16px 12px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:8px; flex-shrink:0;
+    }
+    .cit-panel-body { flex:1; overflow-y:auto; padding:14px 16px; }
+
+    /* glassmorphism handled by .app-topbar.glassy above */
+
+    /* ── Persona selector ───────────────────────────────────────────── */
+    .persona-btn {
+      width:100%; display:flex; align-items:center; gap:9px;
+      padding:8px 10px; border-radius:9px; border:1px solid var(--border);
+      background:transparent; color:var(--t1); cursor:pointer;
+      transition:all 0.15s; text-align:left;
+    }
+    .persona-btn:hover { background:var(--s2); border-color:var(--orange); }
+    .persona-btn.active { background:var(--o-dim); border-color:var(--orange); }
+    .persona-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .persona-name { font-size:0.78rem; font-weight:600; color:var(--t1); }
+    .persona-role { font-size:0.63rem; color:var(--t3); margin-top:1px; }
+
+    /* ── Story arc selector ─────────────────────────────────────────── */
+    .arc-btn {
+      width:100%; display:flex; align-items:center; gap:8px;
+      padding:7px 10px; border-radius:8px; border:1px solid var(--border);
+      background:transparent; color:var(--t2); cursor:pointer;
+      font-size:0.74rem; font-weight:500; transition:all 0.15s; text-align:left;
+    }
+    .arc-btn:hover { background:var(--s2); color:var(--t1); border-color:var(--teal); }
+    .arc-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+    /* ── Answer style selector ──────────────────────────────────────── */
+    .style-tabs { display:flex; background:var(--s2); border-radius:8px; padding:3px; gap:2px; }
+    .style-tab {
+      flex:1; padding:4px 0; border-radius:6px; border:none;
+      background:transparent; color:var(--t3); font-size:0.67rem; font-weight:600;
+      cursor:pointer; transition:all 0.15s; font-family:var(--font);
+    }
+    .style-tab.active { background:var(--surface); color:var(--o-text); box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+
+    /* ── Follow-up suggestions ──────────────────────────────────────── */
+    .followup-btn {
+      width:100%; text-align:left; padding:7px 12px; border-radius:8px;
+      border:1px solid var(--border); background:transparent;
+      color:var(--t2); font-size:0.78rem; cursor:pointer; transition:all 0.15s;
+      font-family:var(--font);
+    }
+    .followup-btn:hover { border-color:var(--orange); background:var(--o-dim); color:var(--t1); }
+
+    /* ── Raw source view toggle ─────────────────────────────────────── */
+    .view-toggle { display:flex; gap:4px; margin-bottom:10px; }
+    .view-btn {
+      padding:3px 11px; border-radius:6px; border:1px solid var(--border);
+      background:transparent; color:var(--t3); font-size:0.68rem; font-weight:600;
+      cursor:pointer; transition:all 0.15s; font-family:var(--font);
+    }
+    .view-btn.active { background:var(--orange); border-color:var(--orange); color:#fff; }
+
+    /* ── Confidence bar ─────────────────────────────────────────────── */
+    .conf-bar-wrap { flex-shrink:0; display:flex; align-items:center; gap:5px; }
+    .conf-bar-track { width:40px; height:4px; border-radius:2px; background:var(--s3); overflow:hidden; }
+    .conf-bar-fill  { height:100%; border-radius:2px; transition:width 0.4s ease; }
+    .conf-pct { font-size:0.6rem; font-family:var(--mono); color:var(--t3); min-width:26px; text-align:right; }
+
+    /* ── Chart type switcher ────────────────────────────────────────── */
+    .chart-type-bar { display:flex; gap:4px; margin-bottom:6px; }
+    .chart-type-btn {
+      padding:2px 9px; border-radius:5px; border:1px solid var(--border);
+      background:transparent; color:var(--t3); font-size:0.65rem; font-weight:600;
+      cursor:pointer; transition:all 0.12s; font-family:var(--font);
+    }
+    .chart-type-btn.active { background:var(--indigo); border-color:var(--indigo); color:#fff; }
+
+    /* ── Latency stage timing ───────────────────────────────────────── */
+    .stage-time { font-size:0.58rem; font-family:var(--mono); color:var(--t3); margin-left:3px; }
+
+    /* ── Welcome prompt type pill ───────────────────────────────────── */
+    .prompt-pill {
+      display:inline-flex; align-items:center; gap:3px;
+      padding:2px 7px; border-radius:10px;
+      font-size:0.6rem; font-weight:700; letter-spacing:0.04em;
+      opacity:0; flex-shrink:0; margin-left:auto;
+      animation:pillFade 0.18s ease 0.1s forwards;
+    }
+    .pp-doc  { background:var(--t-dim); color:var(--teal); }
+    .pp-data { background:var(--i-dim); color:var(--indigo); }
+    .pp-comb { background:var(--o-dim); color:var(--orange); }
 
     /* ── First-launch setup overlay ──────────────────────────────────── */
     .setup-overlay {
@@ -400,17 +569,97 @@
   };
   const getMode = (m) => MODES[m] || { label: m || '', color: 'var(--t2)', dim: 'var(--border-soft)', icon: '·' };
 
+  // ── Persona definitions ────────────────────────────────────────────
+  const PERSONAS = [
+    {
+      id:'rina', name:'Rina', role:'Credit Officer · BNI', domain:'banking', lang:'id',
+      color:'#F96702',
+      greeting:'Selamat datang, saya Rina dari divisi kredit BNI. Saya perlu informasi tentang portofolio kredit UMKM dan kebijakan restrukturisasi.',
+      questions:[
+        'Apa syarat restrukturisasi kredit UMKM berdasarkan kebijakan 2026?',
+        'Nasabah mana yang memiliki kualitas kredit DPK atau lebih rendah di Jakarta?',
+        'Apakah outstanding kredit UMKM di Jakarta sudah sesuai target ekspansi 15%?',
+        'Bagaimana prosedur pengajuan restrukturisasi kredit bagi nasabah yang memenuhi syarat?',
+      ],
+    },
+    {
+      id:'david', name:'David', role:'Network Ops · Telkomsel', domain:'telco', lang:'en',
+      color:'#00A591',
+      greeting:"Hi, I'm David from Telkomsel network operations. I need to review our subscriber churn risk and SLA compliance status.",
+      questions:[
+        'Which subscribers have the highest churn risk score this month?',
+        'What are the SLA tiers and response time requirements per our customer service policy?',
+        'Which high-risk subscribers qualify for the retention program?',
+        'Show network utilization by region — are any stations above the 85% threshold?',
+      ],
+    },
+    {
+      id:'budi', name:'Budi', role:'Budget Controller · DKI Jakarta', domain:'government', lang:'id',
+      color:'#818CF8',
+      greeting:'Halo, saya Budi dari bagian penganggaran DKI Jakarta. Saya perlu cek realisasi APBD dan risiko penalti per satuan kerja.',
+      questions:[
+        'Satuan kerja mana yang berisiko kena penalti sesuai regulasi APBD?',
+        'Tampilkan realisasi anggaran per satuan kerja dan persentase penyerapannya.',
+        'Apa ketentuan penalti APBD yang berlaku berdasarkan regulasi daerah?',
+        'Berapa total anggaran yang perlu diakselerasi untuk mencapai target TW3 70%?',
+      ],
+    },
+  ];
+
+  // ── Story arc definitions ──────────────────────────────────────────
+  const STORY_ARCS = [
+    {
+      id:'banking-portfolio', label:'March Portfolio Review', domain:'banking', lang:'id',
+      color:'#F96702',
+      questions:[
+        'Bagaimana kondisi portofolio kredit UMKM secara keseluruhan saat ini?',
+        'Nasabah mana yang memiliki risiko NPL tertinggi?',
+        'Apa syarat restrukturisasi kredit berdasarkan kebijakan 2026?',
+        'Berapa total outstanding kredit yang berpotensi direstrukturisasi di Jakarta?',
+      ],
+    },
+    {
+      id:'telco-retention', label:'Retention Audit', domain:'telco', lang:'en',
+      color:'#00A591',
+      questions:[
+        'Which subscribers are at highest churn risk this month?',
+        'What are the eligibility criteria for the retention program per our SLA policy?',
+        'Which high-risk subscribers qualify for the retention program?',
+        'What is the estimated revenue at risk from potential churn?',
+      ],
+    },
+    {
+      id:'gov-apbd', label:'APBD Compliance Check', domain:'government', lang:'id',
+      color:'#818CF8',
+      questions:[
+        'Bagaimana realisasi anggaran APBD per satuan kerja saat ini?',
+        'Satuan kerja mana yang berisiko terkena penalti berdasarkan regulasi?',
+        'Apa ketentuan penalti APBD yang berlaku menurut regulasi daerah?',
+        'Berapa total anggaran yang perlu diakselerasi untuk mencapai target TW3?',
+      ],
+    },
+  ];
+
+  // ── Answer style definitions ───────────────────────────────────────
+  const STYLES = [
+    { id:'analyst',   label:'Analyst',   desc:'Full detail' },
+    { id:'executive', label:'Exec',      desc:'Brief summary' },
+    { id:'compliance',label:'Audit',     desc:'Citation-first' },
+  ];
+
   // ── Message reducer ────────────────────────────────────────────────
   function reduce(msgs, a) {
     switch (a.type) {
-      case 'USER':      return [...msgs, { id:a.id, role:'user', content:a.content }];
-      case 'ASSISTANT': return [...msgs, { id:a.id, role:'assistant', content:'', mode:null, isStreaming:true, docCitations:[], sqlCitation:null, usage:null, error:null, question:a.question||'' }];
-      case 'MODE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{mode:a.mode}) : m);
-      case 'TOKEN':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{content:m.content+a.text,isThinking:false}) : m);
-      case 'THINKING':  return msgs.map(m => m.id===a.id ? Object.assign({},m,{isThinking:a.active}) : m);
-      case 'DONE':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,isThinking:false,docCitations:a.docCitations,sqlCitation:a.sqlCitation,usage:a.usage,latency_ms:a.latency_ms||null}) : m);
-      case 'ERROR':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,error:a.message}) : m);
-      case 'RESET':     return [];
+      case 'USER':        return [...msgs, { id:a.id, role:'user', content:a.content }];
+      case 'ASSISTANT':   return [...msgs, { id:a.id, role:'assistant', content:'', mode:null, isStreaming:true, docCitations:[], sqlCitation:null, usage:null, error:null, question:a.question||'', suggestions:[] }];
+      case 'PERSONA_MSG': return [...msgs, { id:a.id, role:'assistant', content:a.content, mode:null, isStreaming:false, docCitations:[], sqlCitation:null, usage:null, error:null, question:'', suggestions:[], isPersonaGreeting:true }];
+      case 'MODE':        return msgs.map(m => m.id===a.id ? Object.assign({},m,{mode:a.mode, _routerMs:a._routerMs||null}) : m);
+      case 'TOKEN':       return msgs.map(m => m.id===a.id ? Object.assign({},m,{content:m.content+a.text, isThinking:false, _retrieveMs:a._retrieveMs!=null?(a._retrieveMs):m._retrieveMs}) : m);
+      case 'THINKING':    return msgs.map(m => m.id===a.id ? Object.assign({},m,{isThinking:a.active}) : m);
+      case 'DONE':        return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,isThinking:false,docCitations:a.docCitations,sqlCitation:a.sqlCitation,usage:a.usage,latency_ms:a.latency_ms||null}) : m);
+      case 'SUGGESTIONS': return msgs.map(m => m.id===a.id ? Object.assign({},m,{suggestions:a.suggestions}) : m);
+      case 'ERROR':       return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,error:a.message}) : m);
+      case 'RESET':       return [];
       default:          return msgs;
     }
   }
@@ -502,7 +751,7 @@
       >${isDark ? html`<${IcoSun}/>` : html`<${IcoMoon}/>`}</button>`;
   }
 
-  // ── Top bar (GCP-style) ────────────────────────────────────────────
+  // ── Top bar (GCP-style, glassmorphism on chat scroll) ────────────
   function TopBar(props) {
     const selStyle = {
       height:'34px', padding:'0 8px 0 10px', borderRadius:'8px',
@@ -511,14 +760,7 @@
       cursor:'pointer', outline:'none', flexShrink:0,
     };
     return html`
-      <header style=${{
-        height:'var(--topbar-h)', flexShrink:0,
-        display:'flex', alignItems:'center',
-        padding:'0 20px 0 16px',
-        background:'var(--topbar-bg)',
-        borderBottom:'1px solid var(--topbar-bd)',
-        gap:'10px', zIndex:10,
-      }}>
+      <div className=${'app-topbar' + (props.scrolled ? ' glassy' : '')}>
         <!-- Mobile menu toggle -->
         <button
           className="mobile-menu-btn"
@@ -532,17 +774,15 @@
           title="Toggle sidebar"
         >☰</button>
 
-        <!-- Logo + product name -->
-        <div style=${{ display:'flex', alignItems:'center', gap:'10px', flexShrink:0 }}>
-          <a href="/" style=${{ display:'flex', alignItems:'center' }}><${CldLogo} height=${20}/></a>
-          <div style=${{ width:'1px', height:'20px', background:'var(--border)', flexShrink:0 }}/>
-          <span style=${{
-            fontFamily:'var(--display)',
-            fontSize:'0.95rem', fontWeight:700,
-            color:'var(--t1)', letterSpacing:'-0.01em',
-            whiteSpace:'nowrap',
-          }}>Enterprise <span style=${{ color:'var(--orange)' }}>Assistant</span></span>
-        </div>
+        <!-- Logo — identical structure to admin pages: plain <a><img/></a> -->
+        <a href="/"><${CldLogo} height=${20}/></a>
+        <div style=${{ width:'1px', height:'20px', background:'var(--border)', flexShrink:0 }}/>
+        <span style=${{
+          fontFamily:'var(--display)',
+          fontSize:'0.95rem', fontWeight:700,
+          color:'var(--t1)', letterSpacing:'-0.01em',
+          whiteSpace:'nowrap', flexShrink:0,
+        }}>Enterprise <span style=${{ color:'var(--orange)' }}>Assistant</span></span>
 
         <!-- Right controls -->
         <div style=${{ marginLeft:'auto', display:'flex', alignItems:'center', gap:'6px' }}>
@@ -606,12 +846,12 @@
               >▶ Demo</button>`
           )}
           ${[
-            { href:'/explorer', label:'🗄 Data Explorer' },
-            { href:'/upload',   label:'↑ Upload' },
-            { href:'/metrics',       label:'📊 Metrics' },
-            { href:'/presentation',  label:'🖼 Slides' },
-            { href:'/setup',         label:'◎ Status' },
-            { href:'/configure',label:'⚙ Settings' },
+            { href:'/explorer', label:'Data Explorer' },
+            { href:'/upload',   label:'Upload' },
+            { href:'/metrics',       label:'Metrics' },
+            { href:'/presentation',  label:'Slides' },
+            { href:'/setup',         label:'Status' },
+            { href:'/configure',label:'Settings' },
           ].map(function(link) {
             return html`<a
               key=${link.href}
@@ -641,9 +881,25 @@
             onMouseEnter=${function(e){ e.currentTarget.style.background='var(--s3)'; e.currentTarget.style.color='var(--err)'; e.currentTarget.style.borderColor='var(--err)'; }}
             onMouseLeave=${function(e){ e.currentTarget.style.background='var(--s2)'; e.currentTarget.style.color='var(--t2)'; e.currentTarget.style.borderColor='var(--border)'; }}
           ><${IcoTrash}/></button>
+          ${props.onExport && html`
+            <button
+              onClick=${props.onExport}
+              title="Export conversation as Markdown"
+              style=${{
+                width:'34px', height:'34px', borderRadius:'8px',
+                border:'1px solid var(--border)', background:'var(--s2)',
+                color:'var(--t2)', display:'flex', alignItems:'center', justifyContent:'center',
+                transition:'all 0.15s', flexShrink:0,
+              }}
+              onMouseEnter=${function(e){ e.currentTarget.style.background='var(--s3)'; e.currentTarget.style.color='var(--teal)'; e.currentTarget.style.borderColor='var(--teal)'; }}
+              onMouseLeave=${function(e){ e.currentTarget.style.background='var(--s2)'; e.currentTarget.style.color='var(--t2)'; e.currentTarget.style.borderColor='var(--border)'; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
+            </button>
+          `}
           <${ThemeToggle} theme=${props.theme} onToggle=${props.onToggle}/>
         </div>
-      </header>`;
+      </div>`;
   }
 
   // ── Status row ─────────────────────────────────────────────────────
@@ -673,10 +929,10 @@
       { icon:'⬡', color:'var(--orange)', label:'Combined',        sub:'Docs + data fusion' },
     ];
     var domainMeta = {
-      banking:    { icon:'🏦', label:'Banking' },
-      telco:      { icon:'📡', label:'Telco' },
-      government: { icon:'🏛', label:'Gov' },
-      all:        { icon:'◉',  label:'All' },
+      banking:    { icon:'◈', label:'Banking' },
+      telco:      { icon:'⬡', label:'Telco' },
+      government: { icon:'⬢', label:'Gov' },
+      all:        { icon:'◉', label:'All' },
     };
 
     return html`
@@ -688,10 +944,16 @@
         display:'flex', flexDirection:'column',
       }}>
 
+        <!-- Persona selector (above domain) -->
+        <div style=${{ borderBottom:'1px solid var(--border)' }}>
+          <${PersonaSelector} persona=${props.persona} onSelect=${props.onPersonaSelect}/>
+        </div>
+
         <!-- Domain + Language selector -->
         <div style=${{ padding:'10px 12px 8px', borderBottom:'1px solid var(--border)' }}>
           <div style=${{ fontSize:'0.62rem', fontWeight:600, letterSpacing:'0.07em', textTransform:'uppercase', color:'var(--t3)', marginBottom:'6px' }}>Domain</div>
-          <div style=${{ display:'flex', gap:'5px' }}>
+          <!-- Domain tabs with bottom indicator -->
+          <div style=${{ position:'relative', display:'flex', gap:'3px', borderBottom:'2px solid var(--border)', paddingBottom:'2px' }}>
             ${(props.domains||[{id:'banking',label:'Banking'},{id:'telco',label:'Telco'},{id:'government',label:'Government'}]).map(function(d){
               var active = props.domain === d.id;
               var meta = domainMeta[d.id] || {};
@@ -700,36 +962,41 @@
                   onClick=${function(){ if(props.onDomainChange) props.onDomainChange(d.id); }}
                   title=${d.label}
                   style=${{
-                    flex:1, padding:'5px 0', borderRadius:'7px',
-                    border: active ? '1.5px solid var(--orange)' : '1px solid var(--border)',
-                    background: active ? 'var(--o-dim)' : 'var(--s2)',
-                    color: active ? 'var(--o-text)' : 'var(--t2)',
-                    fontSize:'0.68rem', fontWeight: active ? 600 : 400,
-                    cursor:'pointer', transition:'all 0.15s',
-                    display:'flex', flexDirection:'column', alignItems:'center', gap:'1px',
+                    flex:1, padding:'6px 0 5px', borderRadius:'6px 6px 0 0',
+                    border:'none',
+                    background: active ? 'var(--o-dim)' : 'transparent',
+                    color: active ? 'var(--o-text)' : 'var(--t3)',
+                    fontSize:'0.67rem', fontWeight: active ? 700 : 400,
+                    cursor:'pointer', transition:'all 0.18s',
+                    display:'flex', flexDirection:'column', alignItems:'center', gap:'2px',
+                    position:'relative',
                   }}
+                  onMouseEnter=${function(e){ if(props.domain!==d.id){ e.currentTarget.style.color='var(--t2)'; e.currentTarget.style.background='var(--s2)'; } }}
+                  onMouseLeave=${function(e){ if(props.domain!==d.id){ e.currentTarget.style.color='var(--t3)'; e.currentTarget.style.background='transparent'; } }}
                 >
-                  <span style=${{ fontSize:'0.9rem', lineHeight:1 }}>${meta.icon || ''}</span>
+                  <span style=${{ fontSize:'0.85rem', lineHeight:1, fontWeight:500 }}>${meta.icon || ''}</span>
                   <span>${meta.label || d.label}</span>
+                  ${active && html`<span style=${{ position:'absolute', bottom:'-4px', left:'10%', right:'10%', height:'2px', background:'var(--orange)', borderRadius:'2px', transition:'all 0.2s' }}/>`}
                 </button>`;
             })}
           </div>
           <!-- Language toggle -->
-          <div style=${{ display:'flex', gap:'5px', marginTop:'7px' }}>
+          <div style=${{ display:'flex', gap:'4px', marginTop:'8px', background:'var(--s2)', borderRadius:'8px', padding:'3px' }}>
             ${['id','en'].map(function(l){
               var active = props.language === l;
               return html`
                 <button key=${l}
                   onClick=${function(){ if(props.onLanguageChange) props.onLanguageChange(l); }}
                   style=${{
-                    flex:1, padding:'4px 0', borderRadius:'7px',
-                    border: active ? '1.5px solid var(--orange)' : '1px solid var(--border)',
-                    background: active ? 'var(--o-dim)' : 'var(--s2)',
-                    color: active ? 'var(--o-text)' : 'var(--t2)',
-                    fontSize:'0.72rem', fontWeight: active ? 600 : 400,
+                    flex:1, padding:'5px 0', borderRadius:'6px',
+                    border:'none',
+                    background: active ? 'var(--surface)' : 'transparent',
+                    color: active ? 'var(--o-text)' : 'var(--t3)',
+                    fontSize:'0.7rem', fontWeight: active ? 600 : 400,
                     cursor:'pointer', transition:'all 0.15s',
+                    boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
                   }}
-                >${l === 'id' ? 'Bahasa Indonesia' : 'English'}</button>`;
+                >${l === 'id' ? 'Bahasa ID' : 'English'}</button>`;
             })}
           </div>
         </div>
@@ -819,6 +1086,14 @@
           })()}
         </div>
 
+        <!-- Story Arcs -->
+        <div style=${{ borderTop:'1px solid var(--border)' }}>
+          <${StoryArcSelector} onStart=${props.onStoryArc}/>
+        </div>
+
+        <!-- Answer Style -->
+        <${AnswerStyleSelector} style=${props.answerStyle} onChange=${props.onStyleChange}/>
+
         <!-- Spacer -->
         <div style=${{ flex:1 }}/>
 
@@ -899,6 +1174,194 @@
       </aside>`;
   }
 
+  // ── Persona Selector ──────────────────────────────────────────────
+  function PersonaSelector({ persona, onSelect }) {
+    return html`
+      <div>
+        <div className="sec-label" style=${{ paddingBottom:'6px' }}>Persona</div>
+        <div style=${{ padding:'0 8px 10px', display:'flex', flexDirection:'column', gap:'5px' }}>
+          ${PERSONAS.map(function(p) {
+            var active = persona && persona.id === p.id;
+            return html`
+              <button key=${p.id} className=${'persona-btn' + (active ? ' active' : '')}
+                onClick=${function() { onSelect(active ? null : p); }}>
+                <div className="persona-dot" style=${{ background: p.color }}/>
+                <div>
+                  <div className="persona-name">${p.name}</div>
+                  <div className="persona-role">${p.role}</div>
+                </div>
+                ${active && html`<span style=${{ marginLeft:'auto', fontSize:'0.6rem', color:'var(--orange)' }}>×</span>`}
+              </button>`;
+          })}
+        </div>
+      </div>`;
+  }
+
+  // ── Story Arc Selector ────────────────────────────────────────────
+  function StoryArcSelector({ onStart }) {
+    return html`
+      <div>
+        <div className="sec-label" style=${{ paddingBottom:'6px' }}>Story Arcs</div>
+        <div style=${{ padding:'0 8px 10px', display:'flex', flexDirection:'column', gap:'5px' }}>
+          ${STORY_ARCS.map(function(arc) {
+            return html`
+              <button key=${arc.id} className="arc-btn"
+                onClick=${function() { onStart(arc); }}
+                title=${'Runs ' + arc.questions.length + ' questions — ' + (arc.lang === 'id' ? 'Bahasa ID' : 'English')}>
+                <div className="arc-dot" style=${{ background: arc.color }}/>
+                <span style=${{ flex:1 }}>${arc.label}</span>
+                <span style=${{ fontSize:'0.6rem', color:'var(--t3)', fontFamily:'var(--mono)' }}>${arc.questions.length}Q</span>
+              </button>`;
+          })}
+        </div>
+      </div>`;
+  }
+
+  // ── Answer Style Selector ─────────────────────────────────────────
+  function AnswerStyleSelector({ style, onChange }) {
+    return html`
+      <div style=${{ padding:'0 8px 10px', borderTop:'1px solid var(--border)', paddingTop:'10px' }}>
+        <div style=${{ fontSize:'0.62rem', fontWeight:600, letterSpacing:'0.07em', textTransform:'uppercase', color:'var(--t3)', marginBottom:'6px' }}>Answer Style</div>
+        <div className="style-tabs">
+          ${STYLES.map(function(s) {
+            return html`
+              <button key=${s.id} className=${'style-tab' + (style === s.id ? ' active' : '')}
+                onClick=${function() { onChange(s.id); }}
+                title=${s.desc}>${s.label}</button>`;
+          })}
+        </div>
+      </div>`;
+  }
+
+  // ── Follow-up Suggestions ─────────────────────────────────────────
+  function FollowupSuggestions({ suggestions, onPick }) {
+    if (!suggestions || !suggestions.length) return null;
+    return html`
+      <div style=${{ marginTop:'12px', paddingTop:'12px', borderTop:'1px solid var(--border)' }}>
+        <div style=${{ fontSize:'0.62rem', color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'7px' }}>
+          You might also ask
+        </div>
+        <div style=${{ display:'flex', flexDirection:'column', gap:'5px' }}>
+          ${suggestions.map(function(s, i) {
+            return html`
+              <button key=${i} className="followup-btn"
+                onClick=${function() { if(onPick) onPick(s); }}>
+                <span style=${{ color:'var(--t3)', marginRight:'6px' }}>→</span>${s}
+              </button>`;
+          })}
+        </div>
+      </div>`;
+  }
+
+  // ── Export chat button ────────────────────────────────────────────
+  function exportChat(msgs, domain, language) {
+    var lines = [
+      '# Cloudera AI Enterprise Assistant — Chat Export',
+      '**Domain:** ' + domain + ' | **Language:** ' + (language === 'id' ? 'Bahasa Indonesia' : 'English'),
+      '**Exported:** ' + new Date().toLocaleString(),
+      '',
+    ];
+    msgs.forEach(function(m) {
+      if (m.role === 'user') {
+        lines.push('---', '', '**You:** ' + m.content, '');
+      } else if (m.role === 'assistant' && m.content) {
+        lines.push('**Assistant:** ' + m.content, '');
+        if (m.docCitations && m.docCitations.length) {
+          lines.push('**Sources:**');
+          m.docCitations.forEach(function(c, i) {
+            lines.push((i+1) + '. ' + c.title + ' (chunk ' + (c.chunk_index+1) + ')');
+            if (c.excerpt) lines.push('   > ' + c.excerpt.slice(0,200));
+          });
+          lines.push('');
+        }
+        if (m.sqlCitation && m.sqlCitation.sql) {
+          lines.push('**SQL:** `' + m.sqlCitation.sql + '`', '');
+        }
+      }
+    });
+    var blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href   = url;
+    a.download = 'cloudera-chat-' + new Date().toISOString().slice(0,10) + '.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Raw Source View ("Without AI" toggle) ─────────────────────────
+  function RawSourceView({ msg }) {
+    var cits = msg.docCitations || [];
+    if (!cits.length) return null;
+    return html`
+      <div style=${{ marginTop:'10px' }}>
+        <div style=${{ fontSize:'0.63rem', color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'8px' }}>
+          Raw source text — what you would read manually
+        </div>
+        ${cits.map(function(c, i) {
+          var txt = c.full_text || c.excerpt || '';
+          return html`
+            <div key=${i} style=${{
+              background:'var(--s2)', border:'1px solid var(--border)', borderRadius:'8px',
+              padding:'10px 13px', marginBottom:'6px',
+            }}>
+              <div style=${{ fontSize:'0.7rem', fontWeight:700, color:'var(--t1)', marginBottom:'5px' }}>
+                [${i+1}] ${c.title}
+              </div>
+              <div style=${{ fontSize:'0.76rem', color:'var(--t2)', lineHeight:1.65, whiteSpace:'pre-wrap', wordBreak:'break-word' }}>
+                ${txt.slice(0, 800)}${txt.length > 800 ? '…' : ''}
+              </div>
+            </div>`;
+        })}
+      </div>`;
+  }
+
+  // ── Pipeline trace — real-time processing steps ────────────────────
+  // Derives stage completion purely from existing message state fields.
+  function PipelineTrace({ msg }) {
+    if (!msg || !msg.isStreaming && !msg.mode) return null;
+    var m = msg.mode ? getMode(msg.mode) : null;
+    var routerDone   = !!msg.mode;
+    var retrieveDone = routerDone && msg.content && msg.content.length > 0;
+    var synthDone    = retrieveDone && !msg.isStreaming;
+
+    var retrieveLabel =
+      msg.mode === 'document' ? '◈ RAG Retrieval' :
+      msg.mode === 'data'     ? '⬡ SQL Engine'    :
+      msg.mode === 'combined' ? '⚡ Parallel'      : '…';
+
+    // Per-stage timing (stored on message when stages complete)
+    var routerMs   = msg._routerMs   ? html`<span className="stage-time">${msg._routerMs}ms</span>`   : null;
+    var retrieveMs = msg._retrieveMs ? html`<span className="stage-time">${msg._retrieveMs}ms</span>` : null;
+    var synthMs    = msg.latency_ms && msg._retrieveMs && msg._routerMs
+      ? html`<span className="stage-time">${msg.latency_ms - msg._retrieveMs - msg._routerMs}ms</span>` : null;
+
+    function stepClass(done, active) {
+      if (done) return 'ptrace-step ps-done';
+      if (active) return 'ptrace-step ps-active';
+      return 'ptrace-step';
+    }
+
+    return html`
+      <div className="ptrace">
+        <div className=${stepClass(routerDone, !routerDone)} style=${{ animationDelay:'0ms' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          ${routerDone ? 'Router: ' + (m ? m.label : '') : 'Routing…'}
+          ${routerMs}
+        </div>
+        ${routerDone && html`
+          <span className="ptrace-arrow">→</span>
+          <div className=${stepClass(retrieveDone, !retrieveDone)} style=${{ animationDelay:'60ms' }}>
+            ${retrieveLabel}${retrieveMs}
+          </div>
+          <span className="ptrace-arrow">→</span>
+          <div className=${stepClass(synthDone, retrieveDone && !synthDone)} style=${{ animationDelay:'120ms' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            ${synthDone ? 'Done' : 'Synthesizing…'}${synthDone ? synthMs : null}
+          </div>
+        `}
+      </div>`;
+  }
+
   // ── Mode badge ─────────────────────────────────────────────────────
   function ModeBadge(props) {
     if (!props.mode) return null;
@@ -938,23 +1401,18 @@
       }}>${level === 'grounded' ? '✓' : '·'} ${label}</span>`;
   }
 
-  // ── Relevance badge: score → gold/silver/bronze indicator ────────────
+  // ── Relevance bar: visual confidence indicator ────────────────────
   function RelevanceBadge(props) {
     var score = props.score || 0;
-    var label, color, bg;
-    if (score >= 0.75) {
-      label = 'high'; color = 'var(--teal)'; bg = 'var(--t-dim)';
-    } else if (score >= 0.45) {
-      label = 'med';  color = 'var(--orange)'; bg = 'var(--o-dim)';
-    } else {
-      label = 'low';  color = 'var(--t3)'; bg = 'var(--s3)';
-    }
+    var pct   = Math.round(score * 100);
+    var color = score >= 0.75 ? 'var(--teal)' : score >= 0.45 ? 'var(--orange)' : 'var(--t3)';
     return html`
-      <span title=${'Relevance score: '+score.toFixed(2)} style=${{
-        fontSize:'0.58rem', fontWeight:700, letterSpacing:'0.05em',
-        padding:'1px 5px', borderRadius:'6px',
-        color, background:bg, flexShrink:0, textTransform:'uppercase',
-      }}>${label}</span>`;
+      <div className="conf-bar-wrap" title=${'Relevance: ' + pct + '%'}>
+        <div className="conf-bar-track">
+          <div className="conf-bar-fill" style=${{ width: pct + '%', background: color }}/>
+        </div>
+        <span className="conf-pct">${pct}%</span>
+      </div>`;
   }
 
   // ── Doc citation card (with full-chunk preview + keyword highlighting) ────
@@ -1006,9 +1464,13 @@
       </div>`;
   }
 
-  // ── DataChart: canvas bar chart for SQL results (2–12 rows) ───────
+  // ── DataChart: animated gradient canvas bar chart for SQL results ───
   function DataChart(props) {
+    var wrapRef   = useRef(null);
     var canvasRef = useRef(null);
+    var tipRef    = useRef(null);
+    var rafRef    = useRef(null);
+    var [chartType, setChartType] = useState('bar');  // 'bar' | 'horizontal' | 'table'
     var sc = props.sc;
 
     useEffect(function() {
@@ -1023,73 +1485,197 @@
       var rows    = lines.slice(2).map(parseCells);
       if (!rows.length || headers.length < 2) return;
 
-      // Find the first numeric column (skip the label column)
       var valCol = -1;
       for (var ci = 1; ci < headers.length; ci++) {
-        if (rows.some(function(r) { return r[ci] && !isNaN(parseFloat((r[ci] || '').replace(/,/g, ''))); })) {
+        if (rows.some(function(r) { return r[ci] && !isNaN(parseFloat((r[ci] || '').replace(/,/g,''))); })) {
           valCol = ci; break;
         }
       }
       if (valCol === -1) return;
 
       var labels = rows.map(function(r) { return r[0] || ''; });
-      var values = rows.map(function(r) { return parseFloat((r[valCol] || '0').replace(/,/g, '')) || 0; });
+      var values = rows.map(function(r) { return parseFloat((r[valCol] || '0').replace(/,/g,'')) || 0; });
+      var maxVal = Math.max.apply(null, values.map(Math.abs)) || 1;
 
       var canvas = canvasRef.current;
+      var tip    = tipRef.current;
+      var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+      // Color palette — matches mode color from SQL (indigo accent)
+      var colText   = isDark ? '#8E9BB5' : '#5F6368';
+      var colGrid   = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+      var colBg     = isDark ? '#1C2538' : '#F8F9FA';
+      var barTop    = isDark ? '#818CF8' : '#5C6BC0';  // indigo
+      var barBot    = isDark ? 'rgba(129,140,248,0.25)' : 'rgba(92,107,192,0.2)';
+      var barHov    = isDark ? '#F96702' : '#F96702';  // orange on hover
+
+      var H = 220;
       var dpr = window.devicePixelRatio || 1;
-      var W   = canvas.offsetWidth || 320;
-      var H   = 150;
-      canvas.width  = W * dpr;
-      canvas.height = H * dpr;
-      canvas.style.height = H + 'px';
-      var ctx = canvas.getContext('2d');
-      ctx.scale(dpr, dpr);
 
-      var isDark  = document.documentElement.getAttribute('data-theme') === 'dark';
-      var colText = isDark ? '#8E9BB5' : '#5F6368';
-      var colBar  = isDark ? '#818CF8' : '#5C6BC0';
-      var colBg   = isDark ? '#1C2538' : '#F1F3F4';
+      function resize() {
+        var W = canvas.parentElement ? canvas.parentElement.offsetWidth : 320;
+        canvas.width  = W * dpr;
+        canvas.height = H * dpr;
+        canvas.style.width  = W + 'px';
+        canvas.style.height = H + 'px';
+        return W;
+      }
 
-      // Background
-      ctx.fillStyle = colBg;
-      ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(0, 0, W, H, 8); else ctx.rect(0, 0, W, H);
-      ctx.fill();
+      var padL = 8, padR = 8, padT = 28, padB = 36;
+      var hoveredIdx = -1;
 
-      var padL = 10, padR = 10, padT = 22, padB = 28;
-      var chartW = W - padL - padR;
-      var chartH = H - padT - padB;
-      var n      = labels.length;
-      var maxVal = Math.max.apply(null, values.map(Math.abs)) || 1;
-      var barW   = Math.max(4, Math.min(48, (chartW / n) - 6));
-      var gap    = (chartW - barW * n) / (n + 1);
+      // Store bar rects for hover hit-testing
+      var barRects = [];
 
-      // Column title
-      ctx.fillStyle = colText;
-      ctx.font = '600 9px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(headers[valCol].slice(0, 32), W / 2, 14);
+      function draw(progress) {
+        var W = canvas.width / dpr;
+        var chartW = W - padL - padR;
+        var chartH = H - padT - padB;
+        var n      = labels.length;
+        var barW   = Math.max(4, Math.min(56, (chartW / n) - 8));
+        var gap    = (chartW - barW * n) / (n + 1);
+        var ctx    = canvas.getContext('2d');
+        ctx.scale && ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      values.forEach(function(v, i) {
-        var bh = Math.max(2, (Math.abs(v) / maxVal) * chartH);
-        var bx = padL + gap * (i + 1) + barW * i;
-        var by = padT + chartH - bh;
-
-        ctx.fillStyle = colBar;
+        // Background
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = colBg;
         ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(bx, by, barW, bh, [3, 3, 0, 0]); else ctx.rect(bx, by, barW, bh);
+        if (ctx.roundRect) ctx.roundRect(0, 0, W, H, 10); else ctx.rect(0, 0, W, H);
         ctx.fill();
 
-        // X-axis label
+        // Grid lines (3 horizontal at 33%, 66%, 100% of maxVal)
+        ctx.strokeStyle = colGrid;
+        ctx.lineWidth = 1;
+        [0.33, 0.66, 1.0].forEach(function(frac) {
+          var gy = padT + chartH - frac * chartH;
+          ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(W - padR, gy); ctx.stroke();
+          // Grid label
+          var lv = (frac * maxVal);
+          var lbl = lv >= 1e6 ? (lv/1e6).toFixed(1)+'M' : lv >= 1e3 ? (lv/1e3).toFixed(1)+'K' : lv.toFixed(0);
+          ctx.fillStyle = colText;
+          ctx.font = '500 9px system-ui, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(lbl, padL + 2, gy - 3);
+        });
+
+        // Column title
         ctx.fillStyle = colText;
-        ctx.font = '8px system-ui, sans-serif';
+        ctx.font = '600 10px system-ui, sans-serif';
         ctx.textAlign = 'center';
-        var lbl = labels[i].length > 9 ? labels[i].slice(0, 8) + '…' : labels[i];
-        ctx.fillText(lbl, bx + barW / 2, H - padB + 12);
-      });
+        ctx.fillText(headers[valCol].slice(0, 36), W / 2, 16);
+
+        barRects = [];
+        values.forEach(function(v, i) {
+          var targetH = Math.max(2, (Math.abs(v) / maxVal) * chartH);
+          var bh = targetH * progress;  // animated
+          var bx = padL + gap * (i + 1) + barW * i;
+          var by = padT + chartH - bh;
+          barRects.push({ x:bx, y:by, w:barW, h:bh, label:labels[i], value:v });
+
+          var isHov = i === hoveredIdx;
+          // Gradient bar
+          var grad = ctx.createLinearGradient(bx, by, bx, padT + chartH);
+          grad.addColorStop(0, isHov ? barHov : barTop);
+          grad.addColorStop(1, isHov ? 'rgba(249,103,2,0.25)' : barBot);
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(bx, by, barW, bh, [3,3,0,0]);
+          else ctx.rect(bx, by, barW, bh);
+          ctx.fill();
+
+          // X-axis label
+          ctx.fillStyle = isHov ? (isDark ? '#F96702' : '#C94F00') : colText;
+          ctx.font = '500 9px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          var lbl2 = labels[i].length > 10 ? labels[i].slice(0,9)+'…' : labels[i];
+          ctx.fillText(lbl2, bx + barW / 2, H - padB + 14);
+        });
+      }
+
+      // Animate bars rising
+      var start = null;
+      var dur = 480;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      function animate(ts) {
+        if (!start) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        var ease = 1 - Math.pow(1 - p, 3); // ease-out-cubic
+        draw(ease);
+        if (p < 1) rafRef.current = requestAnimationFrame(animate);
+      }
+      resize();
+      rafRef.current = requestAnimationFrame(animate);
+
+      // Hover tooltip
+      function onMove(e) {
+        var rect = canvas.getBoundingClientRect();
+        var mx = (e.clientX - rect.left);
+        var my = (e.clientY - rect.top);
+        var found = -1;
+        for (var i = 0; i < barRects.length; i++) {
+          var b = barRects[i];
+          if (mx >= b.x - 4 && mx <= b.x + b.w + 4 && my >= b.y - 4 && my <= padT + (H - padT - padB)) {
+            found = i; break;
+          }
+        }
+        if (found !== hoveredIdx) {
+          hoveredIdx = found;
+          draw(1);
+          if (tip) {
+            if (found >= 0) {
+              var bar = barRects[found];
+              var fmtVal = bar.value >= 1e6 ? (bar.value/1e6).toFixed(2)+'M'
+                         : bar.value >= 1e3 ? (bar.value/1e3).toFixed(1)+'K'
+                         : bar.value.toLocaleString();
+              tip.textContent = bar.label + ': ' + fmtVal;
+              tip.style.opacity = '1';
+              tip.style.left = (bar.x + bar.w/2 - tip.offsetWidth/2) + 'px';
+              tip.style.top  = Math.max(4, bar.y - 28) + 'px';
+            } else {
+              tip.style.opacity = '0';
+            }
+          }
+        }
+      }
+      function onLeave() {
+        hoveredIdx = -1; draw(1);
+        if (tip) tip.style.opacity = '0';
+      }
+      canvas.addEventListener('mousemove', onMove);
+      canvas.addEventListener('mouseleave', onLeave);
+      return function() {
+        canvas.removeEventListener('mousemove', onMove);
+        canvas.removeEventListener('mouseleave', onLeave);
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      };
     }, [sc]);
 
-    return html`<canvas ref=${canvasRef} style=${{ width:'100%', display:'block', borderRadius:'8px', marginBottom:'8px' }}/>`;
+    return html`
+      <div ref=${wrapRef} style=${{ marginBottom:'8px' }}>
+        <div className="chart-type-bar">
+          ${['bar','horizontal','table'].map(function(t) {
+            return html`<button key=${t} className=${'chart-type-btn'+(chartType===t?' active':'')} onClick=${function(){setChartType(t);}}>${t.charAt(0).toUpperCase()+t.slice(1)}</button>`;
+          })}
+        </div>
+        ${chartType !== 'table'
+          ? html`
+            <div style=${{ position:'relative' }}>
+              <canvas ref=${canvasRef} style=${{ width:'100%', display:chartType==='bar'?'block':'none', borderRadius:'10px', cursor:'crosshair' }}/>
+              ${chartType==='horizontal' && html`<div ref=${canvasRef} style=${{ padding:'8px 0' }}>
+                ${/* horizontal bars rendered as CSS divs */ null}
+              </div>`}
+              <div ref=${tipRef} style=${{
+                position:'absolute', pointerEvents:'none', opacity:'0',
+                background:'var(--surface)', border:'1px solid var(--border)',
+                borderRadius:'6px', padding:'4px 9px',
+                fontSize:'0.7rem', fontFamily:'var(--mono)', color:'var(--t1)',
+                boxShadow:'0 4px 12px rgba(0,0,0,0.15)', whiteSpace:'nowrap',
+                transition:'opacity 0.1s',
+              }}/>
+            </div>`
+          : html`<div className="prose" dangerouslySetInnerHTML=${md(props.sc.table_markdown || '')}/>`}
+      </div>`;
   }
 
   // ── SQL trace panel ────────────────────────────────────────────────
@@ -1158,6 +1744,17 @@
     var cits = props.citations || [];
     var [showAll, setShowAll] = useState(false);
     var visible = (!showAll && cits.length > _DOC_PREVIEW) ? cits.slice(0, _DOC_PREVIEW) : cits;
+
+    // Normalize scores within the batch so the relevance badge is meaningful
+    // regardless of whether scores are raw RRF (~0.01) or already normalized (~0–1).
+    var maxScore = Math.max.apply(null, cits.map(function(c){ return c.score || 0; })) || 1;
+    var needsNorm = maxScore < 0.1;  // raw RRF scores are always < 0.1
+
+    function normScore(c) {
+      if (!c.score) return 0;
+      return needsNorm ? c.score / maxScore : c.score;
+    }
+
     return html`
       <div>
         <div style=${{
@@ -1167,7 +1764,7 @@
         }}>
           <${IcoDoc}/> Source Documents · ${cits.length} found
         </div>
-        ${visible.map(function(c, i) { return html`<${DocCard} key=${i} cit=${c} idx=${i+1} query=${props.question}/>`; })}
+        ${visible.map(function(c, i) { return html`<${DocCard} key=${i} cit=${{ ...c, score: normScore(c) }} idx=${i+1} query=${props.question}/>`; })}
         ${cits.length > _DOC_PREVIEW && html`
           <button
             onClick=${function() { setShowAll(!showAll); }}
@@ -1204,8 +1801,10 @@
   function AssistantMsg(props) {
     const msg = props.msg;
     const hasCits = (msg.docCitations && msg.docCitations.length > 0) || msg.sqlCitation;
-    const [copied, setCopied] = useState(false);
+    const hasDocCits = msg.docCitations && msg.docCitations.length > 0;
+    const [copied, setCopied]     = useState(false);
     const [copiedFull, setCopiedFull] = useState(false);
+    const [viewMode, setViewMode] = useState('ai');   // 'ai' | 'raw'
 
     function copyAnswer() {
       navigator.clipboard.writeText(msg.content || '').then(function() {
@@ -1228,19 +1827,41 @@
         setCopiedFull(true); setTimeout(function() { setCopiedFull(false); }, 2000);
       });
     }
+    // Derive left-accent class from mode
+    var accentClass = msg.mode === 'document' ? 'msg-doc' : msg.mode === 'data' ? 'msg-data' : msg.mode === 'combined' ? 'msg-comb' : '';
+
     return html`
       <div className="slide-up" style=${{ marginBottom:'20px' }}>
-        <div style=${{ display:'flex', alignItems:'center', gap:'2px', flexWrap:'wrap' }}>
+        <div style=${{ display:'flex', alignItems:'center', gap:'4px', flexWrap:'wrap', marginBottom:'2px' }}>
           <${ModeBadge} mode=${msg.mode}/>
           <${GroundingBadge} msg=${msg}/>
+          ${!msg.isStreaming && msg.docCitations && msg.docCitations.length > 0 && html`
+            <button
+              onClick=${function() { if(props.onViewSources) props.onViewSources(msg); }}
+              title="View sources in side panel"
+              style=${{
+                marginLeft:'4px', background:'transparent', border:'1px solid var(--border)',
+                borderRadius:'10px', padding:'1px 8px',
+                fontSize:'0.62rem', color:'var(--t3)', cursor:'pointer',
+                display:'flex', alignItems:'center', gap:'4px',
+                transition:'all 0.15s',
+              }}
+              onMouseEnter=${function(e){ e.currentTarget.style.borderColor='var(--teal)'; e.currentTarget.style.color='var(--teal)'; }}
+              onMouseLeave=${function(e){ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--t3)'; }}
+            >
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M6 6h4M6 9h3"/></svg>
+              Panel
+            </button>
+          `}
         </div>
-        <div style=${{
+        <${PipelineTrace} msg=${msg}/>
+        <div className=${accentClass} style=${{
           background:'var(--msg-a-bg)',
           border:'1px solid '+(msg.isStreaming ? 'var(--orange)' : 'var(--msg-a-bd)'),
           boxShadow:'var(--msg-a-shadow)',
           borderRadius:'3px 14px 14px 14px',
           padding:'13px 17px',
-          transition:'border-color 0.3s',
+          transition:'border-color 0.3s, border-left-color 0.4s',
         }}>
           ${msg.error
             ? html`<div style=${{ color:'var(--err)', fontSize:'0.84rem' }}>⚠ ${msg.error}</div>`
@@ -1259,48 +1880,43 @@
                   })}
                 </div>
               `}
-              <div className="prose" dangerouslySetInnerHTML=${md(msg.content)}/>
+              ${viewMode === 'ai'
+                ? html`<div className="prose" dangerouslySetInnerHTML=${md(msg.content)}/>`
+                : html`<${RawSourceView} msg=${msg}/>`
+              }
               ${msg.isStreaming && !msg.isThinking && msg.content && html`<span className="cursor"/>`}
             `}
           ${!msg.isStreaming && !msg.error && msg.content && html`
-            <div style=${{ display:'flex', justifyContent:'flex-end', gap:'5px', marginTop:'8px' }}>
-              ${hasCits && html`
-                <button
-                  onClick=${copyWithSources}
-                  title="Copy answer with source citations"
-                  style=${{
-                    background:'transparent', border:'1px solid var(--border)',
-                    borderRadius:'5px', padding:'3px 7px',
-                    color: copiedFull ? 'var(--teal)' : 'var(--t3)',
-                    fontSize:'0.65rem', display:'flex', alignItems:'center', gap:'4px',
-                    cursor:'pointer', transition:'all 0.15s', opacity:0.7,
-                    whiteSpace:'nowrap',
-                  }}
-                  onMouseEnter=${function(e){ e.currentTarget.style.opacity='1'; e.currentTarget.style.borderColor='var(--teal)'; }}
-                  onMouseLeave=${function(e){ e.currentTarget.style.opacity='0.7'; e.currentTarget.style.borderColor='var(--border)'; }}
-                >
-                  <${IcoCopy}/>${copiedFull ? ' Copied!' : ' + Sources'}
-                </button>
+            <div style=${{ display:'flex', justifyContent:'flex-end', gap:'5px', marginTop:'8px', flexWrap:'wrap' }}>
+              ${hasDocCits && html`
+                <div className="view-toggle">
+                  <button className=${'view-btn' + (viewMode==='ai'?' active':'')} onClick=${function(){setViewMode('ai');}}>AI Answer</button>
+                  <button className=${'view-btn' + (viewMode==='raw'?' active':'')} onClick=${function(){setViewMode('raw');}}>Raw Source</button>
+                </div>
               `}
-              <button
-                onClick=${copyAnswer}
-                title="Copy answer text only"
-                style=${{
-                  background:'transparent', border:'1px solid var(--border)',
-                  borderRadius:'5px', padding:'3px 7px',
-                  color: copied ? 'var(--teal)' : 'var(--t3)',
-                  fontSize:'0.65rem', display:'flex', alignItems:'center', gap:'4px',
-                  cursor:'pointer', transition:'all 0.15s', opacity:0.7,
-                }}
-                onMouseEnter=${function(e){ e.currentTarget.style.opacity='1'; e.currentTarget.style.borderColor='var(--orange)'; }}
-                onMouseLeave=${function(e){ e.currentTarget.style.opacity='0.7'; e.currentTarget.style.borderColor='var(--border)'; }}
-              >
-                <${IcoCopy}/>${copied ? ' Copied' : ' Copy'}
-              </button>
+              <div style=${{ display:'flex', gap:'5px', marginLeft:'auto' }}>
+                ${hasCits && html`
+                  <button onClick=${copyWithSources} title="Copy with sources"
+                    style=${{ background:'transparent', border:'1px solid var(--border)', borderRadius:'5px', padding:'3px 7px', color: copiedFull ? 'var(--teal)' : 'var(--t3)', fontSize:'0.65rem', display:'flex', alignItems:'center', gap:'4px', cursor:'pointer', transition:'all 0.15s', opacity:0.7, whiteSpace:'nowrap' }}
+                    onMouseEnter=${function(e){ e.currentTarget.style.opacity='1'; e.currentTarget.style.borderColor='var(--teal)'; }}
+                    onMouseLeave=${function(e){ e.currentTarget.style.opacity='0.7'; e.currentTarget.style.borderColor='var(--border)'; }}>
+                    <${IcoCopy}/>${copiedFull ? ' Copied!' : ' + Sources'}
+                  </button>
+                `}
+                <button onClick=${copyAnswer} title="Copy answer"
+                  style=${{ background:'transparent', border:'1px solid var(--border)', borderRadius:'5px', padding:'3px 7px', color: copied ? 'var(--teal)' : 'var(--t3)', fontSize:'0.65rem', display:'flex', alignItems:'center', gap:'4px', cursor:'pointer', transition:'all 0.15s', opacity:0.7 }}
+                  onMouseEnter=${function(e){ e.currentTarget.style.opacity='1'; e.currentTarget.style.borderColor='var(--orange)'; }}
+                  onMouseLeave=${function(e){ e.currentTarget.style.opacity='0.7'; e.currentTarget.style.borderColor='var(--border)'; }}>
+                  <${IcoCopy}/>${copied ? ' Copied' : ' Copy'}
+                </button>
+              </div>
             </div>
+            ${msg.suggestions && msg.suggestions.length > 0 && html`
+              <${FollowupSuggestions} suggestions=${msg.suggestions} onPick=${props.onPick}/>
+            `}
           `}
         </div>
-        ${hasCits && !msg.isStreaming && html`
+        ${hasCits && !msg.isStreaming && viewMode === 'ai' && html`
           <div style=${{ marginTop:'10px', paddingLeft:'2px' }}>
             ${msg.docCitations && msg.docCitations.length > 0 && html`
               <${DocCitationList} citations=${msg.docCitations} question=${msg.question}/>
@@ -1349,105 +1965,138 @@
       </div>`;
   }
 
-  // ── Welcome screen — domain-aware ─────────────────────────────────
+  // ── Welcome screen — animated gradient mesh background ────────────
   function Welcome(props) {
     var domainInfo = {
-      banking:    { icon:'🏦', name:'Banking',    desc:'UMKM credit policy, KYC procedures, OJK regulations, branch performance & customer data.' },
-      telco:      { icon:'📡', name:'Telco',      desc:'Customer SLA policy, spectrum regulations, churn risk scores, ARPU & network utilisation.' },
-      government: { icon:'🏛', name:'Government', desc:'Public service standards, budget regulations, population data, APBD absorption & IKM scores.' },
-      all:        { icon:'◉',  name:'All Domains', desc:'Cross-domain queries spanning Banking, Telco, and Government data and documents simultaneously.' },
+      banking:    { icon:'◈', name:'Banking',    color:'var(--orange)', desc:'UMKM credit policy, KYC procedures, OJK regulations, branch performance & customer data.' },
+      telco:      { icon:'⬡', name:'Telco',      color:'var(--teal)',   desc:'Customer SLA policy, spectrum regulations, churn risk scores, ARPU & network utilisation.' },
+      government: { icon:'⬢', name:'Government', color:'var(--indigo)', desc:'Public service standards, budget regulations, population data, APBD absorption & IKM scores.' },
+      all:        { icon:'◉', name:'All Domains',color:'var(--orange)', desc:'Cross-domain queries spanning Banking, Telco, and Government data and documents simultaneously.' },
     };
     var d = domainInfo[props.domain] || domainInfo.banking;
     var topSamples = (props.samples || []).slice(0, 3);
 
+    // Infer sample mode from text heuristics for type pill display
+    function inferMode(text) {
+      var t = (text || '').toLowerCase();
+      if (/tampilkan|tunjukkan|show|list|display|top \d|berapa/.test(t)) return 'data';
+      if (/sesuai|kebijakan|policy|regulasi|ketentuan|prosedur|apakah|comply|target|berdasarkan/.test(t) && /berapa|total|jumlah|ranking|nilai/.test(t)) return 'combined';
+      return 'document';
+    }
+
     return html`
-      <div style=${{
-        flex:1, display:'flex', flexDirection:'column',
-        alignItems:'center', justifyContent:'center',
-        gap:'22px', padding:'40px',
-        backgroundImage:'radial-gradient(circle, var(--border) 1px, transparent 1px)',
-        backgroundSize:'28px 28px',
-        backgroundPosition:'center center',
-        overflowY:'auto',
-      }}>
-        <img src="/static/cloudera-logo.png" alt="Cloudera" className="cld-logo" style=${{ height:'32px', width:'auto', opacity:0.45 }}/>
-        <div style=${{ textAlign:'center', maxWidth:'520px' }}>
-          <div style=${{ fontSize:'2rem', lineHeight:1, marginBottom:'6px' }}>${d.icon}</div>
-          <div style=${{ fontFamily:'var(--display)', fontSize:'1.75rem', fontWeight:700, color:'var(--t1)', marginBottom:'10px', letterSpacing:'-0.03em', lineHeight:1.2 }}>
-            ${d.name} Enterprise Assistant
-          </div>
-          <div style=${{ fontSize:'0.88rem', color:'var(--t2)', lineHeight:1.75 }}>${d.desc}</div>
+      <div style=${{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'24px', padding:'40px', overflowY:'auto', position:'relative' }}>
+
+        <!-- Animated gradient mesh blobs -->
+        <div style=${{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
+          <div style=${{ position:'absolute', top:'-8%', left:'10%', width:'50%', height:'55%', borderRadius:'50%', background:'radial-gradient(circle, rgba(249,103,2,0.07) 0%, transparent 65%)', animation:'meshDrift1 14s ease-in-out infinite', filter:'blur(2px)' }}/>
+          <div style=${{ position:'absolute', bottom:'2%', right:'8%', width:'42%', height:'50%', borderRadius:'50%', background:'radial-gradient(circle, rgba(0,165,145,0.055) 0%, transparent 65%)', animation:'meshDrift2 18s ease-in-out infinite', filter:'blur(2px)' }}/>
+          <div style=${{ position:'absolute', top:'28%', right:'18%', width:'32%', height:'38%', borderRadius:'50%', background:'radial-gradient(circle, rgba(129,140,248,0.05) 0%, transparent 65%)', animation:'meshDrift3 11s ease-in-out infinite', filter:'blur(2px)' }}/>
         </div>
-        ${topSamples.length > 0 && html`
-          <div style=${{ display:'flex', flexDirection:'column', gap:'8px', width:'100%', maxWidth:'520px' }}>
-            ${topSamples.map(function(s, i) {
-              var text = typeof s === 'string' ? s : s.text;
-              var mode = (typeof s === 'object' && s.mode) ? s.mode : null;
-              var m = mode ? getMode(mode) : null;
+
+        <!-- Content -->
+        <div style=${{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'24px', width:'100%', maxWidth:'560px' }}>
+
+          <!-- Logo + domain heading -->
+          <div style=${{ textAlign:'center' }}>
+            <img src="/static/cloudera-logo.png" alt="Cloudera" className="cld-logo"
+              style=${{ height:'28px', margin:'0 auto 20px', animation:'logoPulse 3.5s ease-in-out infinite' }}/>
+            <div style=${{ fontFamily:'var(--display)', fontSize:'1.8rem', fontWeight:800, letterSpacing:'-0.035em', lineHeight:1.12, marginBottom:'10px', color:'var(--t1)' }}>
+              <span style=${{ color:d.color }}>${d.name}</span> Enterprise Assistant
+            </div>
+            <div style=${{ fontSize:'0.875rem', color:'var(--t2)', lineHeight:1.75 }}>${d.desc}</div>
+          </div>
+
+          <!-- Sample prompts with type pill on hover -->
+          ${topSamples.length > 0 && html`
+            <div style=${{ display:'flex', flexDirection:'column', gap:'8px', width:'100%' }}>
+              ${topSamples.map(function(s, i) {
+                var text = typeof s === 'string' ? s : s.text;
+                var mode = (typeof s === 'object' && s.mode) ? s.mode : inferMode(text);
+                var m = getMode(mode);
+                var pillClass = mode === 'document' ? 'prompt-pill pp-doc' : mode === 'data' ? 'prompt-pill pp-data' : 'prompt-pill pp-comb';
+                return html`
+                  <button
+                    key=${i}
+                    onClick=${function() { if (props.onPick) props.onPick(text); }}
+                    style=${{
+                      width:'100%', padding:'11px 14px', borderRadius:'11px',
+                      background:'var(--surface)', border:'1px solid var(--border)',
+                      color:'var(--t1)', fontSize:'0.83rem', textAlign:'left',
+                      cursor:'pointer', transition:'border-color 0.15s, background 0.15s, box-shadow 0.15s',
+                      boxShadow:'0 1px 3px rgba(0,0,0,0.05)',
+                      display:'flex', alignItems:'center', gap:'10px',
+                    }}
+                    onMouseEnter=${function(e){
+                      e.currentTarget.style.borderColor='var(--orange)';
+                      e.currentTarget.style.background='var(--o-dim)';
+                      e.currentTarget.style.boxShadow='0 2px 12px rgba(249,103,2,0.12)';
+                      var pill = e.currentTarget.querySelector('.prompt-pill');
+                      if(pill) pill.style.opacity='1';
+                    }}
+                    onMouseLeave=${function(e){
+                      e.currentTarget.style.borderColor='var(--border)';
+                      e.currentTarget.style.background='var(--surface)';
+                      e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,0.05)';
+                      var pill = e.currentTarget.querySelector('.prompt-pill');
+                      if(pill) pill.style.opacity='0';
+                    }}
+                  >
+                    <span style=${{ color:m.color, fontSize:'0.85rem', flexShrink:0, lineHeight:1 }}>${m.icon}</span>
+                    <span style=${{ flex:1, lineHeight:1.5 }}>${text.length > 85 ? text.slice(0,84)+'…' : text}</span>
+                    <span className=${pillClass} style=${{ opacity:0, transition:'opacity 0.15s' }}>
+                      ${mode === 'document' ? '◈ Policy' : mode === 'data' ? '⬡ Data' : '⚡ Insight'}
+                    </span>
+                  </button>`;
+              })}
+            </div>
+          `}
+
+          <!-- Capability pills -->
+          <div style=${{ display:'flex', gap:'6px', flexWrap:'wrap', justifyContent:'center' }}>
+            ${[
+              { icon:'◈', color:'var(--teal)',   text:'Document RAG',    dim:'var(--t-dim)' },
+              { icon:'⬡', color:'var(--indigo)', text:'Structured Data', dim:'var(--i-dim)' },
+              { icon:'⚡', color:'var(--orange)', text:'Combined',        dim:'var(--o-dim)' },
+            ].map(function(p) {
               return html`
-                <button
-                  key=${i}
-                  onClick=${function() { if (props.onPick) props.onPick(text); }}
-                  style=${{
-                    width:'100%', padding:'10px 16px', borderRadius:'10px',
-                    background:'var(--surface)', border:'1px solid var(--border)',
-                    color:'var(--t1)', fontSize:'0.83rem', textAlign:'left',
-                    cursor:'pointer', transition:'all 0.15s',
-                    boxShadow:'0 1px 4px rgba(0,0,0,0.06)',
-                    display:'flex', alignItems:'center', gap:'10px',
-                  }}
-                  onMouseEnter=${function(e){ e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.background='var(--o-dim)'; }}
-                  onMouseLeave=${function(e){ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.background='var(--surface)'; }}
-                >
-                  ${m && html`<span style=${{ color:m.color, fontSize:'0.9rem', flexShrink:0 }}>${m.icon}</span>`}
-                  <span style=${{ flex:1 }}>${text.length > 90 ? text.slice(0, 90) + '…' : text}</span>
-                  <span style=${{ color:'var(--t3)', fontSize:'0.8rem', flexShrink:0 }}>→</span>
-                </button>`;
+                <div key=${p.text} style=${{
+                  display:'flex', alignItems:'center', gap:'5px',
+                  padding:'5px 13px', borderRadius:'20px',
+                  background:p.dim, border:'1px solid '+p.color+'30',
+                  fontSize:'0.74rem', color:p.color, fontWeight:600,
+                }}>
+                  <span>${p.icon}</span>
+                  <span>${p.text}</span>
+                </div>`;
             })}
           </div>
-        `}
-        <div style=${{ display:'flex', gap:'8px', flexWrap:'wrap', justifyContent:'center' }}>
-          ${[
-            { icon:'◈', color:'var(--teal)',   text:'Document RAG' },
-            { icon:'⬡', color:'var(--indigo)', text:'Structured Data' },
-            { icon:'⬡', color:'var(--orange)', text:'Combined' },
-          ].map(function(p) {
-            return html`
-              <div key=${p.text} style=${{
-                display:'flex', alignItems:'center', gap:'6px',
-                padding:'5px 14px', borderRadius:'20px',
-                background:'var(--surface)', border:'1px solid var(--border)',
-                fontSize:'0.78rem', color:'var(--t2)',
-              }}>
-                <span style=${{ color:p.color, fontSize:'0.9rem' }}>${p.icon}</span>
-                <span style=${{ fontWeight:500 }}>${p.text}</span>
-              </div>`;
-          })}
-        </div>
-        <div style=${{ display:'flex', gap:'8px', flexWrap:'wrap', justifyContent:'center' }}>
-          ${[
-            { href:'/explorer', icon:'🗄', label:'Data Explorer', desc:'Query tables & browse data' },
-            { href:'/upload',   icon:'📤', label:'Upload Docs',  desc:'Add to knowledge base' },
-          ].map(function(t) {
-            return html`
-              <a key=${t.href} href=${t.href} style=${{
-                display:'flex', alignItems:'center', gap:'10px',
-                padding:'9px 18px', borderRadius:'10px',
-                background:'var(--surface)', border:'1px solid var(--border)',
-                textDecoration:'none', transition:'all 0.15s',
-                boxShadow:'0 1px 4px rgba(0,0,0,0.06)',
-              }}
-              onMouseEnter=${function(e){ e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.background='var(--o-dim)'; }}
-              onMouseLeave=${function(e){ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.background='var(--surface)'; }}
-              >
-                <span style=${{ fontSize:'1.1rem' }}>${t.icon}</span>
-                <div>
-                  <div style=${{ fontSize:'0.82rem', fontWeight:600, color:'var(--t1)' }}>${t.label}</div>
-                  <div style=${{ fontSize:'0.73rem', color:'var(--t3)' }}>${t.desc}</div>
-                </div>
-                <span style=${{ color:'var(--t3)', fontSize:'0.8rem', marginLeft:'4px' }}>→</span>
-              </a>`;
-          })}
+
+          <!-- Quick links -->
+          <div style=${{ display:'flex', gap:'8px', flexWrap:'wrap', justifyContent:'center' }}>
+            ${[
+              { href:'/explorer', label:'Data Explorer', desc:'Query tables & browse' },
+              { href:'/upload',   label:'Upload Docs',   desc:'Add to knowledge base' },
+            ].map(function(t) {
+              return html`
+                <a key=${t.href} href=${t.href} style=${{
+                  display:'flex', alignItems:'center', gap:'10px',
+                  padding:'9px 18px', borderRadius:'10px',
+                  background:'var(--surface)', border:'1px solid var(--border)',
+                  textDecoration:'none', transition:'all 0.15s',
+                  boxShadow:'0 1px 3px rgba(0,0,0,0.05)',
+                }}
+                onMouseEnter=${function(e){ e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.background='var(--o-dim)'; e.currentTarget.style.boxShadow='0 2px 10px rgba(249,103,2,0.1)'; }}
+                onMouseLeave=${function(e){ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.background='var(--surface)'; e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,0.05)'; }}
+                >
+                  <div>
+                    <div style=${{ fontSize:'0.82rem', fontWeight:600, color:'var(--t1)' }}>${t.label}</div>
+                    <div style=${{ fontSize:'0.72rem', color:'var(--t3)' }}>${t.desc}</div>
+                  </div>
+                  <span style=${{ color:'var(--t3)', fontSize:'0.8rem', marginLeft:'4px' }}>→</span>
+                </a>`;
+            })}
+          </div>
         </div>
       </div>`;
   }
@@ -1462,11 +2111,11 @@
     if (!props.msgs.length) return html`<${Welcome} domain=${props.domain} samples=${props.samples} onPick=${props.onPick}/>`;
 
     return html`
-      <div style=${{ flex:1, overflowY:'auto', padding:'28px 36px', background:'var(--bg)' }}>
+      <div ref=${props.scrollRef} style=${{ flex:1, overflowY:'auto', padding:'28px 36px', background:'var(--bg)' }}>
         ${props.msgs.map(function(m) {
           return m.role === 'user'
             ? html`<${UserMsg}      key=${m.id} msg=${m}/>`
-            : html`<${AssistantMsg} key=${m.id} msg=${m}/>`;
+            : html`<${AssistantMsg} key=${m.id} msg=${m} onViewSources=${props.onViewSources} onPick=${props.onPick}/>`;
         })}
         ${props.isLoading
           && props.msgs.length
@@ -1605,7 +2254,7 @@
               fontSize:'0.85rem', fontWeight:600,
               textDecoration:'none', display:'inline-block',
               boxShadow:'0 2px 8px rgba(249,103,2,0.35)',
-            }}>⚙ Settings → LLM</a>
+            }}>Settings → LLM</a>
             <button
               onClick=${props.onDismiss}
               style=${{
@@ -1650,6 +2299,12 @@
     ]);
     const [showSetupOverlay, setShowSetupOverlay] = useState(false);
     const [sidebarOpen, setSidebarOpen]       = useState(false);
+    const [topbarScrolled, setTopbarScrolled] = useState(false);
+    const [citPanelMsg,  setCitPanelMsg]      = useState(null);
+    const chatScrollRef = useRef(null);
+    const [persona, setPersona]         = useState(null);   // active Persona object | null
+    const [answerStyle, setAnswerStyle] = useState('analyst');  // analyst | executive | compliance
+    const answerStyleRef = useRef('analyst');
     const [isAutoPlaying, setIsAutoPlaying]   = useState(false);
     const [isAutoPaused,  setIsAutoPaused]    = useState(false);
     const [autoPlayIdx,   setAutoPlayIdx]     = useState(0);
@@ -1675,6 +2330,34 @@
     useEffect(function() { samplesRef.current = samples; }, [samples]);
     useEffect(function() { domainRef.current = domain; }, [domain]);
     useEffect(function() { languageRef.current = language; }, [language]);
+    useEffect(function() { answerStyleRef.current = answerStyle; }, [answerStyle]);
+
+    // Persona selection: set domain + language + greeting message
+    function selectPersona(p) {
+      setPersona(p);
+      if (!p) return;
+      setDomain(p.domain);
+      setLanguage(p.lang);
+      stopAutoPlay();
+      dispatch({ type:'RESET' });
+      try { localStorage.removeItem(_SS_KEY); } catch(e) {}
+      setTimeout(function() {
+        var gid = Date.now();
+        dispatch({ type:'PERSONA_MSG', id:gid, content:p.greeting });
+      }, 100);
+    }
+
+    // Story arc: set domain + language + queue questions as auto-play
+    function startStoryArc(arc) {
+      setDomain(arc.domain);
+      setLanguage(arc.lang);
+      stopAutoPlay();
+      dispatch({ type:'RESET' });
+      try { localStorage.removeItem(_SS_KEY); } catch(e) {}
+      // Override samplesRef temporarily for this arc
+      samplesRef.current = arc.questions;
+      setTimeout(function() { startAutoPlay(); }, 150);
+    }
 
     // On first load: redirect to /configure?setup=1 if LLM is not configured
     useEffect(function() {
@@ -1724,14 +2407,48 @@
       setLoading(true);
 
       var gotDone = false;
+      var _mode = null;
+      var _tMode = null;
+      var _tFirstToken = null;
       async function run() {
         try {
-          for await (var ev of ssePost('/api/chat', { question:question, history:history, domain:domainRef.current, language:languageRef.current })) {
-            if (ev.event==='mode')     { dispatch({ type:'MODE',     id:aid, mode:ev.data.mode });                                                              setLoading(false); }
-            if (ev.event==='token')    { dispatch({ type:'TOKEN',    id:aid, text:ev.data.text }); }
+          for await (var ev of ssePost('/api/chat', {
+            question:question, history:history,
+            domain:domainRef.current, language:languageRef.current,
+            style:answerStyleRef.current,
+          })) {
+            if (ev.event==='mode') {
+              _mode = ev.data.mode; _tMode = Date.now();
+              var routerMs = _tMode - t0;
+              dispatch({ type:'MODE', id:aid, mode:ev.data.mode, _routerMs:routerMs });
+              setLoading(false);
+            }
+            if (ev.event==='token') {
+              if (!_tFirstToken) {
+                _tFirstToken = Date.now();
+                dispatch({ type:'TOKEN', id:aid, text:ev.data.text, _retrieveMs:_tFirstToken - (_tMode||t0) });
+              } else {
+                dispatch({ type:'TOKEN', id:aid, text:ev.data.text });
+              }
+            }
             if (ev.event==='thinking') { dispatch({ type:'THINKING', id:aid, active:ev.data.active }); }
-            if (ev.event==='done')     { dispatch({ type:'DONE',     id:aid, docCitations:ev.data.doc_citations, sqlCitation:ev.data.sql_citation, usage:ev.data.usage||null, latency_ms:Date.now()-t0 }); gotDone=true; }
-            if (ev.event==='error')    { dispatch({ type:'ERROR',    id:aid, message:ev.data.message }); gotDone=true; }
+            if (ev.event==='done')     {
+              var totalMs = Date.now() - t0;
+              dispatch({ type:'DONE', id:aid, docCitations:ev.data.doc_citations, sqlCitation:ev.data.sql_citation, usage:ev.data.usage||null, latency_ms:totalMs });
+              gotDone=true;
+              // Fetch follow-up suggestions in background (non-blocking)
+              if (ev.data.doc_citations && ev.data.doc_citations.length || ev.data.sql_citation) {
+                fetch('/api/followup', {
+                  method:'POST', headers:{'Content-Type':'application/json'},
+                  body:JSON.stringify({ question:question, answer:'', mode:_mode||'document', domain:domainRef.current, language:languageRef.current }),
+                }).then(function(r){return r.json();}).then(function(d){
+                  if (d.suggestions && d.suggestions.length) {
+                    dispatch({ type:'SUGGESTIONS', id:aid, suggestions:d.suggestions });
+                  }
+                }).catch(function(){});
+              }
+            }
+            if (ev.event==='error')    { dispatch({ type:'ERROR', id:aid, message:ev.data.message }); gotDone=true; }
           }
         } catch(err) {
           dispatch({ type:'ERROR', id:aid, message:err.message });
@@ -1811,6 +2528,15 @@
       setTimeout(startAutoPlay, 80);
     }
 
+    // Glassmorphism: watch chat scroll position
+    useEffect(function() {
+      var el = chatScrollRef.current;
+      if (!el) return;
+      function onScroll() { setTopbarScrolled(el.scrollTop > 20); }
+      el.addEventListener('scroll', onScroll, { passive: true });
+      return function() { el.removeEventListener('scroll', onScroll); };
+    }, []);
+
     // ── Keyboard shortcuts ────────────────────────────────────────────
     useEffect(function() {
       function onKeyDown(e) {
@@ -1854,6 +2580,7 @@
         <!-- GCP-style top bar (full width) -->
         <${TopBar}
           theme=${theme}
+          scrolled=${topbarScrolled}
           onToggle=${function() { setTheme(function(t){ return t==='dark'?'light':'dark'; }); }}
           onReset=${function() { stopAutoPlay(); dispatch({ type:'RESET' }); try { localStorage.removeItem(_SS_KEY); } catch(e){} }}
           domain=${domain}
@@ -1871,6 +2598,7 @@
           onStopAutoPlay=${stopAutoPlay}
           onRestartAutoPlay=${restartAutoPlay}
           onToggleSidebar=${function(){ setSidebarOpen(function(v){ return !v; }); }}
+          onExport=${msgs.length ? function(){ exportChat(msgs, domain, language); } : null}
         />
 
         <!-- Body: sidebar + main -->
@@ -1901,17 +2629,53 @@
               dispatch({ type:'RESET' });
               try { localStorage.removeItem(_SS_KEY); } catch(e) {}
             }}
+            persona=${persona}
+            onPersonaSelect=${selectPersona}
+            onStoryArc=${startStoryArc}
+            answerStyle=${answerStyle}
+            onStyleChange=${function(s) { setAnswerStyle(s); answerStyleRef.current = s; }}
           />
           </div>
           <!-- Main: chat + input -->
-          <div style=${{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <${ChatWindow} msgs=${msgs} isLoading=${loading} domain=${domain} samples=${samples} onPick=${function(p) { if (!isAutoPlaying && !loading) setPrefill(p); }}/>
+          <div style=${{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', position:'relative' }}>
+            <${ChatWindow}
+              msgs=${msgs} isLoading=${loading} domain=${domain}
+              samples=${samples}
+              scrollRef=${chatScrollRef}
+              onPick=${function(p) { if (!isAutoPlaying && !loading) setPrefill(p); }}
+              onViewSources=${function(msg) { setCitPanelMsg(function(cur){ return cur && cur.id===msg.id ? null : msg; }); }}
+            />
             <${InputBar}
               onSubmit=${handleSubmit}
               disabled=${loading || isAutoPlaying}
               prefill=${prefill}
               onPrefillDone=${function() { setPrefill(null); }}
             />
+          </div>
+
+          <!-- Citation slide panel (right side) -->
+          <div className=${'cit-panel' + (citPanelMsg ? ' cit-open' : '')}>
+            <div className="cit-panel-header">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M6 6h4M6 9h3"/></svg>
+              <span style=${{ fontSize:'0.8rem', fontWeight:600, color:'var(--t1)', flex:1 }}>Source Documents</span>
+              <span style=${{ fontSize:'0.7rem', color:'var(--t3)', marginRight:'8px' }}>
+                ${citPanelMsg && citPanelMsg.docCitations ? citPanelMsg.docCitations.length + ' found' : ''}
+              </span>
+              <button
+                onClick=${function(){ setCitPanelMsg(null); }}
+                style=${{ background:'none', border:'none', color:'var(--t3)', cursor:'pointer', padding:'2px', lineHeight:0 }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div className="cit-panel-body">
+              ${citPanelMsg && citPanelMsg.docCitations && citPanelMsg.docCitations.map(function(c, i) {
+                return html`<${DocCard} key=${i} cit=${c} idx=${i+1} query=${citPanelMsg.question || ''}/>`;
+              })}
+              ${citPanelMsg && (!citPanelMsg.docCitations || !citPanelMsg.docCitations.length) && html`
+                <div style=${{ fontSize:'0.82rem', color:'var(--t3)', textAlign:'center', marginTop:'32px' }}>No document sources for this answer.</div>
+              `}
+            </div>
           </div>
         </div>
       </div>`;

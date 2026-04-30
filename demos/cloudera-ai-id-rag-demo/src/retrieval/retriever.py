@@ -156,6 +156,15 @@ def _rrf_fuse(
         fused.append((doc, rrf))
 
     fused.sort(key=lambda t: t[1], reverse=True)
+
+    # Normalize RRF scores to [0, 1] so the UI relevance badge is meaningful.
+    # The theoretical max RRF score is (_FAISS_WEIGHT + _BM25_WEIGHT) / _RRF_K = 1/60 ≈ 0.0167.
+    # Without normalization every score is < 0.02 and always renders as "LOW" in the UI.
+    if fused:
+        top_score = fused[0][1]
+        if top_score > 0:
+            fused = [(doc, score / top_score) for doc, score in fused]
+
     return fused
 
 

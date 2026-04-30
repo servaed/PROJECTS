@@ -35,6 +35,8 @@
       --font:    'Google Sans', system-ui, sans-serif;
       --display: 'Google Sans Display', 'Google Sans', system-ui, sans-serif;
       --mono:    'JetBrains Mono', monospace;
+      /* Cloudera orange logo filter */
+      --logo-filter: brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%);
     }
 
     /* ── Slide container ───────────────────────────────────────────────────── */
@@ -44,16 +46,37 @@
       display: flex; flex-direction: column;
       padding: 56px 72px;
       opacity: 0; pointer-events: none;
-      transition: opacity 0.45s cubic-bezier(0.4,0,0.2,1),
-                  transform 0.45s cubic-bezier(0.4,0,0.2,1);
-      transform: translateY(24px);
+      transition: opacity 0.48s cubic-bezier(0.4,0,0.2,1),
+                  transform 0.48s cubic-bezier(0.4,0,0.2,1),
+                  filter 0.48s cubic-bezier(0.4,0,0.2,1);
+      transform: translateY(20px);
+      filter: blur(4px);
     }
     .slide.active {
-      opacity: 1; pointer-events: auto; transform: translateY(0);
+      opacity: 1; pointer-events: auto; transform: translateY(0); filter: blur(0px);
     }
     .slide.exiting {
-      opacity: 0; transform: translateY(-24px);
+      opacity: 0; transform: translateY(-16px); filter: blur(6px);
     }
+
+    /* ── Interactive arch-box (T-01 tooltip) ──────────────────────── */
+    .arch-box[data-tip] { cursor: pointer; }
+    .arch-box[data-tip]:hover {
+      border-color: var(--orange) !important;
+      background: var(--o-dim) !important;
+      transform: translateY(-2px);
+      transition: transform 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .arch-tooltip {
+      position: fixed; z-index: 500; pointer-events: none;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 16px;
+      max-width: 320px; font-size: 0.72rem; color: var(--t2); line-height: 1.6;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .arch-tooltip.tip-vis { opacity: 1; }
+    .arch-tooltip strong { color: var(--t1); display: block; margin-bottom: 4px; font-size: 0.78rem; }
 
     /* ── Slide backgrounds ─────────────────────────────────────────────────── */
     .bg-cover {
@@ -114,22 +137,25 @@
       display: flex; align-items: center; gap: 14px;
       margin-bottom: 40px;
     }
-    /* Cloudera wordmark — white on dark presentation background */
+    /* Cloudera wordmark — Cloudera orange on dark presentation background */
     .cld-logo {
       height: 26px; width: auto; display: block;
-      filter: brightness(0) invert(1);
+      filter: var(--logo-filter);
     }
     /* Subdued footer version */
     .cld-logo-sm {
       height: 11px; width: auto; display: block;
-      filter: brightness(0) invert(1); opacity: 0.4;
+      filter: var(--logo-filter); opacity: 0.55;
     }
     /* Card icon SVG — unicolor, inherits parent color */
     .card-icon { margin-bottom: 6px; color: var(--t2); line-height: 0; }
     .card-icon svg { width: 26px; height: 26px; display: block; }
-    /* Step icon (Slide 8) */
+    /* Step icon */
     .step-icon { font-size: 1.5rem; margin-bottom: 10px; color: var(--t2); line-height: 0; }
     .step-icon svg { width: 28px; height: 28px; display: block; }
+    /* Inline icon helper */
+    .ico { width: 16px; height: 16px; display: inline-block; vertical-align: middle; flex-shrink: 0; }
+    .ico-lg { width: 22px; height: 22px; display: block; flex-shrink: 0; }
 
     /* ── Cards ─────────────────────────────────────────────────────────────── */
     .card-grid { display: grid; gap: 16px; }
@@ -166,7 +192,7 @@
     /* ── Pill badge ────────────────────────────────────────────────────────── */
     .pill {
       display: inline-flex; align-items: center; gap: 5px;
-      padding: 3px 12px; border-radius: 20px;
+      padding: 4px 14px; border-radius: 20px;
       font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
       text-transform: uppercase;
     }
@@ -174,6 +200,16 @@
     .pill-teal   { background: var(--t-dim); color: var(--teal); border: 1px solid rgba(0,165,145,0.3); }
     .pill-indigo { background: var(--i-dim); color: var(--indigo); border: 1px solid rgba(129,140,248,0.3); }
     .pill-green  { background: var(--g-dim); color: var(--green); border: 1px solid rgba(52,211,153,0.3); }
+
+    /* ── Feature row ───────────────────────────────────────────────────────── */
+    .feat-row {
+      display: flex; gap: 24px; flex-wrap: wrap;
+    }
+    .feat-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.82rem; color: var(--t2);
+    }
+    .feat-item svg { color: var(--t2); opacity: 0.7; flex-shrink: 0; }
 
     /* ── Flow diagram ──────────────────────────────────────────────────────── */
     .flow {
@@ -232,7 +268,7 @@
     /* ── Divider ───────────────────────────────────────────────────────────── */
     .divider { height: 1px; background: var(--border); margin: 24px 0; }
 
-    /* ── Two-column layout ─────────────────────────────────────────────────── */
+    /* ── Two/Three column layouts ──────────────────────────────────────────── */
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
     .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; align-items: start; }
 
@@ -242,7 +278,8 @@
       padding: 12px 18px; border-radius: 10px; border: 1px solid var(--border);
       display: flex; align-items: center; gap: 14px;
     }
-    .layer-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .layer-icon { color: var(--t2); flex-shrink: 0; line-height: 0; }
+    .layer-icon svg { width: 20px; height: 20px; display: block; }
     .layer-name { font-size: 0.85rem; font-weight: 700; color: var(--t1); }
     .layer-tech { font-size: 0.72rem; color: var(--t2); margin-top: 2px; font-family: var(--mono); }
 
@@ -281,6 +318,41 @@
     #nextBtn { right: 20px; }
     .nav-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
+    /* ── Audience toggle ───────────────────────────────────────────────────── */
+    .aud-switch {
+      position: fixed; top: 16px; right: 72px; z-index: 200;
+      display: flex; gap: 3px;
+      background: rgba(10,14,26,0.7); border: 1px solid var(--border);
+      border-radius: 20px; padding: 3px; backdrop-filter: blur(10px);
+    }
+    .aud-btn {
+      padding: 5px 16px; border-radius: 16px; border: none;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; cursor: pointer;
+      background: transparent; color: var(--t3);
+      transition: all 0.2s; font-family: var(--font);
+    }
+    .aud-btn.active {
+      background: var(--orange); color: #fff;
+      box-shadow: 0 2px 8px rgba(249,103,2,0.35);
+    }
+    .aud-label {
+      position: fixed; top: 18px; right: 72px; z-index: 201;
+      font-size: 0.55rem; color: var(--t3); letter-spacing: 0.1em; text-transform: uppercase;
+      transform: translateY(-12px);
+    }
+
+    /* ── Tech slide badge ──────────────────────────────────────────────────── */
+    .tech-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 12px;
+      background: var(--i-dim); border: 1px solid rgba(129,140,248,0.3);
+      color: var(--indigo); font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      margin-bottom: 10px; align-self: flex-start;
+    }
+    .tech-badge svg { width: 10px; height: 10px; }
+
     /* ── Keyboard hint ─────────────────────────────────────────────────────── */
     .kbd-hint {
       position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
@@ -289,13 +361,14 @@
       backdrop-filter: blur(6px);
     }
 
-    /* ── Mermaid-style architecture ────────────────────────────────────────── */
+    /* ── Architecture boxes ────────────────────────────────────────────────── */
     .arch-box {
       background: var(--s2); border: 1px solid var(--border); border-radius: 10px;
       padding: 14px 16px; font-size: 0.78rem; font-weight: 600; color: var(--t1);
       text-align: center; min-width: 100px;
     }
-    .arch-box .ab-icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
+    .arch-box .ab-icon { display: block; margin-bottom: 4px; line-height: 0; }
+    .arch-box .ab-icon svg { width: 20px; height: 20px; display: inline-block; }
     .arch-box .ab-sub  { font-size: 0.62rem; color: var(--t2); font-weight: 400; margin-top: 3px; display: block; font-family: var(--mono); }
     .arch-box.hl-orange { border-color: var(--orange); background: var(--o-dim); }
     .arch-box.hl-teal   { border-color: var(--teal); background: var(--t-dim); }
@@ -310,6 +383,16 @@
     }
     .arch-group-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t3); text-align: center; }
 
+    /* ── Provider grid (T-04) ──────────────────────────────────────────────── */
+    .provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .provider-card {
+      background: var(--s2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+    }
+    .provider-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .provider-name { font-size: 0.8rem; font-weight: 600; color: var(--t1); }
+    .provider-sub  { font-size: 0.68rem; color: var(--t2); font-family: var(--mono); }
+
     @keyframes fadeInUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
     .anim { animation: fadeInUp 0.5s ease forwards; }
     .anim-1 { animation-delay: 0.1s; opacity: 0; }
@@ -322,7 +405,15 @@
 </head>
 <body>
 
+<!-- Audience toggle -->
+<div class="aud-switch">
+  <button class="aud-btn active" id="btnBiz" onclick="setAud('biz')">Business</button>
+  <button class="aud-btn" id="btnTech" onclick="setAud('tech')">Technical</button>
+</div>
+
 <div id="deck">
+
+  <!-- ══ BUSINESS SLIDES (s1–s9) ══════════════════════════════════════════ -->
 
   <!-- ── SLIDE 1: Cover ─────────────────────────────────────────────────── -->
   <section class="slide active bg-cover" id="s1">
@@ -330,9 +421,18 @@
       <img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo"/>
     </div>
     <div class="anim anim-2" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
-      <span class="pill pill-orange">🏦 Banking</span>
-      <span class="pill pill-teal">📡 Telco</span>
-      <span class="pill pill-indigo">🏛 Government</span>
+      <span class="pill pill-orange">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+        Banking
+      </span>
+      <span class="pill pill-teal">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg>
+        Telco
+      </span>
+      <span class="pill pill-indigo">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 8 12 2 2 8"/><line x1="6" y1="12" x2="6" y2="20"/><line x1="10" y1="12" x2="10" y2="20"/><line x1="14" y1="12" x2="14" y2="20"/><line x1="18" y1="12" x2="18" y2="20"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+        Government
+      </span>
     </div>
     <h1 class="anim anim-3">
       Your Data Already Has<br/>
@@ -405,7 +505,7 @@
           <div style="font-size:0.9rem;color:var(--t1);margin-bottom:6px;">
             "Apakah outstanding kredit UMKM di Jakarta sudah sesuai target ekspansi 15% kebijakan 2026?"
           </div>
-          <div style="font-size:0.78rem;color:var(--green);">✓ Reads the 2026 policy document → checks live credit data → gives a direct yes/no with the actual numbers. In 2 seconds.</div>
+          <div style="font-size:0.78rem;color:var(--green);">&#x2713; Reads the 2026 policy document → checks live credit data → gives a direct yes/no with the actual numbers. In 2 seconds.</div>
         </div>
       </div>
       <!-- Scenario 2 -->
@@ -416,7 +516,7 @@
           <div style="font-size:0.9rem;color:var(--t1);margin-bottom:6px;">
             "Which subscribers have high churn risk and qualify for the retention program?"
           </div>
-          <div style="font-size:0.78rem;color:var(--green);">✓ Checks retention eligibility criteria in the SLA policy → queries subscriber churn scores → returns a ranked list, ready to act on.</div>
+          <div style="font-size:0.78rem;color:var(--green);">&#x2713; Checks retention eligibility criteria in the SLA policy → queries subscriber churn scores → returns a ranked list, ready to act on.</div>
         </div>
       </div>
       <!-- Scenario 3 -->
@@ -427,7 +527,7 @@
           <div style="font-size:0.9rem;color:var(--t1);margin-bottom:6px;">
             "Satuan kerja mana yang berisiko kena penalti sesuai regulasi APBD?"
           </div>
-          <div style="font-size:0.78rem;color:var(--green);">✓ Reads APBD penalty regulation → checks budget realization per work unit → flags who is at risk and by how much.</div>
+          <div style="font-size:0.78rem;color:var(--green);">&#x2713; Reads APBD penalty regulation → checks budget realization per work unit → flags who is at risk and by how much.</div>
         </div>
       </div>
     </div>
@@ -474,10 +574,19 @@
       </div>
     </div>
     <div class="divider"></div>
-    <div style="display:flex;gap:24px;flex-wrap:wrap;">
-      <div style="font-size:0.82rem;color:var(--t2);">🌐 <strong style="color:var(--t1);">Bilingual</strong> — ask in Bahasa Indonesia or English</div>
-      <div style="font-size:0.82rem;color:var(--t2);">💬 <strong style="color:var(--t1);">Conversational</strong> — follow-up questions work naturally</div>
-      <div style="font-size:0.82rem;color:var(--t2);">📎 <strong style="color:var(--t1);">Always cited</strong> — every answer shows its source</div>
+    <div class="feat-row">
+      <div class="feat-item">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <strong style="color:var(--t1);">Bilingual</strong>&nbsp;<span>— ask in Bahasa Indonesia or English</span>
+      </div>
+      <div class="feat-item">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <strong style="color:var(--t1);">Conversational</strong>&nbsp;<span>— follow-up questions work naturally</span>
+      </div>
+      <div class="feat-item">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <strong style="color:var(--t1);">Always cited</strong>&nbsp;<span>— every answer shows its source</span>
+      </div>
     </div>
     <div class="slide-footer">
       <span class="slide-num">04 / 09</span>
@@ -493,28 +602,28 @@
     <div class="two-col" style="gap:36px;margin-top:4px;">
       <div class="check-list">
         <div class="check-item">
-          <div class="check-icon">✓</div>
+          <div class="check-icon">&#x2713;</div>
           <div>
             <strong>Faster decisions, fewer escalations</strong>
             <div class="sub">Front-line staff get policy answers instantly — without calling compliance, waiting for reports, or searching shared drives. Time-to-answer drops from days to seconds.</div>
           </div>
         </div>
         <div class="check-item">
-          <div class="check-icon">✓</div>
+          <div class="check-icon">&#x2713;</div>
           <div>
             <strong>Consistent, auditable answers</strong>
             <div class="sub">Every answer cites its source. You can trace exactly which policy clause or data row the AI used — critical for compliance, audit, and regulatory reporting.</div>
           </div>
         </div>
         <div class="check-item">
-          <div class="check-icon">✓</div>
+          <div class="check-icon">&#x2713;</div>
           <div>
             <strong>Serves Indonesian-language users natively</strong>
             <div class="sub">No translation layer, no second-class experience. Staff ask in Bahasa Indonesia, get answers in Bahasa Indonesia — from your own documents and data.</div>
           </div>
         </div>
         <div class="check-item">
-          <div class="check-icon">✓</div>
+          <div class="check-icon">&#x2713;</div>
           <div>
             <strong>Knowledge base stays current automatically</strong>
             <div class="sub">New policies, updated regulations, and new data are uploaded through a browser — no IT ticket, no redeploy. The AI learns overnight.</div>
@@ -522,7 +631,6 @@
         </div>
       </div>
       <div>
-        <!-- Impact numbers -->
         <div style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:16px;">
           <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--indigo);margin-bottom:16px;">Indicative Impact</div>
           <div class="stat-row" style="gap:20px;">
@@ -579,7 +687,7 @@
       </div>
       <div class="card card-orange">
         <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-        <div class="card-title">Full Observability & Cost Tracking</div>
+        <div class="card-title">Full Observability &amp; Cost Tracking</div>
         <div class="card-body">Every AI interaction is logged — what was asked, which source answered it, how fast, at what cost. Management-ready dashboards built in.</div>
       </div>
     </div>
@@ -599,16 +707,16 @@
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
           <span style="color:var(--t2);line-height:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg></span>
           <div>
-            <div style="font-size:0.95rem;font-weight:700;color:var(--t1);">Banking & Finance</div>
+            <div style="font-size:0.95rem;font-weight:700;color:var(--t1);">Banking &amp; Finance</div>
             <div style="font-size:0.72rem;color:var(--t2);">OJK compliance · UMKM credit · KYC</div>
           </div>
         </div>
         <div class="check-list" style="gap:9px;">
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Credit restructuring eligibility checks in seconds</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>OJK regulatory compliance Q&amp;A</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>KYC/AML procedure lookups</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Branch performance vs. target analysis</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>NPL portfolio monitoring vs. policy thresholds</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>Credit restructuring eligibility checks in seconds</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>OJK regulatory compliance Q&amp;A</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>KYC/AML procedure lookups</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>Branch performance vs. target analysis</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>NPL portfolio monitoring vs. policy thresholds</div>
         </div>
       </div>
       <div>
@@ -620,34 +728,37 @@
           </div>
         </div>
         <div class="check-list" style="gap:9px;">
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>SLA breach detection vs. policy thresholds</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>High-risk churn subscriber identification</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Retention program eligibility screening</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Network utilization vs. capacity thresholds</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Spectrum regulation compliance</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>SLA breach detection vs. policy thresholds</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>High-risk churn subscriber identification</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>Retention program eligibility screening</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>Network utilization vs. capacity thresholds</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>Spectrum regulation compliance</div>
         </div>
       </div>
       <div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
           <span style="color:var(--t2);line-height:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block"><polyline points="22 8 12 2 2 8"/><line x1="6" y1="12" x2="6" y2="20"/><line x1="10" y1="12" x2="10" y2="20"/><line x1="14" y1="12" x2="14" y2="20"/><line x1="18" y1="12" x2="18" y2="20"/><line x1="2" y1="20" x2="22" y2="20"/></svg></span>
           <div>
-            <div style="font-size:0.95rem;font-weight:700;color:var(--t1);">Government & Public Sector</div>
+            <div style="font-size:0.95rem;font-weight:700;color:var(--t1);">Government &amp; Public Sector</div>
             <div style="font-size:0.72rem;color:var(--t2);">APBD · public service · regulation</div>
           </div>
         </div>
         <div class="check-list" style="gap:9px;">
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>APBD budget absorption and penalty risk</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Public service SLA and IKM compliance</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Regulation lookup in plain Bahasa Indonesia</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Work unit performance vs. regulation target</div>
-          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">✓</div>Regional population and service data analysis</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>APBD budget absorption and penalty risk</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>Public service SLA and IKM compliance</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>Regulation lookup in plain Bahasa Indonesia</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>Work unit performance vs. regulation target</div>
+          <div class="check-item" style="font-size:0.8rem;"><div class="check-icon">&#x2713;</div>Regional population and service data analysis</div>
         </div>
       </div>
     </div>
     <div class="divider"></div>
-    <p style="font-size:0.82rem;color:var(--t2);">
-      💡 <strong style="color:var(--t1);">Adaptable:</strong> Swap in your own documents and data — the AI adapts to your industry, your policies, and your terminology in days, not months.
-    </p>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <svg style="width:16px;height:16px;color:var(--t2);flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p style="font-size:0.82rem;color:var(--t2);">
+        <strong style="color:var(--t1);">Adaptable:</strong> Swap in your own documents and data — the AI adapts to your industry, your policies, and your terminology in days, not months.
+      </p>
+    </div>
     <div class="slide-footer">
       <span class="slide-num">07 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:77%"></div></div>
@@ -680,8 +791,8 @@
         <div style="font-size:0.78rem;color:var(--t2);line-height:1.6;">Roll out to your teams on Cloudera AI Workbench — with your SSO/LDAP login, your data governance policies, and your security controls already in place.</div>
       </div>
     </div>
-    <div style="background:var(--o-dim);border:1px solid rgba(249,103,2,0.25);border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:14px;">
-      <span style="font-size:1.4rem;">💡</span>
+    <div style="background:var(--o-dim);border:1px solid rgba(249,103,2,0.25);border-radius:10px;padding:16px 20px;display:flex;align-items:flex-start;gap:12px;">
+      <svg style="width:18px;height:18px;color:var(--orange);flex-shrink:0;margin-top:1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <div style="font-size:0.85rem;color:var(--t1);line-height:1.6;">
         <strong>This demo itself runs in under 5 minutes on a laptop.</strong> We can run it live right now with your questions — and show you what it looks like with your own content in a proof-of-concept engagement.
       </div>
@@ -716,12 +827,348 @@
       </div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <span class="pill pill-teal">✓ Data stays on your infrastructure</span>
-      <span class="pill pill-indigo">✓ Works in Bahasa Indonesia</span>
-      <span class="pill pill-orange">✓ Banking · Telco · Government</span>
+      <span class="pill pill-teal">&#x2713; Data stays on your infrastructure</span>
+      <span class="pill pill-indigo">&#x2713; Works in Bahasa Indonesia</span>
+      <span class="pill pill-orange">&#x2713; Banking · Telco · Government</span>
     </div>
     <div class="slide-footer">
       <span class="slide-num">09 / 09</span>
+      <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+    </div>
+  </section>
+
+  <!-- ══ TECHNICAL SLIDES (s10–s14) — shown only in Technical mode ════════ -->
+
+  <!-- ── SLIDE T-01: Pipeline Architecture ─────────────────────────────── -->
+  <section class="slide bg-dark" id="s10" data-tech="1">
+    <div class="tech-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>
+      Technical Deep Dive
+    </div>
+    <div class="slide-tag">Architecture</div>
+    <h2>How It Works: <span class="accent">The Processing Pipeline</span></h2>
+    <p class="lead" style="margin-bottom:24px;">Every question goes through a 4-tier intelligence pipeline before a word of the answer is generated.</p>
+
+    <!-- Pipeline diagram -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <!-- Row 1: Input -->
+      <div class="arch-row">
+        <div class="arch-box hl-orange" style="min-width:160px;">
+          <span class="ab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+          User Question
+          <span class="ab-sub">Bahasa Indonesia / English</span>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box hl-indigo" style="min-width:180px;" data-tip="<strong>Intelligence Router</strong>4-tier heuristics: (1) Show verbs → data, (2) Comparison + policy patterns → combined, (3) Aggregation keywords → data, (4) Policy keywords → document. LLM fallback for ambiguous queries. History-aware: last turn injected for context.">
+          <span class="ab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+          Intelligence Router
+          <span class="ab-sub">4-tier heuristic + LLM fallback</span>
+        </div>
+      </div>
+      <!-- Row 2: Three mode branches -->
+      <div class="arch-row" style="gap:10px;">
+        <div class="arch-group" style="flex:1;">
+          <div class="arch-group-label">Document Mode</div>
+          <div class="arch-box hl-teal" style="min-width:0;" data-tip="<strong>RAG Retrieval — 3 stages</strong>Stage 1: FAISS semantic search (multilingual-e5-large, 1024-dim, top-40). Stage 2: BM25 keyword + FAISS fused via RRF. Stage 3: cross-encoder reranking (ms-marco-MiniLM-L-6-v2, ~90MB). Returns top-K chunks with relevance scores.">
+            <span class="ab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+            RAG Retrieval
+            <span class="ab-sub">FAISS + BM25 + cross-encoder</span>
+          </div>
+        </div>
+        <div class="arch-group" style="flex:1;">
+          <div class="arch-group-label">Data Mode</div>
+          <div class="arch-box hl-indigo" style="min-width:0;" data-tip="<strong>SQL Generator</strong>Schema-first: only approved table schemas injected into prompt. 6 few-shot examples. AST guardrail (sqlparse): blocks DDL/DML even in CTEs. Agentic retry: rephrases and retries once on TIDAK_DAPAT_DIJAWAB or guardrail error.">
+            <span class="ab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span>
+            SQL Generator
+            <span class="ab-sub">Schema-aware · guarded · retry</span>
+          </div>
+        </div>
+        <div class="arch-group" style="flex:1;">
+          <div class="arch-group-label">Combined Mode</div>
+          <div class="arch-box hl-orange" style="min-width:0;">
+            <span class="ab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+            Parallel Both
+            <span class="ab-sub">ThreadPoolExecutor(workers=2)</span>
+          </div>
+        </div>
+      </div>
+      <!-- Row 3: Synthesis + Output -->
+      <div class="arch-row">
+        <div class="arch-arrow">↓</div>
+        <div class="arch-box hl-green" style="min-width:180px;" data-tip="<strong>LLM Synthesis</strong>Streams tokens via SSE (Server-Sent Events). Prompt caching on Anthropic (ephemeral) and Bedrock (cachePoint). History-aware: last turn injected. Bilingual output in the same language as the user's question. Supports think-tag filtering for extended reasoning models.">
+          <span class="ab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>
+          LLM Synthesis
+          <span class="ab-sub">SSE streaming · bilingual output</span>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box" style="min-width:160px;">
+          <span class="ab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+          Cited Answer
+          <span class="ab-sub">Source doc · chunk · SQL trace</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span class="slide-num">10 / 14</span>
+      <div class="progress-track"><div class="progress-fill" style="width:71%"></div></div>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+    </div>
+  </section>
+
+  <!-- ── SLIDE T-02: Retrieval Quality Stack ───────────────────────────── -->
+  <section class="slide bg-indigo" id="s11" data-tech="1">
+    <div class="tech-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>
+      Technical Deep Dive
+    </div>
+    <div class="slide-tag">Retrieval Stack</div>
+    <h2>3-Stage Retrieval for <span class="accent">Maximum Accuracy</span></h2>
+    <p class="lead" style="margin-bottom:24px;">Each stage improves result quality. The cross-encoder final stage matches enterprise accuracy requirements for citation-grounded answers.</p>
+    <div class="two-col" style="gap:32px;">
+      <div class="layer-stack">
+        <div class="layer" style="border-color:var(--teal);background:var(--t-dim);">
+          <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+          <div>
+            <div class="layer-name">Stage 1 — Semantic Search</div>
+            <div class="layer-tech">FAISS · multilingual-e5-large · 1024-dim · cosine similarity</div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:0.75rem;color:var(--t3);">↓ top-40 candidates</div>
+        <div class="layer" style="border-color:var(--indigo);background:var(--i-dim);">
+          <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+          <div>
+            <div class="layer-name">Stage 2 — Keyword Re-ranking</div>
+            <div class="layer-tech">BM25 (rank-bm25) + FAISS → RRF fusion · parallel retrieval</div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:0.75rem;color:var(--t3);">↓ fused top-20</div>
+        <div class="layer" style="border-color:var(--orange);background:var(--o-dim);">
+          <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+          <div>
+            <div class="layer-name">Stage 3 — Cross-Encoder Reranking</div>
+            <div class="layer-tech">ms-marco-MiniLM-L-6-v2 · ~90 MB · lazy-loaded · thread-safe</div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:0.75rem;color:var(--t3);">↓ top-K chunks → LLM</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--indigo);margin-bottom:10px;">Knowledge Base</div>
+          <div class="check-list" style="gap:7px;">
+            <div class="check-item" style="font-size:0.78rem;"><div class="check-icon">&#x2713;</div>14 documents — 7 Bahasa Indonesia + 7 English</div>
+            <div class="check-item" style="font-size:0.78rem;"><div class="check-icon">&#x2713;</div>Domain-tagged chunks — banking · telco · government</div>
+            <div class="check-item" style="font-size:0.78rem;"><div class="check-icon">&#x2713;</div>Language-filtered retrieval per UI toggle</div>
+            <div class="check-item" style="font-size:0.78rem;"><div class="check-icon">&#x2713;</div>SHA-256 integrity hash on vector store at load</div>
+          </div>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--teal);margin-bottom:10px;">SQL Engine</div>
+          <div class="check-list" style="gap:7px;">
+            <div class="check-item" style="font-size:0.78rem;"><div class="check-icon">&#x2713;</div>9 tables · 1,485 rows (banking, telco, government)</div>
+            <div class="check-item" style="font-size:0.78rem;"><div class="check-icon">&#x2713;</div>6 few-shot examples injected into generation prompt</div>
+            <div class="check-item" style="font-size:0.78rem;"><div class="check-icon">&#x2713;</div>Agentic retry loop on guardrail error</div>
+            <div class="check-item" style="font-size:0.78rem;"><div class="check-icon">&#x2713;</div>AST-based guardrail — SELECT only, no DDL/DML</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span class="slide-num">11 / 14</span>
+      <div class="progress-track"><div class="progress-fill" style="width:78%"></div></div>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+    </div>
+  </section>
+
+  <!-- ── SLIDE T-03: Deployment Architecture ───────────────────────────── -->
+  <section class="slide bg-teal" id="s12" data-tech="1">
+    <div class="tech-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>
+      Technical Deep Dive
+    </div>
+    <div class="slide-tag">Deployment</div>
+    <h2>One Codebase, <span class="accent">Zero Code Changes</span> for Production</h2>
+    <p class="lead" style="margin-bottom:22px;">Swap from local dev to full CDP production by changing environment variables only. No code changes, no redeploy of app logic.</p>
+
+    <div class="two-col" style="gap:20px;">
+      <!-- Dev mode -->
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:20px;">
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--teal);margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+          <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Dev / Demo Mode
+        </div>
+        <div class="layer-stack" style="gap:6px;">
+          <div class="layer" style="padding:10px 14px;">
+            <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">CML Application (FastAPI + uvicorn)</div><div class="layer-tech">CDSW_APP_PORT · run_app.py launcher</div></div>
+          </div>
+          <div class="layer" style="padding:10px 14px;">
+            <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">DuckDB + Parquet</div><div class="layer-tech">QUERY_ENGINE=duckdb · local filesystem</div></div>
+          </div>
+          <div class="layer" style="padding:10px 14px;">
+            <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">Local Document Store</div><div class="layer-tech">DOCS_STORAGE_TYPE=local · data/sample_docs/</div></div>
+          </div>
+          <div class="layer" style="padding:10px 14px;">
+            <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">External LLM API</div><div class="layer-tech">LLM_PROVIDER=openai · LLM_API_KEY</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Production CDP -->
+      <div style="background:var(--s2);border:1px solid rgba(249,103,2,0.4);border-radius:14px;padding:20px;">
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--orange);margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+          <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          Production CDP
+        </div>
+        <div class="layer-stack" style="gap:6px;">
+          <div class="layer" style="padding:10px 14px;">
+            <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">Same CML Application</div><div class="layer-tech">Identical code · same startup script</div></div>
+          </div>
+          <div class="layer" style="padding:10px 14px;border-color:var(--orange);">
+            <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">CDW / Trino + Iceberg</div><div class="layer-tech">QUERY_ENGINE=trino · TRINO_HOST=&lt;cdw&gt;</div></div>
+          </div>
+          <div class="layer" style="padding:10px 14px;border-color:var(--orange);">
+            <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">Ozone S3GW</div><div class="layer-tech">DOCS_STORAGE_TYPE=s3 · MINIO_ENDPOINT</div></div>
+          </div>
+          <div class="layer" style="padding:10px 14px;border-color:var(--orange);">
+            <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">Cloudera AI Inference</div><div class="layer-tech">LLM_PROVIDER=openai · private endpoint</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span class="slide-num">12 / 14</span>
+      <div class="progress-track"><div class="progress-fill" style="width:85%"></div></div>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+    </div>
+  </section>
+
+  <!-- ── SLIDE T-04: LLM Flexibility & APIs ────────────────────────────── -->
+  <section class="slide bg-dark" id="s13" data-tech="1">
+    <div class="tech-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>
+      Technical Deep Dive
+    </div>
+    <div class="slide-tag">LLM &amp; APIs</div>
+    <h2>Pluggable LLMs, <span class="accent">Enterprise APIs</span></h2>
+    <div class="two-col" style="gap:28px;">
+      <!-- LLM providers -->
+      <div>
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t3);margin-bottom:10px;">Supported LLM Providers</div>
+        <div class="provider-grid">
+          <div class="provider-card">
+            <div class="provider-dot" style="background:var(--orange);"></div>
+            <div><div class="provider-name">Cloudera AI Inference</div><div class="provider-sub">LLM_PROVIDER=openai + custom base URL</div></div>
+          </div>
+          <div class="provider-card">
+            <div class="provider-dot" style="background:var(--teal);"></div>
+            <div><div class="provider-name">OpenAI / Azure OpenAI</div><div class="provider-sub">LLM_PROVIDER=openai</div></div>
+          </div>
+          <div class="provider-card">
+            <div class="provider-dot" style="background:var(--indigo);"></div>
+            <div><div class="provider-name">AWS Bedrock</div><div class="provider-sub">LLM_PROVIDER=bedrock · Claude models</div></div>
+          </div>
+          <div class="provider-card">
+            <div class="provider-dot" style="background:var(--green);"></div>
+            <div><div class="provider-name">Anthropic API</div><div class="provider-sub">LLM_PROVIDER=anthropic · prompt cache</div></div>
+          </div>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:12px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--orange);margin-bottom:8px;">Prompt Caching</div>
+          <div style="font-size:0.75rem;color:var(--t2);line-height:1.6;">Anthropic: <code style="font-family:var(--mono);color:var(--teal);">cache_control: {type: ephemeral}</code> on system block.<br/>Bedrock: <code style="font-family:var(--mono);color:var(--teal);">cachePoint</code> for Claude models. Reduces latency and cost on repeated queries.</div>
+        </div>
+      </div>
+      <!-- Key API endpoints -->
+      <div>
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t3);margin-bottom:10px;">Key API Endpoints</div>
+        <div class="code-block" style="font-size:0.72rem;">
+          <div><span class="key">POST</span> <span class="fn">/api/chat</span>         <span class="cmt"># SSE streaming · mode/token/done</span></div>
+          <div><span class="key">GET </span> <span class="fn">/health</span>            <span class="cmt"># liveness probe · startup poll</span></div>
+          <div><span class="key">GET </span> <span class="fn">/api/status</span>        <span class="cmt"># sidebar indicators</span></div>
+          <div><span class="key">POST</span> <span class="fn">/api/ingest</span>        <span class="cmt"># rebuild FAISS in background</span></div>
+          <div><span class="key">GET </span> <span class="fn">/api/ingest/stream</span> <span class="cmt"># SSE ingest progress</span></div>
+          <div><span class="key">GET </span> <span class="fn">/api/metrics</span>       <span class="cmt"># inference run history</span></div>
+          <div><span class="key">POST</span> <span class="fn">/api/sql/query</span>     <span class="cmt"># read-only SQL explorer</span></div>
+          <div><span class="key">POST</span> <span class="fn">/api/compare</span>       <span class="cmt"># A/B LLM provider comparison</span></div>
+          <div><span class="key">POST</span> <span class="fn">/api/docs/upload</span>   <span class="cmt"># add to knowledge base</span></div>
+          <div><span class="key">POST</span> <span class="fn">/api/docs/scrape</span>   <span class="cmt"># fetch URL, extract, ingest</span></div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--t2);margin-top:10px;line-height:1.6;">All endpoints documented · FastAPI auto-generates OpenAPI schema at <code style="font-family:var(--mono);color:var(--teal);">/docs</code></div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span class="slide-num">13 / 14</span>
+      <div class="progress-track"><div class="progress-fill" style="width:92%"></div></div>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+    </div>
+  </section>
+
+  <!-- ── SLIDE T-05: Security & Observability ──────────────────────────── -->
+  <section class="slide bg-orange" id="s14" data-tech="1">
+    <div class="tech-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>
+      Technical Deep Dive
+    </div>
+    <div class="slide-tag">Security &amp; Observability</div>
+    <h2>Enterprise-Grade Security <span class="accent">Out of the Box</span></h2>
+    <div class="two-col" style="gap:28px;">
+      <!-- Security -->
+      <div>
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t3);margin-bottom:12px;">Security Controls</div>
+        <div class="check-list">
+          <div class="check-item" style="font-size:0.82rem;">
+            <div class="check-icon">&#x2713;</div>
+            <div><strong>SQL AST guardrails</strong><div class="sub">sqlparse AST walking — blocks DROP/DELETE/ALTER even in CTEs and subqueries. Belt-and-suspenders SELECT guard at execution boundary.</div></div>
+          </div>
+          <div class="check-item" style="font-size:0.82rem;">
+            <div class="check-icon">&#x2713;</div>
+            <div><strong>Vector store integrity</strong><div class="sub">SHA-256 hash written after every FAISS build, verified before load. Detects tampering or corruption.</div></div>
+          </div>
+          <div class="check-item" style="font-size:0.82rem;">
+            <div class="check-icon">&#x2713;</div>
+            <div><strong>XSS protection</strong><div class="sub">All LLM output is sanitised with DOMPurify before <code style="font-family:var(--mono);font-size:0.9em;">dangerouslySetInnerHTML</code>. No raw HTML from untrusted sources.</div></div>
+          </div>
+          <div class="check-item" style="font-size:0.82rem;">
+            <div class="check-icon">&#x2713;</div>
+            <div><strong>Configure allowlist</strong><div class="sub">POST /api/configure validates keys against an explicit allowlist. Platform env vars cannot be overwritten via the wizard.</div></div>
+          </div>
+          <div class="check-item" style="font-size:0.82rem;">
+            <div class="check-icon">&#x2713;</div>
+            <div><strong>CML SSO / LDAP</strong><div class="sub">Auth handled entirely by Cloudera AI Workbench — Remote-user headers injected. App implements no custom auth.</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Observability -->
+      <div>
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t3);margin-bottom:12px;">Observability</div>
+        <div class="card-grid" style="grid-template-columns:1fr;gap:10px;">
+          <div class="card card-orange" style="padding:14px 16px;gap:5px;">
+            <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+            <div class="card-title">MLflow Integration</div>
+            <div class="card-body">Latency, token usage, provider, mode — logged async per inference. Ring-buffer always on, MLflow optional via MLFLOW_TRACKING_URI.</div>
+          </div>
+          <div class="card card-teal" style="padding:14px 16px;gap:5px;">
+            <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+            <div class="card-title">Metrics Dashboard</div>
+            <div class="card-body">Built-in /metrics page — session token counters, latency charts, per-run table, mode breakdown. Management-ready, no setup required.</div>
+          </div>
+          <div class="card card-indigo" style="padding:14px 16px;gap:5px;">
+            <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div class="card-title">Iceberg Time Travel</div>
+            <div class="card-body">On CDW/Trino: query historical snapshots of Iceberg tables. Ask "what did the portfolio look like on Jan 1?" — auditor-grade capability.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span class="slide-num">14 / 14</span>
       <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
       <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
     </div>
@@ -736,25 +1183,71 @@
 <button class="nav-btn" id="nextBtn" onclick="next()" aria-label="Next">
   <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
 </button>
-<div class="kbd-hint">← → arrow keys to navigate · F for fullscreen · <a href="/" style="color:inherit;opacity:0.65;text-decoration:none;">← Back to app</a></div>
+<div class="kbd-hint">← → navigate · F fullscreen · <a href="/" style="color:inherit;opacity:0.65;text-decoration:none;">← Back to app</a></div>
 
 <script>
-  var slides = document.querySelectorAll('.slide');
+  var allSlides = [];
+  var slides = [];
   var current = 0;
-  var total = slides.length;
+  var total = 0;
+  var aud = 'biz';
 
-  function goTo(n, direction) {
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+  function buildSlideList() {
+    var filtered = allSlides.filter(function(s) {
+      return aud === 'tech' || !s.dataset.tech;
+    });
+    if (aud === 'tech') {
+      // In Technical mode: CTA (s9) moves to last so the technical slides precede it
+      var cta  = filtered.filter(function(s) { return s.id === 's9'; });
+      var rest = filtered.filter(function(s) { return s.id !== 's9'; });
+      slides = rest.concat(cta);
+    } else {
+      slides = filtered;
+    }
+    total = slides.length;
+    slides.forEach(function(s, i) {
+      var numEl = s.querySelector('.slide-num');
+      if (numEl) numEl.textContent = pad(i + 1) + ' / ' + pad(total);
+      var fill = s.querySelector('.progress-fill');
+      if (fill) fill.style.width = Math.round((i + 1) / total * 100) + '%';
+    });
+  }
+
+  function goTo(n) {
     if (n < 0 || n >= total) return;
-    var prev = slides[current];
-    prev.classList.add('exiting');
-    setTimeout(function() { prev.classList.remove('active','exiting'); }, 440);
+    var prevSlide = slides[current];
+    prevSlide.classList.add('exiting');
+    setTimeout(function() { prevSlide.classList.remove('active', 'exiting'); }, 440);
     current = n;
     slides[current].classList.add('active');
     document.getElementById('prevBtn').disabled = current === 0;
     document.getElementById('nextBtn').disabled = current === total - 1;
   }
+
   function prev() { goTo(current - 1); }
   function next() { goTo(current + 1); }
+
+  function setAud(a) {
+    aud = a;
+    document.getElementById('btnBiz').className = 'aud-btn' + (a === 'biz' ? ' active' : '');
+    document.getElementById('btnTech').className = 'aud-btn' + (a === 'tech' ? ' active' : '');
+    // Hide all slides, rebuild list, show first
+    allSlides.forEach(function(s) { s.classList.remove('active', 'exiting'); });
+    buildSlideList();
+    current = 0;
+    slides[0].classList.add('active');
+    document.getElementById('prevBtn').disabled = true;
+    document.getElementById('nextBtn').disabled = slides.length <= 1;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    allSlides = Array.from(document.querySelectorAll('.slide'));
+    buildSlideList();
+    document.getElementById('prevBtn').disabled = true;
+    document.getElementById('nextBtn').disabled = total <= 1;
+  });
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); next(); }
@@ -768,12 +1261,38 @@
   // Touch swipe
   var touchX = null;
   document.addEventListener('touchstart', function(e) { touchX = e.touches[0].clientX; });
-  document.addEventListener('touchend',   function(e) {
+  document.addEventListener('touchend', function(e) {
     if (touchX === null) return;
     var dx = e.changedTouches[0].clientX - touchX;
     if (dx < -50) next();
     else if (dx > 50) prev();
     touchX = null;
+  });
+
+  // ── Interactive arch-box tooltips ────────────────────────────────
+  var tipEl = document.createElement('div');
+  tipEl.className = 'arch-tooltip';
+  document.body.appendChild(tipEl);
+
+  document.addEventListener('mouseover', function(e) {
+    var box = e.target.closest('.arch-box[data-tip]');
+    if (!box) return;
+    tipEl.innerHTML = box.dataset.tip;
+    tipEl.classList.add('tip-vis');
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!tipEl.classList.contains('tip-vis')) return;
+    var x = e.clientX + 14, y = e.clientY + 14;
+    var tw = tipEl.offsetWidth, th = tipEl.offsetHeight;
+    if (x + tw > window.innerWidth - 8) x = e.clientX - tw - 14;
+    if (y + th > window.innerHeight - 8) y = e.clientY - th - 14;
+    tipEl.style.left = x + 'px';
+    tipEl.style.top  = y + 'px';
+  });
+  document.addEventListener('mouseout', function(e) {
+    var box = e.target.closest('.arch-box[data-tip]');
+    if (!box) return;
+    if (!box.contains(e.relatedTarget)) tipEl.classList.remove('tip-vis');
   });
 </script>
 </body>

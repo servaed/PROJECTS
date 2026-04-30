@@ -363,6 +363,7 @@ class ChatRequest(BaseModel):
     history: list[dict] = []
     domain: str = _DEFAULT_DOMAIN
     language: str = "id"
+    style: str = "analyst"   # analyst | executive | compliance
 
 
 # ── API routes ─────────────────────────────────────────────────────────────
@@ -831,6 +832,256 @@ async def api_configure_post(body: ConfigureRequest):
             f"vector store re-check, new DB connections).{shadow_msg}"
         ),
     }
+
+
+# ── LLM Profile storage ───────────────────────────────────────────────────
+_PROFILES_PATH = Path("data/llm_profiles.json")
+
+
+def _load_profiles() -> dict:
+    if _PROFILES_PATH.exists():
+        try:
+            return json.loads(_PROFILES_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {"profiles": []}
+
+
+def _save_profiles_file(data: dict) -> None:
+    _PROFILES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    _PROFILES_PATH.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+class ProfileSaveRequest(BaseModel):
+    name: str
+    config: dict[str, str]
+
+
+@app.get("/api/profiles", tags=["settings"])
+async def api_profiles_list():
+    """Return all saved LLM profiles."""
+    return _load_profiles()
+
+
+@app.post("/api/profiles", tags=["settings"])
+async def api_profiles_save(body: ProfileSaveRequest):
+    """Create or update a named LLM profile."""
+    import datetime
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Profile name is required")
+    safe_config = {k: v for k, v in body.config.items() if k in _CONFIGURE_ALLOWED_KEYS}
+    data = _load_profiles()
+    profiles = data.get("profiles", [])
+    now = datetime.datetime.now().isoformat(timespec="seconds")
+    existing = next((p for p in profiles if p["name"] == name), None)
+    if existing:
+        existing["config"] = safe_config
+        existing["updated_at"] = now
+    else:
+        profiles.append({"name": name, "config": safe_config, "created_at": now})
+    data["profiles"] = profiles
+    _save_profiles_file(data)
+    logger.info("LLM profile saved: %s", name)
+    return {"ok": True, "name": name, "count": len(profiles)}
+
+
+@app.delete("/api/profiles/{name}", tags=["settings"])
+async def api_profiles_delete(name: str):
+    """Delete a named LLM profile."""
+    data = _load_profiles()
+    before = len(data.get("profiles", []))
+    data["profiles"] = [p for p in data.get("profiles", []) if p["name"] != name]
+    _save_profiles_file(data)
+    return {"ok": True, "deleted": len(data["profiles"]) < before}
+
+
+@app.post("/api/profiles/{name}/activate", tags=["settings"])
+async def api_profiles_activate(name: str):
+    """Apply a saved profile: writes its config to data/.env.local and os.environ."""
+    data = _load_profiles()
+    profile = next((p for p in data.get("profiles", []) if p["name"] == name), None)
+    if not profile:
+        raise HTTPException(status_code=404, detail=f"Profile '{name}' not found")
+    config = {k: v for k, v in profile.get("config", {}).items() if k in _CONFIGURE_ALLOWED_KEYS}
+    existing = _read_override_file()
+    for key, value in config.items():
+        sanitized = _sanitize_config_value(value)
+        if sanitized:
+            existing[key] = sanitized
+            os.environ[key] = sanitized
+        else:
+            existing.pop(key, None)
+            os.environ.pop(key, None)
+    _write_override_file(existing)
+    logger.info("LLM profile activated: %s", name)
+    return {"ok": True, "name": name, "config": config}
+
+
+# ── Follow-up question suggestions ────────────────────────────────────────
+
+class FollowupRequest(BaseModel):
+    question: str
+    answer: str
+    mode: str = "document"
+    domain: str = "banking"
+    language: str = "id"
+
+
+@app.post("/api/followup", tags=["chat"])
+async def api_followup(body: FollowupRequest):
+    """Generate 3 contextual follow-up question suggestions via a lightweight LLM call."""
+    from src.llm.inference_client import get_llm_client
+    lang_hint = "in Bahasa Indonesia" if body.language == "id" else "in English"
+    prompt = (
+        f"Given this Q&A exchange, suggest exactly 3 short follow-up questions {lang_hint} "
+        f"that a user would naturally ask next. Return only the 3 questions, one per line, "
+        f"no numbering, no extra text.\n\n"
+        f"Q: {body.question}\nA: {body.answer[:600]}"
+    )
+    try:
+        llm = get_llm_client()
+        resp = llm.chat(
+            [{"role": "user", "content": prompt}],
+            temperature=0.7, max_tokens=200,
+        )
+        lines = [l.strip().lstrip("-•→").strip() for l in resp.content.strip().splitlines() if l.strip()]
+        suggestions = [l for l in lines if len(l) > 5][:3]
+        return {"suggestions": suggestions}
+    except Exception as exc:
+        logger.warning("follow-up generation failed: %s", exc)
+        return {"suggestions": []}
+
+
+# ── Demo self-test ─────────────────────────────────────────────────────────
+
+_SELFTEST_QUESTIONS = [
+    {"label": "Document RAG",    "question": "Apa syarat pengajuan kredit UMKM?",            "domain": "banking",    "language": "id"},
+    {"label": "Structured Data", "question": "Show top 5 customers by credit exposure",      "domain": "banking",    "language": "en"},
+    {"label": "Combined",        "question": "Apakah utilisasi jaringan di Bali melebihi batas SLA?", "domain": "telco", "language": "id"},
+]
+
+
+@app.post("/api/selftest", tags=["ops"])
+async def api_selftest():
+    """Run 3 quick test questions through the live pipeline and return pass/fail + latency."""
+    results = []
+    for t in _SELFTEST_QUESTIONS:
+        t0 = time.monotonic()
+        try:
+            prep = prepare_answer(
+                t["question"], history=[], top_k=3,
+                domain=t["domain"], language=t["language"],
+            )
+            full_text = ""
+            for tok in __import__("src.orchestration.answer_builder", fromlist=["stream_synthesis"]).stream_synthesis(prep):
+                full_text += tok
+                if len(full_text) > 50:
+                    break
+            elapsed_ms = int((time.monotonic() - t0) * 1000)
+            passed = bool(full_text and len(full_text) > 10)
+            results.append({"label": t["label"], "passed": passed, "latency_ms": elapsed_ms, "error": None})
+        except Exception as exc:
+            elapsed_ms = int((time.monotonic() - t0) * 1000)
+            results.append({"label": t["label"], "passed": False, "latency_ms": elapsed_ms, "error": str(exc)[:120]})
+    return {"tests": results, "all_passed": all(r["passed"] for r in results)}
+
+
+# ── Mini evaluation suite ──────────────────────────────────────────────────
+
+_EVAL_QUESTIONS = [
+    # Banking ID
+    {"domain":"banking","language":"id","mode":"document","question":"Apa syarat restrukturisasi kredit UMKM?"},
+    {"domain":"banking","language":"id","mode":"data",    "question":"Berapa total outstanding kredit UMKM di Jakarta?"},
+    {"domain":"banking","language":"id","mode":"combined","question":"Apakah outstanding kredit UMKM Jakarta sudah sesuai target ekspansi 15% kebijakan 2026?"},
+    # Telco EN
+    {"domain":"telco","language":"en","mode":"document","question":"What are the SLA tiers for customer service?"},
+    {"domain":"telco","language":"en","mode":"data",    "question":"Show top 5 subscribers by churn risk score"},
+    {"domain":"telco","language":"en","mode":"combined","question":"Which subscribers have high churn risk and qualify for the retention program?"},
+    # Government ID
+    {"domain":"government","language":"id","mode":"document","question":"Apa ketentuan penalti APBD yang berlaku?"},
+    {"domain":"government","language":"id","mode":"data",    "question":"Tampilkan realisasi anggaran per satuan kerja"},
+    {"domain":"government","language":"id","mode":"combined","question":"Satuan kerja mana yang berisiko kena penalti sesuai regulasi APBD?"},
+]
+
+_eval_state: dict = {"running": False, "results": None, "completed": 0, "total": len(_EVAL_QUESTIONS)}
+_eval_lock = threading.Lock()
+_EVAL_RESULTS_PATH = Path("data/eval_results.json")
+
+
+def _run_eval_background() -> None:
+    """Execute mini eval in a background thread, writing results to disk."""
+    from src.orchestration.answer_builder import stream_synthesis as _stream
+    results = []
+    by_domain: dict = {}
+    passed_total = 0
+    for i, q in enumerate(_EVAL_QUESTIONS):
+        t0 = time.monotonic()
+        try:
+            prep = prepare_answer(q["question"], top_k=3, domain=q["domain"], language=q["language"])
+            full_text = ""
+            for tok in _stream(prep):
+                full_text += tok
+                if len(full_text) > 200:
+                    break
+            elapsed_ms = int((time.monotonic() - t0) * 1000)
+            passed = bool(full_text and len(full_text) > 10)
+        except Exception as exc:
+            elapsed_ms = int((time.monotonic() - t0) * 1000)
+            passed = False
+            full_text = ""
+        if passed:
+            passed_total += 1
+        d = q["domain"]
+        if d not in by_domain:
+            by_domain[d] = {"passed": 0, "total": 0}
+        by_domain[d]["total"] += 1
+        if passed:
+            by_domain[d]["passed"] += 1
+        results.append({
+            "domain": d, "language": q["language"], "mode": q.get("mode",""),
+            "question": q["question"], "passed": passed, "latency_ms": elapsed_ms,
+        })
+        with _eval_lock:
+            _eval_state["completed"] = i + 1
+    data = {
+        "running": False, "results": results, "by_domain": by_domain,
+        "passed": passed_total, "total": len(results),
+        "completed_at": __import__("datetime").datetime.now().isoformat(timespec="seconds"),
+    }
+    _EVAL_RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    _EVAL_RESULTS_PATH.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+    with _eval_lock:
+        _eval_state.update(data)
+    logger.info("Mini eval complete: %d/%d passed", passed_total, len(results))
+
+
+@app.post("/api/eval/run", tags=["ops"])
+async def api_eval_run():
+    """Start the 9-question mini evaluation in the background."""
+    with _eval_lock:
+        if _eval_state["running"]:
+            return {"ok": False, "message": "Eval already running"}
+        _eval_state["running"] = True
+        _eval_state["completed"] = 0
+        _eval_state["results"] = None
+    t = threading.Thread(target=_run_eval_background, daemon=True)
+    t.start()
+    return {"ok": True, "total": len(_EVAL_QUESTIONS)}
+
+
+@app.get("/api/eval/status", tags=["ops"])
+async def api_eval_status():
+    """Return current eval status — running/completed/results."""
+    with _eval_lock:
+        state = dict(_eval_state)
+    if state.get("results") is None and _EVAL_RESULTS_PATH.exists():
+        try:
+            cached = json.loads(_EVAL_RESULTS_PATH.read_text())
+            state.update(cached)
+        except Exception:
+            pass
+    return state
 
 
 @app.get("/api/stats", tags=["ops"])
@@ -1482,7 +1733,8 @@ async def api_chat(body: ChatRequest, request: Request):
     return StreamingResponse(
         _chat_sse(body.question, body.history, domain=domain,
                   retrieval_domain=retrieval_domain,
-                  domain_tables=domain_tables, language=body.language),
+                  domain_tables=domain_tables, language=body.language,
+                  style=body.style),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -1499,6 +1751,7 @@ async def _chat_sse(
     retrieval_domain: str | None = _DEFAULT_DOMAIN,
     domain_tables: list[str] | None = None,
     language: str = "id",
+    style: str = "analyst",
 ) -> AsyncGenerator[str, None]:
     """Run the three-phase RAG pipeline and yield SSE events.
 
@@ -1513,7 +1766,7 @@ async def _chat_sse(
     try:
         # Phase 1 — classify + retrieve (blocking, run in thread pool)
         prep = await loop.run_in_executor(
-            None, prepare_answer, question, history, 5, retrieval_domain, domain_tables, language
+            None, prepare_answer, question, history, 5, retrieval_domain, domain_tables, language, style
         )
         yield _sse("mode", {"mode": prep.mode})
 

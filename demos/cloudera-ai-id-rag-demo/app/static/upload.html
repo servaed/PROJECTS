@@ -46,7 +46,7 @@
       background: var(--surface); border-bottom: 1px solid var(--border);
       position: sticky; top: 0; z-index: 10;
     }
-    .topbar img { height: 20px; filter: var(--logo-filter); }
+    .topbar img { height: 20px; filter: var(--logo-filter); display: block; }
     .topbar-title {
       font-family: var(--display); font-size: 0.95rem; font-weight: 700;
       color: var(--t1); letter-spacing: -0.01em;
@@ -218,13 +218,13 @@
     <div class="topbar-sep"></div>
     <div class="topbar-title">Enterprise <span>Assistant</span> — Upload</div>
     <nav class="topbar-links">
-      <a class="topbar-link" href="/">⊙ Chat</a>
-      <a class="topbar-link" href="/explorer">🗄 Data Explorer</a>
-      <a class="topbar-link active" href="/upload">↑ Upload</a>
-      <a class="topbar-link" href="/setup">◎ Status</a>
-      <a class="topbar-link" href="/metrics">📊 Metrics</a>
-      <a class="topbar-link" href="/presentation">🖼 Slides</a>
-      <a class="topbar-link" href="/configure">⚙ Settings</a>
+      <a class="topbar-link" href="/">Chat</a>
+      <a class="topbar-link" href="/explorer">Data Explorer</a>
+      <a class="topbar-link active" href="/upload">Upload</a>
+      <a class="topbar-link" href="/metrics">Metrics</a>
+      <a class="topbar-link" href="/presentation">Slides</a>
+      <a class="topbar-link" href="/setup">Status</a>
+      <a class="topbar-link" href="/configure">Settings</a>
       <button class="topbar-link theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
     </nav>
   </div>
@@ -253,7 +253,7 @@
         <div class="dz-types">Max recommended size: 10 MB per file</div>
       </div>
       <div class="file-preview" id="file-preview">
-        <div class="file-icon" id="preview-icon">📄</div>
+        <div class="file-icon" id="preview-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;display:block;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
         <div class="file-info">
           <div class="file-name" id="preview-name"></div>
           <div class="file-size" id="preview-size"></div>
@@ -271,15 +271,15 @@
           <div class="radio-group" id="domain-group">
             <label class="radio-btn checked" id="d-banking">
               <input type="radio" name="domain" value="banking" checked onchange="onRadio('domain', this)"/>
-              🏦 Banking
+              Banking
             </label>
             <label class="radio-btn" id="d-telco">
               <input type="radio" name="domain" value="telco" onchange="onRadio('domain', this)"/>
-              📡 Telco
+              Telco
             </label>
             <label class="radio-btn" id="d-government">
               <input type="radio" name="domain" value="government" onchange="onRadio('domain', this)"/>
-              🏛 Government
+              Government
             </label>
           </div>
         </div>
@@ -288,11 +288,11 @@
           <div class="radio-group" id="lang-group">
             <label class="radio-btn checked" id="l-id">
               <input type="radio" name="language" value="id" checked onchange="onRadio('language', this)"/>
-              🇮🇩 Bahasa Indonesia
+              Bahasa Indonesia
             </label>
             <label class="radio-btn" id="l-en">
               <input type="radio" name="language" value="en" onchange="onRadio('language', this)"/>
-              🇬🇧 English
+              English
             </label>
           </div>
         </div>
@@ -353,7 +353,8 @@
     <!-- ── URL Scrape Card ────────────────────────────── -->
     <div class="card" style="margin-top:24px;">
       <div class="card-title" style="display:flex;align-items:center;gap:8px;">
-        <span>🌐 Scrape from URL</span>
+        <svg style="width:16px;height:16px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span>Scrape from URL</span>
       </div>
       <p style="font-size:13px;color:var(--t2);margin-bottom:14px;">Enter a public URL to fetch its text content, save it as a document, and optionally re-ingest.</p>
       <div class="form-row" style="margin-bottom:12px;">
@@ -379,14 +380,14 @@
         </div>
       </div>
       <button onclick="doScrape()" style="padding:11px 22px;border-radius:var(--radius-sm);border:none;background:var(--teal);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">
-        🌐 Fetch &amp; Save
+        Fetch &amp; Save
       </button>
       <div class="status-box" id="scrape-status"></div>
     </div>
 
     <!-- ── CSV / Excel Table Import Card ─────────────── -->
     <div class="card" style="margin-top:16px;">
-      <div class="card-title">📊 Import CSV / Excel as New Table</div>
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;"><svg style="width:16px;height:16px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg> Import CSV / Excel as New Table</div>
       <p style="font-size:13px;color:var(--t2);margin-bottom:14px;">Upload a .csv or .xlsx file to register it as a new queryable DuckDB table. Only available when QUERY_ENGINE=duckdb.</p>
       <div class="form-row" style="margin-bottom:12px;align-items:flex-end;">
         <div class="form-group" style="flex:2;">
@@ -406,7 +407,7 @@
         </div>
       </div>
       <button onclick="doTableImport()" style="padding:11px 22px;border-radius:var(--radius-sm);border:none;background:var(--indigo);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">
-        📊 Import Table
+        Import Table
       </button>
       <div class="status-box" id="table-status"></div>
     </div>
@@ -414,7 +415,8 @@
     <!-- ── Document Management ───────────────────────── -->
     <div class="card" style="margin-top:24px;">
       <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-        <span>📁 Knowledge Base Documents</span>
+        <svg style="width:16px;height:16px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span>Knowledge Base Documents</span>
         <span id="doc-count" style="font-size:11px;background:var(--s3);padding:1px 8px;border-radius:10px;color:var(--t2);font-weight:500;margin-left:auto;"></span>
         <button onclick="loadDocs()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);cursor:pointer;color:var(--t2);">↻ Refresh</button>
       </div>
@@ -445,7 +447,8 @@
   var _uploads = [];
 
   // ── File selection ─────────────────────────────────────────────────────────
-  var FILE_ICONS = { pdf: '📄', docx: '📝', txt: '📃', md: '📋' };
+  var _FILE_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;display:block;opacity:0.6;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+  var FILE_ICONS = { pdf: _FILE_ICON_SVG, docx: _FILE_ICON_SVG, txt: _FILE_ICON_SVG, md: _FILE_ICON_SVG };
   var _fileQueue = [];
 
   function onDragOver(e) { e.preventDefault(); document.getElementById('dropzone').classList.add('drag-over'); }
@@ -461,7 +464,7 @@
     if (files.length === 1) {
       _file = files[0];
       var ext = _file.name.split('.').pop().toLowerCase();
-      document.getElementById('preview-icon').textContent = FILE_ICONS[ext] || '📄';
+      document.getElementById('preview-icon').innerHTML = _FILE_ICON_SVG;
       document.getElementById('preview-name').textContent = _file.name;
       document.getElementById('preview-size').textContent = formatSize(_file.size) + ' · ' + ext.toUpperCase();
       document.getElementById('file-preview').classList.add('visible');
@@ -485,7 +488,7 @@
     list.innerHTML = _fileQueue.map(function(f, i) {
       var ext = f.name.split('.').pop().toLowerCase();
       return '<div class="upload-item" id="q-' + i + '">' +
-        '<div class="upload-item-icon">' + (FILE_ICONS[ext] || '📄') + '</div>' +
+        '<div class="upload-item-icon">' + _FILE_ICON_SVG + '</div>' +
         '<div class="upload-item-info"><div class="upload-item-name">' + escHtml(f.name) + '</div>' +
         '<div class="upload-item-meta">' + formatSize(f.size) + ' · ' + ext.toUpperCase() + '</div></div>' +
         '<span id="q-status-' + i + '" style="font-size:11px;color:var(--t3);">Pending</span>' +
@@ -683,13 +686,13 @@
     list.innerHTML = docs.map(function(doc) {
       var color = DOMAIN_COLORS[doc.domain] || 'var(--t2)';
       return '<div class="upload-item">' +
-        '<div class="upload-item-icon">' + (doc.file_type === 'PDF' ? '📄' : doc.file_type === 'DOCX' ? '📝' : '📃') + '</div>' +
+        '<div class="upload-item-icon">' + _FILE_ICON_SVG + '</div>' +
         '<div class="upload-item-info">' +
         '<div class="upload-item-name" title="' + escHtml(doc.path) + '">' + escHtml(doc.name) + '</div>' +
         '<div class="upload-item-meta">' + doc.file_type + ' · ' + formatSize(doc.size_bytes) + ' · ' + (doc.language === 'en' ? 'English' : 'Bahasa Indonesia') + '</div>' +
         '</div>' +
         '<span style="font-size:11px;font-weight:600;color:' + color + ';padding:2px 8px;border-radius:10px;background:' + color.replace(')', ',0.1)').replace('var(', 'rgba(').replace('--o-text,0.1)', '249,103,2,0.08)').replace('--indigo,0.1)', '92,107,192,0.08)').replace('--teal,0.1)', '0,121,107,0.08)') + '">' + doc.domain + '</span>' +
-        '<button onclick="deleteDoc(\'' + escHtml(doc.path) + '\')" title="Delete" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--t3);padding:4px;border-radius:50%;transition:color 0.12s;" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--t3)\'">🗑</button>' +
+        '<button onclick="deleteDoc(\'' + escHtml(doc.path) + '\')" title="Delete" style="background:none;border:none;cursor:pointer;color:var(--t3);padding:4px;border-radius:50%;transition:color 0.12s;line-height:0;" onmouseover="this.style.color=\'var(--err)\'" onmouseout="this.style.color=\'var(--t3)\'"><svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' style=\'width:15px;height:15px;display:block;\'><polyline points=\'3 6 5 6 21 6\'/><path d=\'M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6\'/><path d=\'M10 11v6M14 11v6\'/><path d=\'M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2\'/></svg></button>' +
         '</div>';
     }).join('');
   }
@@ -764,14 +767,11 @@
     var card = document.getElementById('recent-card');
     var list = document.getElementById('upload-list');
     card.style.display = '';
-    var icons = { pdf: '📄', docx: '📝', txt: '📃', md: '📋' };
     var ext = data.saved_as.split('.').pop().toLowerCase();
-    var icon = icons[ext] || '📄';
     var html = '';
     _uploads.forEach(function(u) {
-      var uExt = u.saved_as.split('.').pop().toLowerCase();
       html += '<div class="upload-item">';
-      html += '<div class="upload-item-icon">' + (icons[uExt] || '📄') + '</div>';
+      html += '<div class="upload-item-icon">' + _FILE_ICON_SVG + '</div>';
       html += '<div class="upload-item-info">';
       html += '<div class="upload-item-name">' + escHtml(u.saved_as) + '</div>';
       html += '<div class="upload-item-meta">' + formatSize(u.size_bytes) + ' · ' + (u.language === 'en' ? 'English' : 'Bahasa Indonesia') + '</div>';

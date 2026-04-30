@@ -76,14 +76,27 @@ def rerank(
     k = top_k if top_k is not None else settings.reranker_top_k
 
     try:
+        import math
         pairs = [(question, c.text[:400]) for c in chunks]
-        scores = model.predict(pairs)
+        raw_scores = model.predict(pairs)
         reranked = sorted(
-            zip(chunks, scores),
+            zip(chunks, raw_scores),
             key=lambda t: t[1],
             reverse=True,
         )
-        result = [c for c, _ in reranked[:k]]
+        # Convert cross-encoder logits to [0, 1] via sigmoid so the UI badge is meaningful.
+        # ms-marco-MiniLM logits are typically in the range [-10, +10].
+        result = []
+        for c, logit in reranked[:k]:
+            sig = 1.0 / (1.0 + math.exp(-float(logit)))
+            result.append(c.__class__(
+                text=c.text,
+                title=c.title,
+                source_path=c.source_path,
+                chunk_index=c.chunk_index,
+                score=round(sig, 4),
+                ingest_timestamp=c.ingest_timestamp,
+            ))
         logger.debug("Reranker: %d -> %d chunks for: %.60s", len(chunks), len(result), question)
         return result
     except Exception as exc:

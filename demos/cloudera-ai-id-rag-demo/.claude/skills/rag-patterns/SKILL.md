@@ -17,14 +17,22 @@ Run ingestion:
 python -m src.retrieval.document_loader
 ```
 
-## Retrieval
+## Retrieval — 3-Stage Pipeline
 
-`src/retrieval/retriever.py` runs hybrid BM25 + FAISS search fused via Reciprocal Rank Fusion (RRF)
-and returns `RetrievedChunk` objects. Each chunk carries: `text`, `title`, `source_path`,
-`chunk_index`, `score`, `ingest_timestamp`, `domain`, `language`.
+`src/retrieval/retriever.py` runs a **3-stage retrieval** pipeline:
 
-Retriever always filters by `domain` and optionally by `language` so each UI language
-only sees chunks from its own knowledge base (`_en.txt` files → `language="en"`).
+**Stage 1 — Semantic search**: FAISS cosine similarity using `multilingual-e5-large` (1024-dim). Returns top-40 candidates.
+
+**Stage 2 — Keyword re-ranking**: BM25 (`rank-bm25`) runs in parallel; results fused with FAISS via Reciprocal Rank Fusion (RRF). Produces a fused top-20.
+
+**Stage 3 — Cross-encoder reranking**: `cross-encoder/ms-marco-MiniLM-L-6-v2` (~90 MB, lazy-loaded, thread-safe singleton) scores fused candidates and returns top-K. Controlled by:
+- `RERANKER_ENABLED` (default: `true`) — set `false` to skip stage 3
+- `RERANKER_MODEL` — override the cross-encoder checkpoint
+- `RERANKER_TOP_K` — number of final chunks passed to LLM
+
+Each `RetrievedChunk` carries: `text`, `title`, `source_path`, `chunk_index`, `score`, `ingest_timestamp`, `domain`, `language`.
+
+Retriever always filters by `domain` (pass `domain=None` for All-Domains mode) and optionally by `language` so each UI language only sees chunks from its own knowledge base (`_en.txt` files → `language="en"`).
 
 ## Citation Rules
 
@@ -52,6 +60,19 @@ Upload via the browser: `http://<app-url>/upload`
 - File is saved to `data/sample_docs/{domain}/{filename}`
 - English files must end in `_en` (e.g. `my_policy_en.txt`) — auto-appended if missing
 - Optional: enable "Re-ingest after upload" to rebuild the vector store immediately
+
+## All-Domains Mode
+
+Set `domain="all"` in `/api/chat` → `retrieval_domain=None` → retriever skips the domain filter.
+All 14 documents and all 9 SQL tables are visible. The "◉ All" tab in the sidebar triggers this.
+
+## Agentic SQL Retry
+
+In `combined` mode and `data` mode, if `validate_sql()` raises `SqlGuardrailError` or returns `TIDAK_DAPAT_DIJAWAB`, the orchestrator auto-rephrases the question once and retries SQL generation before falling back to `get_answer_sql_failed(language)`.
+
+## MLflow Tracking
+
+`src/utils/metrics.py` maintains an in-memory ring buffer of inference runs (always on). If `MLFLOW_TRACKING_URI` is set, runs are also logged to MLflow asynchronously (non-blocking). Tracked: latency_ms, tokens_used, provider, model, mode, domain, language.
 
 ## Adding New Document Types
 

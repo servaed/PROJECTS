@@ -2,6 +2,7 @@
 
 Quick reference for running the cloudera-ai-id-rag-demo in front of a customer.
 Complete all pre-demo steps before the call. Estimated run time: **25–35 minutes** for a full demo.
+Add **10 minutes** for the Technical deep-dive if the audience includes architects or IT decision-makers.
 
 ---
 
@@ -23,7 +24,8 @@ Complete all pre-demo steps before the call. Estimated run time: **25–35 minut
 ## Pre-Demo (30 Minutes Before)
 
 - [ ] Open the app URL in browser
-- [ ] Select the correct domain (Banking 🏦 / Telco 📡 / Government 🏛)
+- [ ] Choose audience mode in `/presentation`: **Business** (default) or **Technical** (for architects/IT)
+- [ ] Select the correct domain (Banking / Telco / Government) in the chat sidebar
 - [ ] Select the correct language (Indonesian / English)
 - [ ] Confirm all sidebar indicators show green
 - [ ] Run one sample question manually to warm up the LLM cache
@@ -32,7 +34,13 @@ Complete all pre-demo steps before the call. Estimated run time: **25–35 minut
 
 ---
 
-## Demo Flow (25–35 min)
+## Demo Flow (25–35 min, +10 min for Technical audience)
+
+### 0. Slide Deck — Context Setting (3 min, optional)
+- Open `/presentation` in a second tab or full-screen
+- **Business audience**: walk through slides 1–3 (problem → solution → scenarios) then jump to live demo
+- **Technical audience**: after the live demo, switch to Technical mode and walk through slides 10–14 (pipeline, retrieval, deployment, LLM APIs, security)
+- Use F key for fullscreen; ←/→ to navigate
 
 ### 1. Opening Hook (2 min)
 - Show the clean interface — no setup, no infrastructure visible
@@ -70,6 +78,8 @@ Complete all pre-demo steps before the call. Estimated run time: **25–35 minut
 | Mode badge | "The badge tells you whether the answer came from documents, data, or both — no black box" |
 | Language toggle | "Same model, same data — just switch the language and the responses follow" |
 | Domain tabs | "One deployment, three business domains — add your own by changing the config" |
+| Slide deck | "The Technical slides show the full pipeline — ask me anything about the architecture" |
+| Audience toggle | Switch to Technical mode live if an architect in the room asks "how does this work?" |
 
 ---
 

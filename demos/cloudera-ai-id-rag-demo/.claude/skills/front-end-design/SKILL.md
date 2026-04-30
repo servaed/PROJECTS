@@ -40,3 +40,51 @@ Interpret creatively and make unexpected choices that feel genuinely designed fo
 **IMPORTANT**: Match implementation complexity to the aesthetic vision. Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful attention to spacing, typography, and subtle details. Elegance comes from executing the vision well.
 
 Remember: Claude is capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
+
+---
+
+## Project Design System — cloudera-ai-id-rag-demo
+
+When working on pages within this project, follow the established design system:
+
+### Color Palette
+```css
+--orange:  #F96702;   /* Cloudera brand — primary accent */
+--teal:    #00A591;   /* secondary accent (dark) / #00796B (light mode) */
+--indigo:  #818CF8;   /* tertiary accent (dark) / #5C6BC0 (light mode) */
+--green:   #34D399;   /* success / positive */
+--bg:      #F8F9FA;   /* light mode background */
+--surface: #FFFFFF;   /* light mode card */
+/* Dark mode (presentation + dark UI variant): #0a0e1a bg, #111827 surface */
+```
+
+### Typography
+- **Body**: `Google Sans` (from Google Fonts) — `system-ui` fallback for offline
+- **Display headings**: `Google Sans Display` (700/800/900)
+- **Monospace**: `JetBrains Mono` (code blocks, SQL, paths, monospace labels)
+- Anti-aliasing: always `-webkit-font-smoothing: antialiased`
+
+### Icon Vocabulary
+**Rule: zero emoji in UI chrome.** All icons are stroke SVG, Feather icon style, `fill:none`, `stroke:currentColor`, `stroke-width:1.5`, `stroke-linecap:round`, `stroke-linejoin:round`, 24×24 viewBox.
+
+Domain symbols (sidebar tabs, welcome screen): `◈` Banking · `⬡` Telco · `⬢` Government · `◉` All
+
+Common icons:
+- Chat: `<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>`
+- Database: `<ellipse cx="12" cy="5" rx="9" ry="3"/>` + path arcs
+- Bar chart: `<line x1="18" y1="20" x2="18" y2="10"/>` + similar lines + baseline
+- Settings/gear: circle + gear path (full Feather settings icon)
+- File: `<path d="M14 2H6a2 2 0 0 0-2 2v16..."/>` + polyline for fold
+- Folder: `<path d="M22 19a2 2 0 0 1-2 2H4..."/>` with tab
+
+### Cloudera Logo Usage
+- **Light mode chat**: orange filter — `brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%)`
+- **Dark mode chat**: white filter — `brightness(0) invert(1)`
+- **Presentation (dark bg)**: orange filter via `--logo-filter` CSS variable
+
+### Component Patterns
+- Cards: `border-radius:14px`, `border:1px solid var(--border)`, 3px top accent bar via `::before`
+- Pills/badges: `border-radius:20px`, uppercase, 700 weight, dimmed background + colored border
+- Buttons (primary): orange bg, white text, `box-shadow:0 4px 20px rgba(249,103,2,0.4)`
+- Topbar: `height:64px`, white/surface bg, 1px bottom border, flex align-center
+- Nav links (topbar): `height:32px`, `border-radius:8px`, border, `var(--s2)` bg — plain text labels

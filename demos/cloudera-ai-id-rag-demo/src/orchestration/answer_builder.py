@@ -64,6 +64,7 @@ class AnswerPrep:
     history: list[dict]
     domain: str = "banking"
     language: str = "id"
+    style: str = "analyst"   # analyst | executive | compliance
     # Populated by stream_synthesis so _chat_sse can include token estimates in the
     # done event without re-building the messages or calling the LLM a second time.
     synthesis_input_chars: int = 0
@@ -143,6 +144,7 @@ def prepare_answer(
     domain: str = "banking",
     domain_tables: list[str] | None = None,
     language: str = "id",
+    style: str = "analyst",
 ) -> AnswerPrep:
     """Classify the question and retrieve all context. No LLM synthesis here.
 
@@ -203,6 +205,7 @@ def prepare_answer(
         history=history or [],
         domain=domain,
         language=language,
+        style=style,
     )
 
 
@@ -295,13 +298,15 @@ def _build_messages(prep: AnswerPrep) -> list[dict]:
     """Build the LLM prompt messages from retrieved context."""
     lang = prep.language
 
+    sty = prep.style
+
     if prep.mode == "document":
         context = _format_doc_context(prep.doc_chunks)
-        return build_document_prompt(context, prep.question, history=prep.history, language=lang)
+        return build_document_prompt(context, prep.question, history=prep.history, language=lang, style=sty)
 
     if prep.mode == "data":
         sql_summary = _format_sql_summary(prep.query_result)
-        return build_data_prompt(sql_summary, prep.question, history=prep.history, language=lang)
+        return build_data_prompt(sql_summary, prep.question, history=prep.history, language=lang, style=sty)
 
     # gabungan — merge both sources
     doc_context = (
@@ -315,7 +320,7 @@ def _build_messages(prep: AnswerPrep) -> list[dict]:
         else "_No data available._"
     )
     return build_combined_prompt(
-        doc_context, sql_summary, prep.question, history=prep.history, language=lang
+        doc_context, sql_summary, prep.question, history=prep.history, language=lang, style=sty
     )
 
 

@@ -13,10 +13,11 @@ banking, telco, and government sectors.
 | Feature | Description |
 |---------|-------------|
 | Multilingual chat | Questions and answers in English or Indonesian — auto-detected |
-| Domain selector | Sidebar tabs: 🏦 Banking · 📡 Telco · 🏛 Government |
+| Domain selector | Sidebar tabs: Banking · Telco · Government (uniform SVG icons, ◈ ⬡ ⬢) |
 | Document RAG | Answers from TXT, PDF, DOCX, HTML, Markdown with source preview |
 | Structured data query | Natural language to SQL — read-only with full guardrails |
 | Combined answers | Merges document context + table query results in one response |
+| 3-stage retrieval | FAISS semantic → BM25 keyword (RRF fusion) → cross-encoder reranking |
 | Conversation history | Maintains context across prior turns |
 | Streaming responses | Token-by-token streaming via Server-Sent Events |
 | Keyword highlighting | Matched query words highlighted in source chunk previews |
@@ -32,6 +33,11 @@ banking, telco, and government sectors.
 | .env download | Export current (non-secret) config as a `.env` file from `/configure` |
 | Health dashboard | `/setup` shows live status, startup banner, in-app log viewer, QR code, Re-ingest button |
 | First-launch overlay | Setup guide shown automatically when LLM is not yet configured |
+| Presales slide deck | `/presentation` — 9-slide business deck + 5-slide technical deep-dive; audience toggle |
+| Uniform icon design | All pages use stroke SVG icons (Feather style) — no emoji in navigation |
+| MLflow observability | Inference latency, token usage, provider logged per run; ring buffer always on |
+| LLM A/B compare | `/explorer` LLM Compare tab — side-by-side provider comparison |
+| Iceberg time travel | Historical table snapshots via CDW/Trino (production path only) |
 
 ---
 
@@ -154,7 +160,7 @@ flowchart LR
 | **Serving** | FastAPI + uvicorn · async · SSE streaming · port 8080 |
 | **Frontend** | React 18 SPA · htm tagged templates · no build step required |
 | **Embeddings** | `intfloat/multilingual-e5-large` (local, 560 M params, multilingual) or OpenAI |
-| **Retrieval** | BM25 + FAISS cosine similarity · Reciprocal Rank Fusion |
+| **Retrieval** | BM25 + FAISS cosine similarity · Reciprocal Rank Fusion · cross-encoder reranking (ms-marco-MiniLM) |
 | **SQL (demo)** | DuckDB · Parquet files · 9 tables · read-only with AST guardrails |
 | **SQL (production)** | CDW — Trino + Apache Iceberg on Ozone |
 | **Document store (demo)** | Local filesystem |
@@ -208,6 +214,10 @@ cloudera-ai-id-rag-demo/
 │     ├─ index.html              # React SPA — chat interface (htm, no build step)
 │     ├─ setup.html              # Health dashboard — QR, logs, startup banner
 │     ├─ configure.html          # Env-var wizard — Test LLM, model suggestions
+│     ├─ explorer.html           # SQL editor, docs browser, LLM Compare, Time Travel
+│     ├─ upload.html             # Bulk upload, URL scrape, CSV table import, doc mgmt
+│     ├─ metrics.html            # Inference dashboard — stats, charts, run table
+│     ├─ presentation.html       # Presales slide deck — Business (9 slides) + Technical (5 slides)
 │     ├─ cloudera-logo.png
 │     └─ vendor/                 # Self-hosted JS (React, htm, DOMPurify, QRCode)
 ├─ src/
@@ -321,8 +331,9 @@ Cloudera AI Application deployment before credentials are configured.
 ## Demo Features
 
 ### Domain & language selector (sidebar)
-- Click **🏦 Banking**, **📡 Telco**, or **🏛 Gov** tabs to switch the active domain
+- Click **Banking (◈)**, **Telco (⬡)**, or **Gov (⬢)** tabs to switch the active domain
 - Toggle **Indonesian / English** to switch the response language
+- Select **All (◉)** to run cross-domain queries spanning all three domains
 
 ### ▶ Run Demo (auto-play)
 Click **▶ Run Demo** to walk through all sample prompts automatically (1.8 s pause between answers).
@@ -426,19 +437,23 @@ See the full guide in [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ## Presales Demo Script
 
-1. **Open the app** — if LLM is not configured, a setup overlay appears with instructions
-2. Select a domain (🏦 Banking, 📡 Telco, or 🏛 Gov) and language (ID / EN) from the sidebar
-3. **Welcome screen** shows the domain's top 3 sample prompts — click any to fire immediately
-4. Click **▶ Run Demo** for a fully automatic walkthrough — no typing required
+1. **Open the slide deck** at `/presentation` — choose **Business** or **Technical** audience mode
+   - Business mode: 9 slides (problem → solution → value → why Cloudera → CTA)
+   - Technical mode: adds 5 deep-dive slides (pipeline, retrieval stack, deployment, LLMs & APIs, security)
+2. **Open the live demo** — if LLM is not configured, a setup overlay appears
+3. Select a domain (Banking / Telco / Gov) and language (ID / EN) from the sidebar
+4. **Welcome screen** shows the domain's top 3 sample prompts — click any to fire immediately
+5. Click **▶ Run Demo** for a fully automatic walkthrough — no typing required
    - Use **⏸ Pause / ▶ Resume** to pause between prompts for Q&A
    - Use **↺ Reset Demo** to restart from scratch
-5. Or ask manually (examples in English mode):
+6. Or ask manually (examples in English mode):
    - *Document*: *"What is the credit restructuring procedure?"* → streaming answer + source panel
    - *Data*: *"Show the top 5 customers by credit exposure"* → answer + SQL trace + bar chart
    - *Combined*: *"Has network utilization in Bali exceeded the SLA threshold?"* → merges both
-6. Expand a citation card → **▼ Show full chunk** to show source transparency
-7. Open **/setup** to show the live health dashboard — database, vector store, LLM ping
-8. Open **/configure** to show how credentials are set without shell access — click **⚡ Test LLM**
+7. Expand a citation card → **▼ Show full chunk** to show source transparency
+8. Open **/setup** to show the live health dashboard — database, vector store, LLM ping
+9. Open **/configure** to show how credentials are set without shell access — click **⚡ Test LLM**
+10. For technical audiences: show **/explorer** (SQL editor, LLM Compare) and **/metrics** (inference dashboard)
 
 ---
 

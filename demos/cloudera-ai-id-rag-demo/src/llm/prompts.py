@@ -22,6 +22,27 @@ def _lang_rule(language: str) -> str:
     return _LANG_INSTRUCTION.get(language, _LANG_INSTRUCTION["id"])
 
 
+# ── Answer style instructions ──────────────────────────────────────────────
+
+_STYLE_INSTRUCTION: dict[str, str] = {
+    "analyst": "",  # default — no extra constraint; full detail
+    "executive": (
+        "PENTING: Berikan jawaban SANGAT SINGKAT dalam 2-3 kalimat saja. "
+        "Fokus pada kesimpulan bisnis dan dampak keputusan. Hilangkan detail teknis."
+    ),
+    "compliance": (
+        "PENTING: Utamakan kutipan langsung dari dokumen sumber dengan menyebutkan "
+        "pasal/bagian secara eksplisit. Minimalkan sintesis — tampilkan teks regulasi "
+        "yang relevan apa adanya, lalu berikan kesimpulan singkat."
+    ),
+}
+
+
+def _style_rule(style: str) -> str:
+    """Return extra instruction text for the requested answer style."""
+    return _STYLE_INSTRUCTION.get(style, "")
+
+
 SYSTEM_PROMPT_DOCUMENT = """\
 Anda adalah asisten perusahaan yang menjawab pertanyaan berdasarkan \
 dokumen-dokumen internal yang relevan.
@@ -33,7 +54,7 @@ Aturan:
 - Selalu sebutkan sumber dokumen (judul atau bagian) di bagian akhir jawaban.
 - Jangan mengarang fakta, angka, atau kutipan.
 - Perhatikan riwayat percakapan sebelumnya untuk menjaga konteks dialog.
-"""
+{style_rule}"""
 
 SYSTEM_PROMPT_DATA = """\
 Anda adalah asisten data perusahaan yang menjawab pertanyaan \
@@ -97,7 +118,7 @@ Aturan:
 - Jika data tersedia: bandingkan angka aktual dengan target/standar dari dokumen secara eksplisit.
 - Jika data tidak tersedia: jawab hanya dari dokumen, nyatakan bahwa data aktual tidak diperoleh.
 - Jika dokumen tidak tersedia: jawab hanya dari data, nyatakan bahwa referensi kebijakan tidak diperoleh.
-"""
+{style_rule}"""
 
 SYSTEM_PROMPT_DATA_EXTRACTION = """\
 Ekstrak komponen data dari pertanyaan gabungan (dokumen + data).
@@ -190,9 +211,11 @@ def build_document_prompt(
     question: str,
     history: list[dict] | None = None,
     language: str = "id",
+    style: str = "analyst",
 ) -> list[dict]:
     """Build messages for document-grounded answering with optional conversation history."""
-    system = SYSTEM_PROMPT_DOCUMENT.format(lang_rule=_lang_rule(language))
+    sr = _style_rule(style)
+    system = SYSTEM_PROMPT_DOCUMENT.format(lang_rule=_lang_rule(language), style_rule=("\n" + sr) if sr else "")
     messages: list[dict] = [{"role": "system", "content": system}]
     messages.extend(_trim_history(history))
     messages.append(
@@ -209,6 +232,7 @@ def build_data_prompt(
     question: str,
     history: list[dict] | None = None,
     language: str = "id",
+    style: str = "analyst",
 ) -> list[dict]:
     """Build messages for structured-data-grounded answering with optional conversation history."""
     system = SYSTEM_PROMPT_DATA.format(lang_rule=_lang_rule(language))
@@ -241,9 +265,11 @@ def build_combined_prompt(
     question: str,
     history: list[dict] | None = None,
     language: str = "id",
+    style: str = "analyst",
 ) -> list[dict]:
     """Build messages for combined document + SQL answer synthesis with optional history."""
-    system = SYSTEM_PROMPT_COMBINED.format(lang_rule=_lang_rule(language))
+    sr = _style_rule(style)
+    system = SYSTEM_PROMPT_COMBINED.format(lang_rule=_lang_rule(language), style_rule=("\n" + sr) if sr else "")
     messages: list[dict] = [{"role": "system", "content": system}]
     messages.extend(_trim_history(history))
     messages.append(

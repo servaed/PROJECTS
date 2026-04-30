@@ -141,11 +141,12 @@ The app responds in the same language the user asks in:
 - SQL generation prompt is always Indonesian (internal directive only, not user-facing)
 
 ## Domain Selector (UI Sidebar)
-- Three clickable icon tabs in the sidebar: 🏦 Banking · 📡 Telco · 🏛 Gov
+- Four clickable tabs: Banking (◈) · Telco (⬡) · Gov (⬢) · All (◉) — uniform geometric Unicode symbols, no emoji
 - Language toggle below: Bahasa Indonesia / English
 - `Sidebar` receives `domains`, `domain`, `language`, `onDomainChange`, `onLanguageChange` from `App`
-- Domain/language controls removed from topbar to reduce clutter
+- Domain/language controls in sidebar only (not topbar)
 - Switching domain resets auto-play and re-fetches sample prompts
+- `domain="all"` → `retrieval_domain=None` (skips domain filter); all 9 tables visible to SQL generator
 
 ## Coding Standards
 - Python 3.10+
@@ -254,6 +255,43 @@ Key patterns:
 - `SetupOverlay` component: full-screen first-launch guide when `llm_configured === false`
 - Keyboard shortcuts: Ctrl+Shift+D (demo), Ctrl+K (clear), Ctrl+Shift+R (reset), Escape (stop)
 - `/health` endpoint (not `/api/status`) used for setup overlay check — has `checks.llm_configured`
+- **Nav links** (topbar): plain text labels only — no emoji. Labels: Chat / Data Explorer / Upload / Metrics / Slides / Status / Settings
+- **Domain icons**: uniform geometric Unicode — ◈ Banking · ⬡ Telco · ⬢ Gov · ◉ All (no emoji)
+
+## Icon Design System (all pages)
+All HTML pages use a **uniform stroke-SVG icon vocabulary** (Feather icon style, 1.5px stroke, 24×24 viewBox). Zero emoji in navigation or UI chrome.
+
+| Context | Icon style |
+|---------|-----------|
+| Nav links | Plain text labels (no icon prefix) |
+| Domain tabs (sidebar) | ◈ ⬡ ⬢ ◉ — Unicode geometric symbols |
+| Card icons, step icons | Inline stroke SVG (`fill:none`, `stroke:currentColor`) |
+| File type icons | Single uniform file SVG (no per-type differentiation) |
+| Action buttons (delete, etc.) | Stroke SVG trash/upload icon |
+
+Cloudera logo: orange in the presentation (`--logo-filter` CSS variable); light-mode chat also uses orange. Dark-mode chat uses white (`brightness(0) invert(1)`).
+
+## Pages (FastAPI routes)
+- `GET /` → `index.html` — React SPA chat
+- `GET /setup` → `setup.html` — health dashboard (Token Usage, startup banner, log viewer)
+- `GET /configure` → `configure.html` — env-var wizard + 6 quick-start provider profiles
+- `GET /explorer` → `explorer.html` — SQL editor + Docs browser + LLM Compare + Iceberg Time Travel
+- `GET /upload` → `upload.html` — bulk upload, URL scrape, CSV table import, doc management
+- `GET /metrics` → `metrics.html` — inference dashboard (stats, charts, run table, MLflow banner)
+- `GET /presentation` → `presentation.html` — presales slide deck (14 slides total, audience toggle)
+
+## Presentation Architecture (`app/static/presentation.html`)
+- **Audience toggle**: Business (9 slides, default) / Technical (14 slides) — fixed top-right pill switcher
+- `data-tech="1"` attribute marks technical-only slides (s10–s14)
+- JS: `buildSlideList()` filters by `aud` + `data-tech`; `goTo()` updates slide num + progress fill
+- **Business slides** (s1–s9): problem → solution → capabilities → value → why Cloudera → industries → getting started → CTA
+- **Technical slides** (s10–s14): pipeline architecture · retrieval stack · deployment architecture · LLM providers & APIs · security & observability
+- Cloudera logo: Cloudera orange (`--logo-filter` = `brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%)`)
+- All icons: stroke SVG (Feather vocabulary) — banking=column-chart, telco=wifi, government=landmark
+- Served at `/presentation`; synced copy at `docs/presentation.html`
+
+## Admin Pages Nav Consistency
+All admin pages (setup, configure, explorer, upload, metrics, presentation) have a uniform topbar with plain-text nav links to all pages. No emoji in nav. Active page highlighted with orange border/bg.
 
 ## /health vs /api/status
 **Critical distinction** — these are separate endpoints with different response shapes:
