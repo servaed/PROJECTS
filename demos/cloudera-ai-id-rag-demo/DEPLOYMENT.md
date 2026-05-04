@@ -198,7 +198,7 @@ Find the endpoint URL and API key at: **CML Workspace → AI Inference → your 
 [0/5] Load data/.env.local (saved by /configure wizard on prior runs)
 [1/5] pip install -r requirements.txt  (skipped after first run)
 [2/5] Install provider SDK if needed (boto3 for Bedrock, anthropic package)
-[3/5] Seed Parquet files via seed_parquet.py — 9 tables, 1485 rows (idempotent, checks msme_credit.parquet)
+[3/5] Seed Parquet files via seed_parquet.py — 11 tables, 2,286 rows (idempotent, checks msme_credit.parquet)
 [4/5] Build FAISS vector store (skipped if data/vector_store/index.faiss exists)
       First run: downloads multilingual-e5-large (~500 MB) — please wait
 [5/5] exec uvicorn app.api:app on $CDSW_APP_PORT
@@ -216,7 +216,7 @@ Find the endpoint URL and API key at: **CML Workspace → AI Inference → your 
 Navigate to `http://<app-url>/setup`. All status cards must be green:
 
 - ✅ **Vector Store** — FAISS index present and SHA-256 verified
-- ✅ **Database** — 9 tables found with row counts
+- ✅ **Database** — 11 tables found with row counts
 - ✅ **LLM** — endpoint reachable, ping latency shown
 - ✅ **Embeddings** — provider and model confirmed
 - ✅ **Documents** — source files listed
@@ -252,7 +252,7 @@ Open `/setup → Logs`. Expected on successful startup:
 [4/5] Vector store: found at ./data/vector_store — skipping ingestion.
 [5/5] Starting FastAPI server (React UI) on port 8080...
 INFO  Startup check — vector store: OK
-INFO  Startup check — database: OK (9 tables via duckdb)
+INFO  Startup check — database: OK (11 tables via duckdb)
 INFO  Startup check — LLM: configured (provider=openai)
 ```
 
@@ -407,7 +407,7 @@ Reduces RAM by ~3 GB, adds API cost per query.
 |---|---|---|
 | `QUERY_ENGINE` | `duckdb` | `duckdb` (local Parquet) or `trino` (CDP CDW) |
 | `DUCKDB_PARQUET_DIR` | `./data/parquet` | Directory of Parquet files read by DuckDB |
-| `SQL_APPROVED_TABLES` | all 9 demo tables | Comma-separated table allowlist for LLM queries |
+| `SQL_APPROVED_TABLES` | all 11 demo tables | Comma-separated table allowlist for LLM queries |
 | `SQL_MAX_ROWS` | `500` | Max rows per result (hard cap: 1000) |
 
 **Trino settings** (when `QUERY_ENGINE=trino`):

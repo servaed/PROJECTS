@@ -7,110 +7,155 @@ description: Complete presales demo execution guide — opening hook, demo flow,
 
 ## Audience Preparation (Before Opening the App)
 
-1. Ask the customer: "Are there architects or IT decision-makers in the call?"
+1. Ask: "Are there architects or IT decision-makers in the call?"
    - **Yes → Technical mode**: open `/presentation`, click the **Technical** toggle top-right
    - **No → Business mode**: keep the default **Business** toggle (9 slides)
 
 2. Confirm the domain that resonates with the customer:
-   - **Banking**: credit officers, compliance teams, risk managers
-   - **Telco**: network ops, customer success, retention teams
-   - **Government**: budget controllers, public service coordinators
+   - **Banking**: credit officers, risk managers, compliance teams → domain "Banking"
+   - **Telco**: network ops, customer success, retention teams → domain "Telco"
+   - **Government**: budget controllers, public service coordinators → domain "Government"
+   - **Cross-domain**: executives seeing the full picture → domain "All"
 
-3. Confirm language: use **Bahasa Indonesia** if the audience is primarily Indonesian-speaking; **English** for mixed or international audiences.
+3. Confirm language: **Bahasa Indonesia** for Indonesian-speaking audiences; **English** for mixed/international.
+
+4. Optionally pick a **Persona** (Rina / David / Budi) for a role-led demo flow.
+
+---
 
 ## Demo Flow
 
 ### Phase 1 — Context (3 min)
 Open `/presentation`. Walk through **slides 1–3**:
 - Slide 1: "Your Data Already Has All the Answers" — set the hook
-- Slide 2: The Problem — pick one pain card that matches the customer's role
+- Slide 2: The Problem — pick the pain card that matches the customer's role
 - Slide 3: The Solution — walk through the scenario that matches their domain
 
 Say: *"Let me show you this live — the demo is running right now."*
 
 ### Phase 2 — Live Demo (20–25 min)
 
-**Step 1 — Document mode** (5–8 min)
+**Step 1 — Document mode** (5 min)
 - Select the customer's domain in the sidebar
-- Ask a policy question (click a sample prompt or type your own)
-- After the answer: expand a **citation card** → "Show full chunk"
+- Click a document-mode sample prompt (policy/procedure question)
+- After answer: expand a **citation card** → "Show full chunk"
 - Say: *"Every answer is traceable to the exact policy paragraph it came from."*
 
-**Step 2 — Data mode** (5–8 min)
-- Ask a data/aggregation question
-- Expand the **SQL trace panel** → show the generated SQL
-- Point to the bar chart if rendered
-- Say: *"The SQL is shown verbatim — your audit team can validate every query."*
+**Step 2 — Data mode with Map** (8 min)
+- Ask a geo-aware data question from the "Try Asking" sidebar:
+  - Banking: *"Tampilkan peta risiko NPL kredit UMKM per kota"*
+  - Telco: *"Tampilkan peta utilisasi jaringan per kota"*
+- The **Map view auto-activates** — show the Indonesia heatmap
+- Point to bubble sizing (larger = higher metric), color (teal→orange→red)
+- Switch between **Map / Bar / Table** tabs
+- Expand the SQL trace panel → show generated SQL
+- Say: *"Geography is in the data — Cloudera AI turns SQL results into a live heatmap."*
 
-**Step 3 — Combined mode** (5–8 min)
+**Step 3 — Combined mode** (8 min)
 - Ask a combined question (policy target vs. actual data)
-- Wait for the mode badge to show "Combined"
-- Say: *"It simultaneously checked the policy for the target AND queried live data for the actual number. One question, one answer."*
+- Wait for mode badge to show "Combined"
+- Say: *"It simultaneously checked the policy for the target AND queried live data for the actual number."*
 
-**Step 4 — Bilingual switch** (2 min, if relevant)
-- Toggle language in sidebar
-- Ask the same question in the other language
+**Step 4 — AI Reasoning / Debate** (optional, 5 min, advanced audiences)
+- Toggle **Think** ON → ask a complex question → show chain-of-thought reasoning panel
+  - Say: *"The model shows its work — no black box."*
+- OR toggle **Debate** ON → show Researcher + Critic cards before the answer
+  - Say: *"We have one AI challenge another's assumptions — adversarial review built in."*
+
+**Step 5 — Bilingual switch** (2 min, if relevant)
+- Toggle language in sidebar → ask the same question
 - Say: *"Same model, same data — just switch the language."*
 
-**Step 5 — Customer's own question** (3–5 min)
+**Step 6 — Customer's own question** (3–5 min)
 - Invite the customer to type any question
-- If it fails gracefully: acknowledge the guardrails, don't apologize excessively
+- If it fails gracefully: acknowledge the guardrails; don't apologize excessively
 
 ### Phase 3 — Technical Deep Dive (optional, +10 min)
 Switch to `/presentation` Technical mode. Walk through slides 10–14:
-- T-01: Pipeline — "Here's exactly what happens when you hit send"
-- T-02: Retrieval — "Three stages of quality filtering before a word is generated"
-- T-03: Deployment — "Same code, different env vars for dev vs. production CDP"
-- T-04: LLMs & APIs — "Pluggable — Cloudera AI Inference, OpenAI, Bedrock, Anthropic"
-- T-05: Security — "SQL guardrails, vector store integrity, DOMPurify, MLflow"
+- T-01: Pipeline architecture
+- T-02: Three-stage retrieval (FAISS + BM25 + cross-encoder)
+- T-03: Deployment (dev DuckDB → production CDW/Trino, same connectors)
+- T-04: LLM providers (pluggable)
+- T-05: Security (SQL AST guardrails, vector store integrity, DOMPurify)
 
 ### Phase 4 — Admin Pages (2 min)
-- Open `/setup` — show all green indicators
+- Open `/setup` — show all green indicators + token usage
 - Open `/metrics` — show latency, token usage, mode breakdown
 - Open `/configure` — show provider wizard; click **Test LLM**
+
+---
+
+## High-Impact Complex Questions
+
+Use these for maximum "wow" — each produces a map and a multi-metric SQL result:
+
+**Banking:**
+- *"Kota mana yang NPL di atas 8% DAN volume kredit di atas 5 triliun?"* → dual-threshold hotspot map
+- *"Bandingkan ROI cabang vs NPL rate — cabang mana yang paling efisien?"* → branch efficiency ranking
+- *"Tampilkan tingkat persetujuan KUR per kota — identifikasi kota dengan backlog tinggi"* → loan approval map
+
+**Telco:**
+- *"Hitung revenue at risk: total ARPU pelanggan churn >70 per kota"* → business impact map
+- *"Tampilkan composite risk score jaringan: utilisasi × packet loss per kota"* → network risk map
+
+**Cross-domain (All tab):**
+- *"Tampilkan economic stress index per kota: gabungkan NPL + churn risk + keluhan layanan"* → triple-metric map
+
+---
 
 ## Talking Points by Audience
 
 | Audience | Key message | Feature to highlight |
 |----------|-------------|---------------------|
-| C-suite | "Days to seconds for compliance decisions" | Auto-play demo, latency badge |
-| Compliance officer | "Every answer is source-cited and auditable" | Citation cards, chunk preview |
+| C-suite | "Days to seconds for compliance decisions" | Map heatmap, latency badge, auto-play |
+| Compliance officer | "Every answer is source-cited and auditable" | Citation cards, chunk preview, SQL trace |
 | IT architect | "Zero new infrastructure — deploys on your existing Cloudera stack" | T-03 deployment slide |
-| Data engineer | "SQL guardrails use AST walking, not regex — no bypass possible" | T-05 security slide, SQL trace |
-| Operations manager | "Real-time data, always current — no ETL, no sync" | T-03: CDW/Trino connector |
-| Indonesian-speaking user | "Ask in Bahasa Indonesia, get answers in Bahasa Indonesia" | Language toggle |
+| Data engineer | "SQL guardrails use AST walking, not regex — no bypass possible" | T-05 security, SQL trace |
+| Operations manager | "Real-time data, always current — no ETL, no sync" | CDW/Trino connector |
+| Risk manager | "Geographic NPL visualization across all 27 cities — instantly" | Indonesia heatmap |
+| Indonesian user | "Ask in Bahasa Indonesia, get answers in Bahasa Indonesia" | Language toggle |
+
+---
 
 ## Handling Difficult Questions
 
 **"What if the AI makes something up?"**
-> "It can't fabricate an answer from thin air — it only reads from your documents and data. If it can't find the answer, it says so explicitly rather than guessing. Watch — let me ask a question outside the knowledge base."
+> "It can't fabricate from thin air — it only reads your documents and data. If it can't find the answer, it says so explicitly. Watch — let me ask a question outside the knowledge base."
 
 **"Is our data safe?"**
 > "With Cloudera AI Inference, the LLM runs on your own infrastructure — no data leaves your cluster. With external providers, only the question and retrieved context are sent — never the full document or database."
 
 **"How long does it take to set up with our own data?"**
-> "The technical setup is a few hours — upload documents through the browser, point it at your data warehouse, done. Fine-tuning the sample prompts and testing with real questions takes a day or two."
+> "Technical setup is a few hours — upload documents through the browser, point it at your data warehouse, done. Testing with real questions takes a day or two."
 
 **"Can it handle [specific domain/regulation]?"**
-> "Yes — you upload your own policy documents and it learns them. The demo uses UMKM credit policy, OJK regulation, and APBD regulation as examples. You'd replace these with your actual documents."
+> "Yes — you upload your own policy documents and it learns them. The demo uses OJK regulation, APBD, and telco SLA as examples. You'd replace these with your actual documents."
 
 **"What model is it using?"**
-> Show `/configure` — point to the provider selector. "It's model-agnostic. For this demo I'm using [current provider]. For production, Cloudera AI Inference runs the model on your cluster."
+> Show `/configure`. "It's model-agnostic. For this demo I'm using [current provider]. For production, Cloudera AI Inference runs the model on your cluster."
+
+**"Can it show its reasoning?"**
+> "Yes — toggle Think mode and the model streams its chain-of-thought before answering. With Debate mode, a second AI challenges the first's assumptions." Show live.
+
+---
 
 ## Common Issues During Demo
 
 | Issue | Recovery |
 |-------|---------|
-| LLM slow (>15s) | "The model was cold — it warms up after the first question." Wait; next response will be fast. |
+| LLM slow (>15s) | "The model was cold — it warms up after the first question." |
+| Map not appearing | Ensure the query returns a city/region/province column; try "Tampilkan jaringan per kota" |
 | Wrong language | Toggle language back and forth in sidebar |
-| Auto-play stuck | Stop → "New conversation" → restart auto-play |
-| SQL returns empty | Ask a different data question; the first one may have hit an edge case in the seeded data |
-| App shows red in `/setup` | Check LLM config: open `/configure`, re-enter API key, Test LLM |
+| Auto-play stuck | Stop → Reset Demo → restart auto-play |
+| SQL returns empty | Ask a different data question |
+| App shows red in `/setup` | Open `/configure`, re-enter API key, click Test LLM |
+
+---
 
 ## Post-Demo Follow-Up
 
-- [ ] Send the GitHub repo link
+- [ ] Send GitHub repo link
 - [ ] Share `DEPLOYMENT.md` and architecture diagram
 - [ ] Capture specific questions for the product team
-- [ ] Propose a PoC engagement: "We can load your actual documents and connect to your data warehouse — typically 1–2 days for a working PoC"
-- [ ] Click **"New conversation"** before leaving the session
+- [ ] Propose a PoC: "We can load your actual documents and connect to your data warehouse — typically 1–2 days for a working PoC"
+- [ ] Click **Reset Demo** before leaving the session

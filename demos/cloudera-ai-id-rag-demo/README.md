@@ -3,8 +3,8 @@
 An **enterprise conversational assistant** deployed as a Cloudera AI Application.
 
 The assistant answers questions from enterprise documents (RAG) and structured tables (SQL),
-with full source traceability and streaming responses. Designed for presales demos in
-banking, telco, and government sectors.
+with full source traceability, streaming responses, and map visualization. Designed for
+presales demos in banking, telco, and government sectors.
 
 ---
 
@@ -13,31 +13,36 @@ banking, telco, and government sectors.
 | Feature | Description |
 |---------|-------------|
 | Multilingual chat | Questions and answers in English or Indonesian — auto-detected |
-| Domain selector | Sidebar tabs: Banking · Telco · Government (uniform SVG icons, ◈ ⬡ ⬢) |
+| Domain selector | Sidebar tabs: Banking (◈) · Telco (⬡) · Government (⬢) · All (◉) |
 | Document RAG | Answers from TXT, PDF, DOCX, HTML, Markdown with source preview |
-| Structured data query | Natural language to SQL — read-only with full guardrails |
+| Structured data query | Natural language to SQL — read-only with AST guardrails |
 | Combined answers | Merges document context + table query results in one response |
 | 3-stage retrieval | FAISS semantic → BM25 keyword (RRF fusion) → cross-encoder reranking |
-| Conversation history | Maintains context across prior turns |
-| Streaming responses | Token-by-token streaming via Server-Sent Events |
-| Keyword highlighting | Matched query words highlighted in source chunk previews |
-| Demo auto-play | "▶ Run Demo" walks through all sample prompts; ⏸ Pause / ▶ Resume / ⏹ Stop |
-| Response latency badge | `⚡ X.Xs` displayed on every assistant message |
-| Inline bar chart | SQL results with 2–12 rows rendered as a Canvas bar chart |
-| Domain-aware welcome | Clickable sample prompts on the welcome screen per selected domain |
-| Keyboard shortcuts | Ctrl+Shift+D (demo), Ctrl+K (clear), Ctrl+Shift+R (full reset), Escape (stop) |
-| Full demo reset | ↺ Reset Demo button restores domain + language + clears history |
-| Chat persistence | Chat history survives page refresh via `localStorage` |
-| Configure wizard | Set LLM credentials via browser UI at `/configure`; inline Test LLM |
-| Model suggestions | Provider-aware model ID dropdown suggestions in `/configure` |
-| .env download | Export current (non-secret) config as a `.env` file from `/configure` |
-| Health dashboard | `/setup` shows live status, startup banner, in-app log viewer, QR code, Re-ingest button |
-| First-launch overlay | Setup guide shown automatically when LLM is not yet configured |
-| Presales slide deck | `/presentation` — 9-slide business deck + 5-slide technical deep-dive; audience toggle |
-| Uniform icon design | All pages use stroke SVG icons (Feather style) — no emoji in navigation |
-| MLflow observability | Inference latency, token usage, provider logged per run; ring buffer always on |
+| **Indonesia Heatmap** | SQL results with city/region/province column auto-render as Leaflet bubble map |
+| **Reasoning Mode** | "Think" toggle streams chain-of-thought before the answer (DeepSeek-R1, Claude 4, etc.) |
+| **AI Agent Mode** | Multi-step Planner → Executor → Synthesizer with visible research trace |
+| **Debate Mode** | Researcher + Critic AI agents debate the answer before synthesis |
+| **Document Intelligence** | PDF upload auto-extracts tables → queryable DuckDB views |
+| Persona mode | Pre-built personas (Rina / Bank Indonesia, David / Indosat, Budi / DKI Jakarta) |
+| Story arcs | Guided multi-turn scenario sequences for demo auto-play |
+| Answer styles | Analyst / Executive / Audit response depth modes |
+| Follow-up suggestions | 3 contextual follow-up questions after every answer |
+| Conversation export | Export full chat history as markdown |
+| LLM Profiles | Save / switch named LLM configurations without redeployment |
+| Demo auto-play | "▶ Run Demo" walks through all sample prompts; ⏸ Pause / ▶ Resume |
+| Response latency badge | `⚡ X.Xs` total round-trip on every assistant message |
+| Token usage | `≈ X in · Y out · Z total` per message |
+| Map / Bar / Table chart | SQL results rendered as Leaflet map, Canvas bar chart, or markdown table |
+| Keyword highlighting | Query words highlighted orange in source chunk previews |
+| Confidence bars | Relevance score shown per citation (BM25+FAISS RRF normalized 0–100%) |
+| Chat persistence | Survives page refresh via `localStorage` |
+| Configure wizard | Set LLM credentials at `/configure`; inline Test LLM |
+| Health dashboard | `/setup` — live status, log viewer, startup banner, QR code, Re-ingest |
+| Presales slide deck | `/presentation` — 9-slide business + 5-slide technical; audience toggle |
+| Uniform icon design | Stroke SVG icons (Feather style) across all pages — no emoji in navigation |
+| MLflow observability | Inference latency, token usage, provider logged per run |
 | LLM A/B compare | `/explorer` LLM Compare tab — side-by-side provider comparison |
-| Iceberg time travel | Historical table snapshots via CDW/Trino (production path only) |
+| Iceberg time travel | Historical table snapshots via CDW/Trino (production path) |
 
 ---
 
@@ -55,37 +60,37 @@ flowchart TB
     classDef llm      fill:#FAF5FF,stroke:#9333EA,color:#581C87,font-weight:700
     classDef cdp      fill:#EDE9FE,stroke:#7C3AED,color:#4C1D95,font-weight:500
 
-    User(["👤 User\nIndonesian · English"]):::user
+    User(["User\nIndonesian · English"]):::user
 
-    subgraph CML["  ☁  Cloudera AI Application — port 8080  "]
+    subgraph CML["Cloudera AI Application — port 8080"]
         direction TB
 
-        SPA["⚡ React 18 SPA\nStreaming · Auto-play demo · Dark/Light · Domain tabs"]:::frontend
+        SPA["React 18 SPA\nMap · Think · Agent · Debate · Personas · Auto-play"]:::frontend
 
-        subgraph APILAYER["  FastAPI — app/api.py  "]
+        subgraph APILAYER["FastAPI — app/api.py"]
             direction LR
-            A1["POST /api/chat\n→ SSE stream"]:::api
-            A2["POST /api/configure\n→ live reload"]:::api
-            A3["GET /health · /api/status\n/api/ingest · /api/sql/query"]:::api
+            A1["POST /api/chat\nPOST /api/agent/chat\nPOST /api/debate/chat"]:::api
+            A2["POST /api/configure\nGET /health · /api/status"]:::api
+            A3["POST /api/docs/upload\n(PDF table extraction)"]:::api
         end
 
-        subgraph PIPE["  Orchestration Pipeline  "]
+        subgraph PIPE["Orchestration Pipeline"]
             direction LR
-            RTR["🔀 Router\n4-tier heuristics + LLM fallback\ndocument · data · combined"]:::orch
+            RTR["Router\n4-tier heuristics + LLM\ndocument · data · combined"]:::orch
             AB["Answer Builder\nprepare → stream → finalize"]:::orch
         end
 
-        subgraph LOCAL["  Local Storage — Demo Default  "]
+        subgraph LOCAL["Local Storage — Demo Default"]
             direction LR
             FI[("FAISS Index\ne5-large · SHA-256")]:::store
-            DB[("DuckDB\n9 tables · 1,485 rows")]:::store
-            DC["📄 14 source docs\n7 Indonesian + 7 English"]:::store
+            DB[("DuckDB\n11 tables · 2,286 rows")]:::store
+            DC["14 source docs\n7 Indonesian + 7 English"]:::store
         end
     end
 
-    subgraph CDP["  ☁  Cloudera Data Platform — Production Swap  "]
+    subgraph CDP["Cloudera Data Platform — Production Swap"]
         direction LR
-        LLM(["🤖 LLM\nCloudera AI Inference\nOpenAI · Azure · Bedrock · Anthropic"]):::llm
+        LLM(["LLM\nCloudera AI Inference\nOpenAI · Azure · Bedrock · Anthropic"]):::llm
         CDW[("CDW — Trino\nApache Iceberg")]:::cdp
         OZ[("Apache Ozone\nS3-compatible")]:::cdp
     end
@@ -106,65 +111,18 @@ flowchart TB
     DC  -. "DOCS_STORAGE_TYPE=s3" .-> OZ
 ```
 
-### Request pipeline
-
-```mermaid
-flowchart LR
-    classDef input  fill:#FFF7ED,stroke:#F96702,color:#9A3412,font-weight:700
-    classDef router fill:#EFF6FF,stroke:#2563EB,color:#1E3A8A,font-weight:600
-    classDef rag    fill:#F0FDFA,stroke:#0D9488,color:#134E4A,font-weight:500
-    classDef sql    fill:#F0FDF4,stroke:#16A34A,color:#14532D,font-weight:500
-    classDef synth  fill:#FAF5FF,stroke:#9333EA,color:#581C87,font-weight:700
-    classDef output fill:#FFF8E1,stroke:#D97706,color:#92400E,font-weight:600
-
-    Q(["❓ Question"]):::input
-
-    RTR["🔀 Router\n4-tier heuristics\n+ LLM fallback"]:::router
-
-    subgraph RAG["  ◈  Document RAG  "]
-        direction TB
-        R1["BM25 keyword search"]:::rag
-        R2["FAISS semantic search"]:::rag
-        R3["Reciprocal Rank Fusion"]:::rag
-        R1 --> R3
-        R2 --> R3
-    end
-
-    subgraph SQL["  ⬡  Structured SQL  "]
-        direction TB
-        S1["Schema discovery"]:::sql
-        S2["LLM → SQL generation"]:::sql
-        S3["AST guardrail check"]:::sql
-        S4["DuckDB / Trino execute"]:::sql
-        S1 --> S2 --> S3 --> S4
-    end
-
-    SYNTH["🤖 LLM Synthesis\nMultilingual · Streaming SSE\n⟨think⟩ tag filtering"]:::synth
-
-    OUT["📤 Response\n⚡ Answer + latency badge\n◈ Doc citations + relevance\n⬡ SQL trace + bar chart"]:::output
-
-    Q       --> RTR
-    RTR -->|document| RAG
-    RTR -->|data| SQL
-    RTR -->|combined| RAG
-    RTR -->|combined| SQL
-    RAG     --> SYNTH
-    SQL     --> SYNTH
-    SYNTH   --> OUT
-```
-
 ### Stack
 
 | Layer | Technology |
 |-------|-----------|
 | **Serving** | FastAPI + uvicorn · async · SSE streaming · port 8080 |
-| **Frontend** | React 18 SPA · htm tagged templates · no build step required |
-| **Embeddings** | `intfloat/multilingual-e5-large` (local, 560 M params, multilingual) or OpenAI |
-| **Retrieval** | BM25 + FAISS cosine similarity · Reciprocal Rank Fusion · cross-encoder reranking (ms-marco-MiniLM) |
-| **SQL (demo)** | DuckDB · Parquet files · 9 tables · read-only with AST guardrails |
+| **Frontend** | React 18 SPA · htm tagged templates · no build step |
+| **Map** | Leaflet 1.9.4 (self-hosted, offline-safe) · CartoDB tiles |
+| **Embeddings** | `intfloat/multilingual-e5-large` (local, 560 M params) or OpenAI |
+| **Retrieval** | BM25 + FAISS cosine · Reciprocal Rank Fusion · cross-encoder reranking |
+| **SQL (demo)** | DuckDB · Parquet files · 11 tables · read-only AST guardrails |
 | **SQL (production)** | CDW — Trino + Apache Iceberg on Ozone |
-| **Document store (demo)** | Local filesystem |
-| **Document store (production)** | Apache Ozone (S3-compatible) |
+| **PDF tables** | pdfplumber → DuckDB views with `doc_` prefix |
 | **LLM** | Pluggable — Cloudera AI Inference · OpenAI · Azure · Bedrock · Anthropic |
 
 ### Connector swap — demo ↔ CDP
@@ -178,20 +136,6 @@ No code changes required — connector swap is purely configuration.
 
 ---
 
-## Cloudera CDP Mapping
-
-| Demo component | Cloudera CDP equivalent |
-|---|---|
-| Apache Ozone (S3GW) | CDP Object Store — document + warehouse storage |
-| Trino + Iceberg | **Cloudera Data Warehouse (CDW)** — virtual warehouse |
-| Apache Iceberg tables | **Apache Iceberg** on Ozone (same open table format) |
-| FastAPI + uvicorn | **Cloudera AI Application** — serving layer |
-| FAISS vector store | Enterprise vector DB (Milvus, Pinecone, etc.) |
-| `intfloat/multilingual-e5-large` | Embeddings via Cloudera AI Inference |
-| LLM provider | **Cloudera AI Inference** — any deployed model |
-
----
-
 ## Repository Structure
 
 ```
@@ -199,59 +143,39 @@ cloudera-ai-id-rag-demo/
 ├─ CLAUDE.md                     # Project memory and working conventions
 ├─ README.md
 ├─ DEPLOYMENT.md                 # Full Cloudera AI deployment guide
-├─ Makefile                      # Dev shortcuts: make dev / make test
-├─ cdsw-build.sh                 # CML pre-build script (pip install + seed + model cache)
+├─ Makefile
 ├─ requirements.txt
-├─ .env.example
-├─ .gitignore
 ├─ run_app.py                    # CML Application script entry point
-├─ eval_all.py                   # 36-question evaluation runner
 ├─ app/
-│  ├─ api.py                     # FastAPI entry point — all routes
-│  ├─ main.py                    # Streamlit entry point (notebook/local fallback)
-│  ├─ ui.py                      # Streamlit UI components
+│  ├─ api.py                     # FastAPI — /api/chat, /api/agent/chat, /api/debate/chat, ...
 │  └─ static/
-│     ├─ index.html              # React SPA — chat interface (htm, no build step)
-│     ├─ setup.html              # Health dashboard — QR, logs, startup banner
-│     ├─ configure.html          # Env-var wizard — Test LLM, model suggestions
+│     ├─ index.html              # React SPA — chat, map, Think/Agent/Debate toggles
+│     ├─ setup.html              # Health dashboard
+│     ├─ configure.html          # Env-var wizard + LLM Profiles
 │     ├─ explorer.html           # SQL editor, docs browser, LLM Compare, Time Travel
-│     ├─ upload.html             # Bulk upload, URL scrape, CSV table import, doc mgmt
-│     ├─ metrics.html            # Inference dashboard — stats, charts, run table
-│     ├─ presentation.html       # Presales slide deck — Business (9 slides) + Technical (5 slides)
-│     ├─ cloudera-logo.png
-│     └─ vendor/                 # Self-hosted JS (React, htm, DOMPurify, QRCode)
+│     ├─ upload.html             # Bulk upload, URL scrape, CSV import, PDF table extraction
+│     ├─ metrics.html            # Inference dashboard
+│     ├─ presentation.html       # Presales deck — Business (9 slides) + Technical (5 slides)
+│     └─ vendor/                 # Self-hosted: React, htm, DOMPurify, Leaflet 1.9.4
 ├─ src/
-│  ├─ config/settings.py         # All configuration via env vars (pydantic-settings)
-│  ├─ config/logging.py
-│  ├─ llm/base.py                # Abstract LLM interface
-│  ├─ llm/inference_client.py    # OpenAI-compatible client + streaming + ping
-│  ├─ llm/prompts.py             # System prompts (multilingual)
-│  ├─ retrieval/                 # Document loading, chunking, embeddings, FAISS
-│  ├─ sql/                       # SQL guardrails (AST), generation, execution
-│  ├─ orchestration/             # Router, answer builder, citations
-│  ├─ connectors/
-│  │  ├─ db_adapter.py           # Factory: DuckDB (dev) or Trino (CDP)
-│  │  ├─ trino_adapter.py        # Trino Python client (Iceberg on CDW)
-│  │  ├─ ozone_adapter.py        # boto3 S3 client (Apache Ozone / S3-compatible)
-│  │  └─ files_adapter.py        # Local filesystem adapter (dev mode)
-│  └─ utils/                     # Language helpers, ID generation
+│  ├─ config/                    # Settings (pydantic-settings), logging
+│  ├─ llm/                       # LLM clients, prompts (bilingual)
+│  ├─ retrieval/
+│  │  ├─ retriever.py            # Hybrid BM25+FAISS+RRF
+│  │  ├─ reranker.py             # Cross-encoder reranking
+│  │  └─ table_extractor.py      # PDF table extraction → DuckDB views
+│  ├─ sql/                       # Guardrails (AST), generation, execution, metadata
+│  ├─ orchestration/             # Router, answer builder (Think/stream/finalize), citations
+│  └─ connectors/                # DuckDB, Trino, Ozone, local filesystem
 ├─ data/
-│  ├─ sample_docs/
-│  │  ├─ banking/                # 6 documents (3 Indonesian + 3 English)
-│  │  ├─ telco/                  # 4 documents (2 Indonesian + 2 English)
-│  │  └─ government/             # 4 documents (2 Indonesian + 2 English)
-│  ├─ sample_tables/             # Parquet seeder + data generator — 9 tables, 1485 rows
-│  └─ .env.local                 # ← written by /configure wizard (gitignored)
+│  ├─ sample_docs/               # 14 source documents (7 ID + 7 EN)
+│  ├─ sample_tables/             # seed_parquet.py + sample_data.py — 11 tables, 2,286 rows
+│  └─ parquet/                   # Generated Parquet files (gitignored)
 ├─ deployment/
-│  ├─ launch_app.sh              # CML startup: pip → seed → vector store → uvicorn
-│  ├─ app_config.md              # Environment variable reference
-│  ├─ PRESALES_CHECKLIST.md      # Pre-demo checklist
-│  └─ cloudera_ai_application.md # Step-by-step Cloudera AI deployment guide
-└─ tests/
-   ├─ test_sql_guardrails.py     # 30 tests — AST bypass, CTE, multi-JOIN
-   ├─ test_router.py             # 12 tests — classification, error fallback
-   ├─ test_retrieval.py          # 17 tests — chunking, citations, mocked store
-   └─ test_api.py                # 27 tests — FastAPI endpoints, SSE shape
+│  ├─ launch_app.sh              # CML startup script
+│  ├─ PRESALES_CHECKLIST.md
+│  └─ cloudera_ai_application.md
+└─ tests/                        # 86 unit tests (pytest)
 ```
 
 ---
@@ -259,8 +183,6 @@ cloudera-ai-id-rag-demo/
 ## Quick Start
 
 ### Option A — Cloudera AI Application (production)
-
-See the full guide in [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ```
 1. Clone repo into a CML Project (Git → HTTPS)
@@ -270,190 +192,63 @@ See the full guide in [`DEPLOYMENT.md`](DEPLOYMENT.md).
 5. Create Application → open /setup to verify all components green
 ```
 
-For Trino/CDW + Ozone, additionally set:
-```
-QUERY_ENGINE=trino
-TRINO_HOST=<cdw-coordinator-endpoint>
-DOCS_STORAGE_TYPE=s3
-S3_ENDPOINT_URL=http://<ozone-s3gw>:9878
-S3_BUCKET=rag-docs
-S3_ACCESS_KEY=...
-S3_SECRET_KEY=...
-```
-
-### Option B — Local Development (DuckDB + local files)
+### Option B — Local Development
 
 ```bash
-# 1. Clone the repo
-git clone <repo-url>
-cd cloudera-ai-id-rag-demo
-
-# 2. Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-
-# 3. One command starts everything
-make dev
-
-# OR step by step:
-pip install -r requirements.txt
-python data/sample_tables/seed_parquet.py
-python -m src.retrieval.document_loader
-uvicorn app.api:app --host 0.0.0.0 --port 8080 --reload
+python -m venv .venv && source .venv/bin/activate
+make dev        # pip install + seed + uvicorn --reload
 ```
 
-Open **http://localhost:8080** for the chat interface.
-Open **http://localhost:8080/setup** to check component health.
-Open **http://localhost:8080/configure** to set credentials — use **⚡ Test LLM** to verify.
+Open **http://localhost:8080** — chat interface  
+Open **http://localhost:8080/configure** — set LLM credentials  
+Open **http://localhost:8080/setup** — health dashboard  
 
 ---
 
-## Configure Wizard (`/configure`)
+## Sample Data (11 tables, 2,286 rows)
 
-Set LLM credentials through the browser — no shell access required. Useful on a fresh
-Cloudera AI Application deployment before credentials are configured.
-
-**Flow:**
-1. Open `http://<app-url>/configure`
-2. Select your LLM provider (Cloudera / OpenAI / Azure / Bedrock / Anthropic / Local)
-3. Fill in credentials — model ID field shows provider-specific suggestions via `<datalist>`
-4. Click **⚡ Test LLM** — sends a test ping and shows provider, model, and latency inline
-5. Click **Save Configuration** — writes to `data/.env.local`, applied immediately
-6. Click **⬛ Download .env** to export the current (non-secret) config as a `.env` file
-
-**Source badges:**
-- 🟢 **From environment** — set via Cloudera AI platform UI, locked
-- 🔵 **From saved file** — stored in `data/.env.local` by this wizard
-- ⬜ **Not set** — will use code default
-
----
-
-## Demo Features
-
-### Domain & language selector (sidebar)
-- Click **Banking (◈)**, **Telco (⬡)**, or **Gov (⬢)** tabs to switch the active domain
-- Toggle **Indonesian / English** to switch the response language
-- Select **All (◉)** to run cross-domain queries spanning all three domains
-
-### ▶ Run Demo (auto-play)
-Click **▶ Run Demo** to walk through all sample prompts automatically (1.8 s pause between answers).
-- **⏸ Pause / ▶ Resume** — suspend at any prompt and pick up exactly where paused
-- **⏹ Stop** — exit auto-play immediately
-- **↺ Reset Demo** — restore domain, language, and clear all history
-- Keyboard: **Ctrl+Shift+D** start/stop · **Escape** stop · **Ctrl+Shift+R** full reset
-
-### Response latency & bar charts
-- Every assistant response shows a `⚡ X.Xs` latency badge (total round-trip time)
-- SQL results with 2–12 rows are rendered as an inline Canvas bar chart
-
-### Source document preview
-Expand any citation card with **▼ Show full chunk** to read the complete retrieved text,
-with query keywords highlighted in orange.
-
-### Citation relevance scores
-Each citation card shows a **relevance badge** (high / med / low) based on the
-Reciprocal Rank Fusion score from the hybrid BM25 + FAISS retrieval.
-
----
-
-## SQL Safety & Guardrails
-
-The assistant executes only **read-only SELECT queries** against an approved table list.
-
-| Layer | What it does |
-|-------|-------------|
-| Keyword blocklist | Rejects `DROP`, `DELETE`, `UPDATE`, `INSERT`, `ALTER`, `TRUNCATE`, etc. |
-| AST table check | Walks the sqlparse AST to extract all tables (subqueries + CTEs), rejects any not in the domain allowlist |
-| Multi-statement block | Detects `;`-separated statements; comments stripped first to prevent bypass |
-| LIMIT enforcement | Strips any existing `LIMIT` and re-applies a hard cap (default 500 rows) |
-| SELECT-only gate | Query must start with `SELECT` after comment stripping |
-| Rate limiting | `/api/chat` accepts at most 30 requests per minute per IP |
-
----
-
-## Running Tests
-
-```bash
-pytest tests/ -v
-```
-
-| Suite | Tests | Coverage |
-|-------|-------|---------|
-| `test_sql_guardrails.py` | 30 | SQL injection, subquery bypass, CTE, table allowlist |
-| `test_router.py` | 12 | LLM classification modes, aliases, error fallback |
-| `test_retrieval.py` | 17 | Chunking, citation building, mocked vector store |
-| `test_api.py` | 27 | FastAPI endpoints, SSE stream shape, LLM provider indicators |
-
-**Evaluation** (36 questions across both languages against the running app):
-```bash
-python eval_all.py
-```
-
----
-
-## Deploying to Cloudera AI Applications
-
-See the full guide in [`DEPLOYMENT.md`](DEPLOYMENT.md).
-
-**Cloudera AI Workbench (CML Applications) — quick reference:**
-
-1. Clone or sync this repo into a CML project via Git (HTTPS recommended)
-2. **Applications → New Application**
-
-   | Field | Value |
-   |---|---|
-   | Script | `demos/cloudera-ai-id-rag-demo/run_app.py` |
-   | Kernel | Python 3.10 |
-   | vCPU / Memory | 4 vCPU / 8 GiB |
-
-3. Add env vars: `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL_ID`
-4. Click **Create Application** → wait ~3–5 min for first boot
-5. Verify at `/setup` — all status cards green
-
-> **Note:** `run_app.py` is a Python launcher that calls `deployment/launch_app.sh`.
-> Uses DuckDB + local filesystem by default. Switch to CDW/Ozone via env vars.
-
----
-
-## Sample Data
-
-9 tables (**1485 rows**), generated deterministically (seed 42):
+Generated deterministically (seed 42). NPL tiers baked in: Java 3–6% · Sumatra/Kalimantan 7–12% · Outer islands 13–22%.
 
 | Domain | Tables | Highlights |
 |--------|--------|-----------|
-| Banking | `msme_credit` (540), `customer` (80), `branch` (25) | 15 cities × 3 segments × 12 months, OJK credit quality tiers, 25 branches |
-| Telco | `subscriber` (80), `data_usage` (480), `network` (20) | Churn risk scores, ARPU, 80 subscribers × 6 months usage, 20 network stations |
-| Government | `resident` (40), `regional_budget` (88), `public_service` (132) | 40 districts, 11 programs × 4 quarters × 2 years, 11 service types × 12 months |
+| Banking | `msme_credit` (972) | 27 cities × 3 segments × 12 months, province column |
+| Banking | `customer` (80) | industry, annual_revenue, debt_service_ratio |
+| Banking | `branch` (25) | npl_amount, deposit_balance, roi_pct, lat/lon |
+| Banking | `loan_application` (600) | 25 branches × 3 KUR types × 8 months; approval_rate_pct |
+| Telco | `subscriber` (80) | tenure_months, monthly_complaints |
+| Telco | `data_usage` (480) | 80 subscribers × 6 months |
+| Telco | `network` (27) | avg_latency_ms, packet_loss_pct, lat/lon |
+| Telco | `network_incident` (162) | 27 cities × 6 months; sla_breach_count, mttr_hrs |
+| Government | `resident` (40) | district/city/province population |
+| Government | `regional_budget` (88) | 11 programs × 4 quarters × 2 years |
+| Government | `public_service` (132) | pending_count, complaint_count |
 
-14 documents — 7 Indonesian + 7 English:
-
-| Domain | Indonesian | English |
-|--------|-----------------|---------|
-| Banking | `kebijakan_kredit_umkm.txt` · `prosedur_kyc_nasabah.txt` · `regulasi_ojk_2025.txt` | `sme_credit_policy_en.txt` · `kyc_aml_procedures_en.txt` · `ojk_regulatory_summary_en.txt` |
-| Telco | `kebijakan_layanan_pelanggan.txt` · `regulasi_spektrum_frekuensi.txt` | `customer_service_sla_policy_en.txt` · `spectrum_network_operations_en.txt` |
-| Government | `kebijakan_pelayanan_publik.txt` · `regulasi_anggaran_daerah.txt` | `public_service_standard_en.txt` · `municipal_budget_regulation_en.txt` |
+14 source documents — 7 Indonesian + 7 English across banking, telco, government.
 
 ---
 
-## Presales Demo Script
+## Chat Modes
 
-1. **Open the slide deck** at `/presentation` — choose **Business** or **Technical** audience mode
-   - Business mode: 9 slides (problem → solution → value → why Cloudera → CTA)
-   - Technical mode: adds 5 deep-dive slides (pipeline, retrieval stack, deployment, LLMs & APIs, security)
-2. **Open the live demo** — if LLM is not configured, a setup overlay appears
-3. Select a domain (Banking / Telco / Gov) and language (ID / EN) from the sidebar
-4. **Welcome screen** shows the domain's top 3 sample prompts — click any to fire immediately
-5. Click **▶ Run Demo** for a fully automatic walkthrough — no typing required
-   - Use **⏸ Pause / ▶ Resume** to pause between prompts for Q&A
-   - Use **↺ Reset Demo** to restart from scratch
-6. Or ask manually (examples in English mode):
-   - *Document*: *"What is the credit restructuring procedure?"* → streaming answer + source panel
-   - *Data*: *"Show the top 5 customers by credit exposure"* → answer + SQL trace + bar chart
-   - *Combined*: *"Has network utilization in Bali exceeded the SLA threshold?"* → merges both
-7. Expand a citation card → **▼ Show full chunk** to show source transparency
-8. Open **/setup** to show the live health dashboard — database, vector store, LLM ping
-9. Open **/configure** to show how credentials are set without shell access — click **⚡ Test LLM**
-10. For technical audiences: show **/explorer** (SQL editor, LLM Compare) and **/metrics** (inference dashboard)
+| Mode | Toggle | Description |
+|------|--------|-------------|
+| Standard | (default) | RAG + SQL + combined — single-pass answer |
+| **Think** | Think button | Streams chain-of-thought before answer; works with DeepSeek-R1, Claude 4, QwQ |
+| **Agent** | Agent button | Planner breaks question into research steps, executes each, synthesizes |
+| **Debate** | Debate button | Researcher LLM gathers evidence; Critic LLM challenges; Synthesis resolves |
+
+---
+
+## SQL Safety
+
+Read-only SELECT queries only. Guardrail layers: keyword blocklist → AST table check → multi-statement block → LIMIT cap. All queries logged with latency and row count.
+
+---
+
+## Testing
+
+```bash
+pytest tests/ -v     # 86 unit tests
+```
 
 ---
 
