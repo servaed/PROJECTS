@@ -9,12 +9,14 @@ for presales demos in banking, telco, and government sectors.
 ## System Architecture
 ```
 User (Bahasa Indonesia or English)
-  → React SPA (port 8080) — sidebar domain tabs + language toggle
+  → React SPA (port 8080) — sidebar domain tabs + language toggle + mode toggles
   → FastAPI Backend (app/api.py)
        ├─ GET  /              → index.html (React SPA chat interface)
        ├─ GET  /setup         → setup.html (health dashboard)
        ├─ GET  /configure     → configure.html (env var wizard)
-       ├─ POST /api/chat      → SSE streaming (mode → token… → done)
+       ├─ POST /api/chat      → SSE streaming (mode → thinking_token → token… → done)
+       ├─ POST /api/agent/chat    → Agent SSE (plan → step → synthesis → done)
+       ├─ POST /api/debate/chat   → Debate SSE (researcher → critic → synthesis → done)
        ├─ GET  /api/status    → live component status (sidebar indicators)
        ├─ GET  /api/samples   → sample prompts list (domain + lang filtered)
        ├─ GET  /api/domains   → available domain list
@@ -23,8 +25,9 @@ User (Bahasa Indonesia or English)
        ├─ POST /api/configure → validate → write data/.env.local → os.environ update
        ├─ POST /api/test/llm     → send 1-token ping to LLM, return provider/model/latency
        ├─ GET  /api/logs         → last N lines from _MemoryHandler ring buffer
-       ├─ POST /api/ingest       → rebuild FAISS vector store in background (source docs preserved)
-       ├─ GET  /api/ingest/status → poll ingest job: running/elapsed_s/last_result
+       ├─ POST /api/ingest       → rebuild FAISS vector store in background
+       ├─ GET  /api/ingest/status → poll ingest job
+       ├─ POST /api/docs/upload  → upload document; PDFs get table extraction via pdfplumber
        └─ GET  /health           → {status, checks:{vector_store,database,llm_configured}, uptime_s}
   → Orchestration Router (classify → dokumen / data / gabungan)
        ├─ Keyword heuristics (4-tier: show-verb → gabungan → data → dokumen)
@@ -61,17 +64,18 @@ LLM tokens via Server-Sent Events on `POST /api/chat`.
 | `app/static/index.html` | React SPA — chat interface (htm tagged templates, no build step) |
 | `app/static/setup.html` | Health dashboard — auto-refreshes every 30 s; QR popup; startup banner; log viewer |
 | `app/static/configure.html` | Env-var wizard — saves to `data/.env.local`; Test LLM; .env download; model datalists |
-| `app/static/vendor/` | Self-hosted JS: React, htm, DOMPurify, QRCode.js |
+| `app/static/vendor/` | Self-hosted JS: React, htm, DOMPurify, QRCode.js, **Leaflet 1.9.4** (map) |
 | `Makefile` | Dev shortcuts: `make dev`, `make seed`, `make test`, `make reset-vs` |
 | `src/config/` | Settings (pydantic-settings), logging config |
 | `src/llm/` | LLM abstraction base (`chat` + `stream_chat`), OpenAI-compatible client, bilingual prompts |
 | `src/retrieval/` | Document loaders, chunking, embeddings (e5-large), FAISS + BM25 hybrid retriever |
-| `src/sql/` | Schema metadata, SQL guardrails (sqlparse AST), query generator, executor (number formatting) |
+| `src/retrieval/table_extractor.py` | **PDF table extraction** via pdfplumber → DuckDB views |
+| `src/sql/` | Schema metadata, SQL guardrails (sqlparse AST), query generator, executor |
 | `src/orchestration/` | Router (4-tier heuristic + LLM), answer builder (prepare/stream/finalize), citations |
 | `src/connectors/` | Storage adapters: Trino (CDW), Ozone/S3, DuckDB, local files |
 | `src/utils/` | Language helpers, unique ID generation |
 | `data/sample_docs/` | Domain-segregated TXT documents (banking/, telco/, government/) |
-| `data/sample_tables/` | Parquet seeder (`seed_parquet.py`) + shared generator (`sample_data.py`) — 9 tables, 1485 rows |
+| `data/sample_tables/` | Parquet seeder (`seed_parquet.py`) + shared generator (`sample_data.py`) — 11 tables, 2,286 rows |
 | `data/vector_store/` | FAISS index + SHA-256 integrity hash (gitignored) |
 | `deployment/` | `launch_app.sh` (step 0–5 startup), env var reference, deployment guide |
 | `tests/` | Pytest unit tests (86 total across 4 suites) |
@@ -90,235 +94,212 @@ python data/sample_tables/seed_parquet.py
 python -m src.retrieval.document_loader
 uvicorn app.api:app --host 0.0.0.0 --port 8080 --reload
 
-# Configure via browser (open after starting the app)
-# http://localhost:8080/configure
-
 # Run all tests
 pytest tests/ -v
-make test          # same via Makefile
-make test-fast     # pytest -x (stop on first failure)
+make test
 
 # Force re-ingestion (after adding new documents)
-make reset-vs   # deletes data/vector_store/, next uvicorn start re-ingests
-
-# Run full 36-question evaluation against running app
-python eval_all.py
+make reset-vs
 ```
+
+## Chat Modes (Input Bar Toggles)
+Three mutually-aware toggles in the bottom-right of the input bar:
+
+| Toggle | Endpoint | SSE events | UI component |
+|--------|----------|------------|--------------|
+| **Think** | `/api/chat` with `thinking:true` | `thinking_token` | `ThinkingPanel` — collapsible CoT panel |
+| **Agent** | `/api/agent/chat` | `agent_plan`, `agent_step_*`, `agent_synthesis` | `AgentResearch` — step trace |
+| **Debate** | `/api/debate/chat` | `debate_researcher_done`, `debate_critic_token`, `debate_synthesis_start` | `DebatePanel` — Researcher + Critic cards |
+
+Think can be combined with any mode. Agent and Debate are mutually exclusive.
+
+### Reasoning Mode (Think)
+- `_ThinkingFilter.feed()` returns `(visible_text, thinking_text)` tuple — thinking content captured separately
+- Backend emits `thinking_token` SSE events when `ChatRequest.thinking=True`
+- Works with any model emitting `<think>` tags (DeepSeek-R1, Nemotron, QwQ) or Anthropic extended thinking
+- `ThinkingPanel` auto-opens while model is thinking, shows word count when done
+
+### Agent Mode (Plan → Execute → Synthesize)
+- `_AGENT_PLAN_SYSTEM` instructs planner to output **natural language queries** (not SQL) in `query` field
+- Executor runs `retrieve()` for docs steps, `_generate_sql_with_retry()` for data steps
+- `AGENT_SYNTH_SYSTEM` prompt in `_debate_sse` / `_agent_sse` synthesizes all step results
+- Agent messages: `mode:'agent'`, `isAgent:true`, `agentPhase:'planning'|'executing'|'synthesizing'|'done'`
+
+### Debate Mode (Researcher → Critic → Synthesis)
+- **Researcher**: retrieves docs + SQL, produces factual briefing (non-streaming LLM call)
+- **Critic**: receives Researcher's briefing, streams challenges and alternative interpretations
+- **Synthesis**: final LLM call incorporating both perspectives, streamed as regular `token` events
+- Debate messages: `mode:'debate'`, `isDebate:true`, `debatePhase:'researching'|'critic'|'synthesis'`
+
+## Map Visualization
+- **Leaflet 1.9.4** served locally from `/static/vendor/leaflet.js` (works offline, no CDN)
+- `MapChart` component auto-activates when SQL result has `city`, `region`, `province`, `kota`, or `provinsi` column
+- Row limit: ≤12 rows for bar chart; ≤50 rows for map (geo queries typically return 27 cities)
+- `_CITY_COORDS` in `index.html` covers all 27 cities + 24 Indonesian province centers
+- Bubble markers: radius 9–38px, color teal→orange→red encoding metric value
+- CartoDB Dark Matter / Positron tiles match dark/light theme
+- Legend shows Low→High gradient in bottom-right corner
+
+## Document Intelligence (PDF Table Extraction)
+- `src/retrieval/table_extractor.py` uses `pdfplumber` (graceful no-op when not installed)
+- On PDF upload via `POST /api/docs/upload`: tables extracted and registered as DuckDB views with `doc_` prefix
+- View naming: `doc_{stem}_{page}_{table}` (e.g. `doc_annual_report_p1_t1`)
+- Upload response includes `extracted_tables: ["doc_report_p1_t1", ...]`
+- Extracted tables immediately queryable in chat
 
 ## Deployment Assumptions (Cloudera AI Applications)
 - **Script field runs Python only** — CML executes the Script as a Python file, not bash.
   Use `run_app.py` as the Script; it calls `deployment/launch_app.sh` via subprocess.
-- **Port**: bind to `CDSW_APP_PORT` (CML injects this, defaults to 8080). `launch_app.sh`
-  uses `PORT="${CDSW_APP_PORT:-${APP_PORT:-8080}}"`.
-- **No Docker image source in CML UI** — CML uses Source-to-Image (S2I) internally.
-  Git source path (DuckDB + local filesystem) is the standard deployment path.
+- **Port**: bind to `CDSW_APP_PORT` (CML injects this, defaults to 8080).
 - All configuration via environment variables set in the Applications UI **or** via `/configure` wizard.
-- **Application-level env vars override project-level env vars** — set LLM credentials at
-  Application level so they appear locked ("From environment") in `/configure`.
-- **Auth**: CML handles SSO/LDAP and injects `Remote-user` + `Remote-user-perm` headers.
-  App must not implement its own auth. Public access requires admin to enable it in Site Administration.
+- **Application-level env vars override project-level env vars**.
 - `deployment/launch_app.sh` sources `data/.env.local` at step 0 before uvicorn starts.
-- **SSH through HTTP proxy not supported** — use HTTPS for Git operations in CML.
-- See `DEPLOYMENT.md` and `deployment/cloudera_ai_application.md` for full guides.
 - **Minimum resource profile**: 4 vCPU / 8 GiB RAM (for `multilingual-e5-large` local embeddings).
-
-## Configure Wizard (`/configure`)
-- `GET /api/configure` returns current config state: value (masked for secrets) + source (`env` / `file` / `null`)
-- `POST /api/configure` body: `{"env_vars": {"LLM_PROVIDER": "openai", ...}}`
-  - Allowed keys: `_CONFIGURE_ALLOWED_KEYS` in `api.py`
-  - Skips keys already set by platform env (warns in response)
-  - Blank value = delete from override file
-  - Writes `data/.env.local` and updates `os.environ` immediately
-- Override file location: `_OVERRIDE_PATH = Path("data/.env.local")` in `api.py`
 
 ## Bilingual Support
 The app responds in the same language the user asks in:
 - `ChatRequest.language` (`"id"` or `"en"`) is sent from the frontend
 - Threaded through `_chat_sse` → `prepare_answer` → `AnswerPrep.language`
-- `_build_messages` passes `language` to all prompt builders
 - System prompts use `{lang_rule}` placeholder → `_lang_rule(language)` in `prompts.py`
-- Fallback strings (`not_found`, `sql_failed`) also localised via `get_answer_not_found(lang)` / `get_answer_sql_failed(lang)`
-- SQL generation prompt is always Indonesian (internal directive only, not user-facing)
+- Fallback strings localised via `get_answer_not_found(lang)` / `get_answer_sql_failed(lang)`
 
 ## Domain Selector (UI Sidebar)
-- Four clickable tabs: Banking (◈) · Telco (⬡) · Gov (⬢) · All (◉) — uniform geometric Unicode symbols, no emoji
-- Language toggle below: Bahasa Indonesia / English
-- `Sidebar` receives `domains`, `domain`, `language`, `onDomainChange`, `onLanguageChange` from `App`
-- Domain/language controls in sidebar only (not topbar)
-- Switching domain resets auto-play and re-fetches sample prompts
-- `domain="all"` → `retrieval_domain=None` (skips domain filter); all 9 tables visible to SQL generator
+- Four tabs: Banking (◈) · Telco (⬡) · Gov (⬢) · All (◉)
+- `domain="all"` → `retrieval_domain=None` (skips domain filter); all 11 tables visible to SQL generator
+- Cross-domain questions (economic stress index, infrastructure gap) use "All" domain
 
 ## Coding Standards
-- Python 3.10+
-- Absolute imports only (`from src.retrieval.retriever import ...`)
+- Python 3.10+, absolute imports only
 - **All code, comments, and documentation in English**
-- **LLM-facing system prompts in Bahasa Indonesia** (with `{lang_rule}` placeholder for bilingual)
-- **User-visible UI strings in Bahasa Indonesia** (fallback messages, labels)
+- **LLM-facing system prompts in Bahasa Indonesia** (with `{lang_rule}` placeholder)
 - No hardcoded credentials, endpoints, or model names — use `src/config/settings.py`
-- Module-level docstrings on every file; inline comments only where logic is non-obvious
-- Small, testable modules — one responsibility per file
-- Type hints on all public function signatures
 - **Logger format strings must use ASCII only** — `→` and `≥` crash Windows cp1252 console; use `->` and `>=`
 
 ## Security Notes
-- SQL guardrails use **sqlparse AST walking** (not regex) — handles subqueries, CTEs, aliases
-- FAISS vector store: SHA-256 integrity hash written after build, verified before load
-- XSS: all LLM markdown output sanitised with DOMPurify before `dangerouslySetInnerHTML`
-- `POST /api/configure` validates keys against allowlist; skips platform env vars
-- `db_adapter.execute_read_query`: belt-and-suspenders SELECT guard at execution boundary
-- LLM ping uses `ThreadPoolExecutor` + 5 s timeout to prevent uvicorn thread exhaustion
-- SSE producer thread: `thread.join(timeout=60)` with alive-check log
+- SQL guardrails use **sqlparse AST walking** — handles subqueries, CTEs, aliases
+- FAISS vector store: SHA-256 integrity hash verified before load
+- XSS: all LLM markdown sanitised with DOMPurify before `dangerouslySetInnerHTML`
+- `POST /api/configure` validates keys against allowlist
 
 ## RAG Safety Rules
 - Never fabricate citations, page numbers, or source metadata
-- Always return source document metadata alongside retrieved chunks
-- If no relevant document found, respond with `get_answer_not_found(language)` from `prompts.py`
-- Required source metadata: `title`, `source_path`, `chunk_index`, `ingest_timestamp`
-- SSE `done` event includes `full_text` (complete retrieved chunk) for source preview
+- If no relevant document found, respond with `get_answer_not_found(language)`
+- SSE `done` event includes `full_text` for source preview
 
 ## SQL Safety Rules
-- Read-only queries only — SELECT statements exclusively
-- Block: `DROP`, `DELETE`, `UPDATE`, `INSERT`, `ALTER`, `TRUNCATE`, multi-statement (`;` separator)
+- Read-only queries only — SELECT exclusively
+- Block: `DROP`, `DELETE`, `UPDATE`, `INSERT`, `ALTER`, `TRUNCATE`, multi-statement
 - Default row limit: 500; hard cap: 1000
-- Log every executed query with timestamp, latency, row count
-- Never claim answer is from structured data if query failed or returned empty results
-- Mark all generated SQL as system-generated in the UI trace
-- **Number formatting**: `executor.py` pre-formats all numeric columns before `to_markdown()` — integers with `,` thousands separator, floats as `f"{v:,.2f}"` — prevents scientific notation like `2.368e+10`
-- **SQL context in synthesis**: `_format_sql_summary()` in `answer_builder.py` prefixes the result table with the SQL query text so the LLM understands what each column represents
+- **Number formatting**: `executor.py` pre-formats numeric columns before `to_markdown()` — integers with `,` separator, floats as `f"{v:,.2f}"`
 
-## Retrieval Architecture
-- **Embeddings model**: `intfloat/multilingual-e5-large` (560M params, 1024-dim) — supports ID + EN
-- **Hybrid retrieval**: BM25 (`rank-bm25`) + FAISS cosine similarity fused via Reciprocal Rank Fusion (RRF)
-- **Domain filtering**: each chunk tagged with domain at ingest time; retriever filters by `domain` param
-- **Gabungan two-pass**: original question retrieves policy chunks; extracted data question retrieves metric chunks; deduplicated by `(source_path, chunk_index)`
+## Sample Data (11 tables, 2,286 rows)
 
-## Router Architecture (4-tier heuristics)
-1. **Tier 1 — Show verbs**: `tampilkan|tunjukkan|show|list|display` → always `data`
-2. **Tier 2 — Gabungan patterns**: comparison + policy reference patterns (ID + EN, plural-aware)
-3. **Tier 3 — Data keywords**: aggregation/listing + no policy words → `data`
-4. **Tier 4 — Policy keywords**: policy/regulation + no data keywords → `dokumen`
-5. **LLM fallback**: only for genuinely ambiguous questions; defaults to `dokumen` on error
-- All logger strings use `->` (not `→`) to avoid Windows cp1252 crashes
+Data generated by `data/sample_tables/sample_data.py` (fixed `random.Random(42)` seed).
 
-## Sample Data (9 tables, 1485 rows)
-
-Data is generated by `data/sample_tables/sample_data.py` (fixed `random.Random(42)` seed) and
-imported by `seed_parquet.py` (DuckDB dev) or `deployment/seed_iceberg.py` (Trino/Iceberg on CDP).
-
-All table names and column names are in English. Status/segment values are in English
-(Active, Inactive, Micro, Small, Medium, etc.). OJK credit quality codes (Lancar, DPK,
-Kurang Lancar, Macet) and Indonesian government agency names remain in Indonesian.
+**NPL tiers** baked into data:
+- **Low** (Java metro + Bali): 3–6% NPL — Jakarta, Surabaya, Bandung, Denpasar, etc.
+- **Mid** (Sumatra + Kalimantan): 7–12% NPL — Medan, Palembang, Balikpapan, etc.
+- **High** (Outer islands): 13–22% NPL — Jayapura, Kupang, Kendari, Ambon, etc.
 
 | Domain | Tables | Details |
 |--------|--------|---------|
-| Banking | `msme_credit` (540), `customer` (80), `branch` (25) | 15 cities × 3 segments × 12 months, OJK credit quality tiers, 25 branches nationwide |
-| Telco | `subscriber` (80), `data_usage` (480), `network` (20) | Churn risk score, ARPU, 80 subscribers × 6 months usage, 20 network stations |
-| Government | `resident` (40), `regional_budget` (88), `public_service` (132) | 40 districts, 11 programs × 4 quarters × 2 years budget, 11 services × 12 months |
+| Banking | `msme_credit` (972) | 27 cities × 3 segments × 12 months, province column, NPL-tiered pools |
+| Banking | `customer` (80) | industry, annual_revenue, debt_service_ratio, internal_rating |
+| Banking | `branch` (25) | npl_amount, deposit_balance, roi_pct, lat/lon |
+| Banking | `loan_application` (600) | 25 branches × 3 types × 8 months; approval_rate_pct, avg_processing_days |
+| Telco | `subscriber` (80) | tenure_months, monthly_complaints (correlated with churn_risk_score) |
+| Telco | `data_usage` (480) | 80 subscribers × 6 months |
+| Telco | `network` (27) | avg_latency_ms, packet_loss_pct (correlated with utilization/status), lat/lon |
+| Telco | `network_incident` (162) | 27 cities × 6 months; sla_breach_count, mttr_hrs |
+| Government | `resident` (40) | district/city/province population |
+| Government | `regional_budget` (88) | 11 programs × 4 quarters × 2 years |
+| Government | `public_service` (132) | pending_count, complaint_count added; 11 services × 12 months |
 
-## Documents (14 files — 7 Bahasa Indonesia + 7 English)
-
-Language detection: files ending in `_en.txt` -> "en"; all others -> "id".
-Retrieval filters by `language` metadata so each UI language sees its own knowledge base.
-
-| Domain | File | Lang | Key content |
-|--------|------|------|-------------|
-| Banking | `kebijakan_kredit_umkm.txt` | id | 15% YoY targets, NPL thresholds, restructuring conditions |
-| Banking | `sme_credit_policy_en.txt` | en | Same as above in English |
-| Banking | `prosedur_kyc_nasabah.txt` | id | Risk tiers (SDD/CDD/EDD), PPATK thresholds |
-| Banking | `kyc_aml_procedures_en.txt` | en | Same as above in English |
-| Banking | `regulasi_ojk_2025.txt` | id | POJK references, CAR/LCR ratios, KUR 2026 allocation |
-| Banking | `ojk_regulatory_summary_en.txt` | en | Same as above in English |
-| Telco | `kebijakan_layanan_pelanggan.txt` | id | SLA tiers (P1-P4), churn risk tiers, retention eligibility (score >=70) |
-| Telco | `customer_service_sla_policy_en.txt` | en | Same as above in English |
-| Telco | `regulasi_spektrum_frekuensi.txt` | id | Spectrum allocation, utilisation thresholds (70/85/95%) |
-| Telco | `spectrum_network_operations_en.txt` | en | Same as above in English |
-| Government | `kebijakan_pelayanan_publik.txt` | id | Processing times (KTP 3d, IMB 14d), IKM target 82.0 |
-| Government | `public_service_standard_en.txt` | en | Same as above in English |
-| Government | `regulasi_anggaran_daerah.txt` | id | APBD structure, TW3 target 70%, penalty for <75% end-year |
-| Government | `municipal_budget_regulation_en.txt` | en | Same as above in English |
+## DOMAIN_CONFIG (approved SQL tables per domain)
+```python
+"banking":    ["msme_credit", "customer", "branch", "loan_application"]
+"telco":      ["subscriber", "data_usage", "network", "network_incident"]
+"government": ["resident", "regional_budget", "public_service"]
+"all":        all 11 tables
+```
 
 ## Frontend Architecture (index.html)
 The React SPA uses **htm tagged templates** — no build step, no JSX, no bundler.
 
+Key components:
+- `ThinkingPanel` — collapsible chain-of-thought panel; auto-opens during thinking, shows word count
+- `DebatePanel` — Researcher card (teal) + Critic card (orange) + Synthesis indicator (indigo)
+- `AgentResearch` — collapsible step trace with type badge, query, result summary, latency
+- `MapChart` — Leaflet bubble map; auto-detected from geo column; city+province coordinate lookup
+- `DataChart` — Canvas bar chart (≤12 rows) or Leaflet map (≤50 rows with geo column); Map/Bar/Table switcher
+- `PipelineTrace` — Router→Retrieval→Synthesis stage timing for regular chat
+- `DocCitationList` — source cards with relevance bar and full-chunk preview
+- `SqlPanel` — generated SQL + results table + DataChart (collapsed by default)
+
 Key patterns:
-- `useReducer(reduce, [], initializer)` — initializer reads `localStorage` for persistence (`_SS_VER=3`)
-- ASSISTANT messages store `question` + `latency_ms` fields; `⚡ X.Xs` badge rendered from `latency_ms`
-- `handleSubmit(question, _onDone)` — `_onDone` callback enables auto-play chaining
-- Auto-play uses three refs (`autoPlayRef`, `samplesRef`, `handleSubmitRef`) + pause refs
-  (`autoPausedRef`, `pausedAtIdxRef`, `playNextRef`) to avoid stale closures
-- `highlightHtml(text, query)` — HTML-escapes then wraps matched words in `<mark>` tags (safe)
-- Chat persisted to `localStorage` key `cld-chat`; cleared on RESET dispatch and full reset
-- Domain tabs and language toggle are in the **sidebar** (not topbar)
-- SSE token events use `{"text": "..."}` key (not `"token"`)
-- `Welcome` component: domain-aware with icon + description + 3 clickable sample prompts
-- `DataChart` component: Canvas bar chart for SQL results with 2–12 rows (`ctx.roundRect()`)
-- `SetupOverlay` component: full-screen first-launch guide when `llm_configured === false`
-- Keyboard shortcuts: Ctrl+Shift+D (demo), Ctrl+K (clear), Ctrl+Shift+R (reset), Escape (stop)
-- `/health` endpoint (not `/api/status`) used for setup overlay check — has `checks.llm_configured`
-- **Nav links** (topbar): plain text labels only — no emoji. Labels: Chat / Data Explorer / Upload / Metrics / Slides / Status / Settings
-- **Domain icons**: uniform geometric Unicode — ◈ Banking · ⬡ Telco · ⬢ Gov · ◉ All (no emoji)
+- `useReducer(reduce, [], initializer)` — initializer reads `localStorage` (`_SS_VER=3`)
+- Stale closure prevention: `agentModeRef`, `thinkModeRef`, `debateModeRef`, `answerStyleRef`, `domainRef` — all synced via `useEffect`
+- `handleSubmit` routes to `/api/chat`, `/api/agent/chat`, or `/api/debate/chat` based on active toggle
+- Chat body includes `thinking: thinkModeRef.current` for reasoning mode
+- **Nav links** (topbar): plain text only — Chat / Data Explorer / Upload / Metrics / Slides / Status / Settings
+- **Domain icons**: ◈ Banking · ⬡ Telco · ⬢ Gov · ◉ All
+
+## Personas
+| Persona | Company | Domain | Lang |
+|---------|---------|--------|------|
+| Rina | Credit Officer · **Bank Indonesia** | banking | id |
+| David | Network Ops · **Indosat** | telco | en |
+| Budi | Budget Controller · DKI Jakarta | government | id |
+
+## SSE Event Reference
+| Event | Source | Payload |
+|-------|--------|---------|
+| `mode` | `/api/chat` | `{mode: "dokumen"|"data"|"gabungan"}` |
+| `token` | all | `{text: "..."}` |
+| `thinking` | `/api/chat` | `{active: bool}` |
+| `thinking_token` | `/api/chat` (think=true) | `{text: "..."}` |
+| `done` | all | `{doc_citations, sql_citation, usage, latency_ms}` |
+| `agent_plan` | `/api/agent/chat` | `{steps: [{type,query,label}]}` |
+| `agent_step_start` | `/api/agent/chat` | `{index, type, query, label}` |
+| `agent_step_done` | `/api/agent/chat` | `{index, summary, latency_ms}` |
+| `agent_synthesis` | `/api/agent/chat` | `{}` |
+| `debate_researcher_done` | `/api/debate/chat` | `{text: "..."}` |
+| `debate_critic_start` | `/api/debate/chat` | `{}` |
+| `debate_critic_token` | `/api/debate/chat` | `{text: "..."}` |
+| `debate_synthesis_start` | `/api/debate/chat` | `{}` |
+| `error` | all | `{message: "..."}` |
 
 ## Icon Design System (all pages)
-All HTML pages use a **uniform stroke-SVG icon vocabulary** (Feather icon style, 1.5px stroke, 24×24 viewBox). Zero emoji in navigation or UI chrome.
+All HTML pages use stroke-SVG icons (Feather style, 1.5px stroke, 24×24 viewBox). Zero emoji in UI chrome.
 
-| Context | Icon style |
-|---------|-----------|
-| Nav links | Plain text labels (no icon prefix) |
-| Domain tabs (sidebar) | ◈ ⬡ ⬢ ◉ — Unicode geometric symbols |
-| Card icons, step icons | Inline stroke SVG (`fill:none`, `stroke:currentColor`) |
-| File type icons | Single uniform file SVG (no per-type differentiation) |
-| Action buttons (delete, etc.) | Stroke SVG trash/upload icon |
-
-Cloudera logo: orange in the presentation (`--logo-filter` CSS variable); light-mode chat also uses orange. Dark-mode chat uses white (`brightness(0) invert(1)`).
+Cloudera logo: orange in light mode (`--logo-filter` CSS filter); white in dark mode.
 
 ## Pages (FastAPI routes)
 - `GET /` → `index.html` — React SPA chat
-- `GET /setup` → `setup.html` — health dashboard (Token Usage, startup banner, log viewer)
-- `GET /configure` → `configure.html` — env-var wizard + 6 quick-start provider profiles
+- `GET /setup` → `setup.html` — health dashboard
+- `GET /configure` → `configure.html` — env-var wizard
 - `GET /explorer` → `explorer.html` — SQL editor + Docs browser + LLM Compare + Iceberg Time Travel
 - `GET /upload` → `upload.html` — bulk upload, URL scrape, CSV table import, doc management
-- `GET /metrics` → `metrics.html` — inference dashboard (stats, charts, run table, MLflow banner)
-- `GET /presentation` → `presentation.html` — presales slide deck (14 slides total, audience toggle)
-
-## Presentation Architecture (`app/static/presentation.html`)
-- **Audience toggle**: Business (9 slides, default) / Technical (14 slides) — fixed top-right pill switcher
-- `data-tech="1"` attribute marks technical-only slides (s10–s14)
-- JS: `buildSlideList()` filters by `aud` + `data-tech`; `goTo()` updates slide num + progress fill
-- **Business slides** (s1–s9): problem → solution → capabilities → value → why Cloudera → industries → getting started → CTA
-- **Technical slides** (s10–s14): pipeline architecture · retrieval stack · deployment architecture · LLM providers & APIs · security & observability
-- Cloudera logo: Cloudera orange (`--logo-filter` = `brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%)`)
-- All icons: stroke SVG (Feather vocabulary) — banking=column-chart, telco=wifi, government=landmark
-- Served at `/presentation`; synced copy at `docs/presentation.html`
-
-## Admin Pages Nav Consistency
-All admin pages (setup, configure, explorer, upload, metrics, presentation) have a uniform topbar with plain-text nav links to all pages. No emoji in nav. Active page highlighted with orange border/bg.
+- `GET /metrics` → `metrics.html` — inference dashboard
+- `GET /presentation` → `presentation.html` — presales slide deck (14 slides, audience toggle)
 
 ## /health vs /api/status
-**Critical distinction** — these are separate endpoints with different response shapes:
-- `/health` → `{status:"ok"|"degraded", checks:{vector_store:bool, database:bool, llm_configured:bool}, uptime_s:int}`
-  Used by: setup overlay in `index.html`, fast-poll in `setup.html`, liveness probe
-- `/api/status` → `{vector_store:{ok:bool,...}, database:{ok:bool,...}, llm:{ok:bool,...}}`
-  Used by: sidebar component indicators in `index.html`
-  
-Do NOT use `/api/status` for startup/health polling — it lacks `uptime_s` and `checks.*`.
+- `/health` → `{status, checks:{vector_store, database, llm_configured}, uptime_s}` — used by setup overlay
+- `/api/status` → `{vector_store:{ok,...}, database:{ok,...}, llm:{ok,...}}` — used by sidebar indicators
 
 ## Language Policy
 | Content | Language |
 |---------|----------|
 | Code, docstrings, comments | English |
-| Documentation (README, CLAUDE.md, deployment guides) | English |
-| LLM system prompts | Bahasa Indonesia (with `{lang_rule}` placeholder — intentional for LLM quality) |
-| LLM user prompts | Bahasa Indonesia (internal framing only) |
+| LLM system prompts | Bahasa Indonesia (with `{lang_rule}` placeholder) |
 | UI labels, buttons, error messages | English |
-| LLM responses to user | Same language as user's question (ID or EN) |
-| Schema names, table names, column names | English (technical labels) |
-| Sample data status/segment values (e.g. "Active", "Micro", "Prepaid") | English |
-| Domain-authentic codes (e.g. "Lancar", "DPK", "Kurang Lancar", "Macet") | Indonesian (OJK standard) |
-| Government agency names (e.g. "Dinas Kesehatan") | Indonesian (official names) |
+| LLM responses to user | Same as user's question (ID or EN) |
+| Schema / table / column names | English |
+| OJK credit quality codes | Indonesian (Lancar, DPK, Kurang Lancar, Macet) |
+| Government agency names | Indonesian (official names) |
 
 ## History Tracking
 After each meaningful work session:
 1. Create `.claude/history/sessions/YYYY-MM-DD-HHMM-<topic>.md`
-2. Record architecture decisions in `.claude/history/decisions/YYYY-MM-DD-<decision>.md`
-3. Update `.claude/history/changelogs/YYYY-MM-DD.md` with notable changes
-4. Store reusable prompts in `.claude/history/prompts/`
+2. Record architecture decisions in `.claude/history/decisions/`
+3. Update `.claude/history/changelogs/YYYY-MM-DD.md`

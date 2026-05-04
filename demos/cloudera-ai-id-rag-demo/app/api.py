@@ -269,11 +269,11 @@ app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 DOMAIN_CONFIG: dict[str, dict] = {
     "banking": {
         "label": "Banking",
-        "tables": ["msme_credit", "customer", "branch"],
+        "tables": ["msme_credit", "customer", "branch", "loan_application"],
     },
     "telco": {
         "label": "Telco",
-        "tables": ["subscriber", "data_usage", "network"],
+        "tables": ["subscriber", "data_usage", "network", "network_incident"],
     },
     "government": {
         "label": "Government",
@@ -282,8 +282,8 @@ DOMAIN_CONFIG: dict[str, dict] = {
     "all": {
         "label": "All Domains",
         "tables": [
-            "msme_credit", "customer", "branch",
-            "subscriber", "data_usage", "network",
+            "msme_credit", "customer", "branch", "loan_application",
+            "subscriber", "data_usage", "network", "network_incident",
             "resident", "regional_budget", "public_service",
         ],
     },
@@ -298,61 +298,74 @@ _DEFAULT_DOMAIN = "banking"
 _SAMPLES: list[dict] = [
     # ── Banking ───────────────────────────────────────────────────────────
     {"domain": "banking", "mode": "document",
-     "text_id": "Apa saja syarat pengajuan kredit UMKM dan dokumen yang wajib dilengkapi?",
-     "text_en": "What are the MSME credit requirements and mandatory documents?"},
-    {"domain": "banking", "mode": "document",
-     "text_id": "Bagaimana prosedur restrukturisasi kredit jika debitur mengalami kesulitan pembayaran?",
-     "text_en": "What is the credit restructuring procedure when a debtor has payment difficulties?"},
+     "text_id": "Apa syarat restrukturisasi kredit UMKM dan bagaimana prosedur pengajuannya?",
+     "text_en": "What are the MSME credit restructuring conditions and how is the application process?"},
     {"domain": "banking", "mode": "data",
-     "text_id": "Berapa total outstanding kredit UMKM di Jakarta per Maret 2026?",
-     "text_en": "What is the total outstanding MSME credit in Jakarta as of March 2026?"},
+     "text_id": "Tampilkan peta risiko NPL kredit UMKM per kota seluruh Indonesia bulan Maret 2026.",
+     "text_en": "Show the MSME credit NPL risk heatmap by city across Indonesia for March 2026."},
     {"domain": "banking", "mode": "data",
-     "text_id": "Tampilkan 5 nasabah dengan total eksposur kredit tertinggi.",
-     "text_en": "Show the top 5 customers by total credit exposure."},
+     "text_id": "Kota mana yang memiliki NPL di atas 8% DAN volume kredit di atas 5 triliun? Tampilkan dual-risk hotspot.",
+     "text_en": "Which cities have NPL above 8% AND credit volume above 5 trillion? Show dual-risk hotspots."},
+    {"domain": "banking", "mode": "data",
+     "text_id": "Bandingkan ROI cabang vs NPL rate — cabang mana yang paling dan paling tidak efisien?",
+     "text_en": "Compare branch ROI versus NPL rate — which branches are most and least efficient?"},
+    {"domain": "banking", "mode": "data",
+     "text_id": "Tampilkan tingkat persetujuan KUR per kota dan jenis pinjaman — identifikasi kota dengan backlog tinggi.",
+     "text_en": "Show KUR loan approval rate by city and type — identify cities with processing backlogs."},
+    {"domain": "banking", "mode": "data",
+     "text_id": "Nasabah dengan debt service ratio di atas 45% dan rating B atau B- — siapa yang paling berisiko?",
+     "text_en": "Customers with debt service ratio above 45% and rating B or B- — who faces the highest systemic risk?"},
     {"domain": "banking", "mode": "combined",
-     "text_id": "Apakah outstanding kredit UMKM di Jakarta sudah sesuai target ekspansi 15% yang ditetapkan kebijakan 2026?",
-     "text_en": "Does the Jakarta MSME credit outstanding align with the 15% expansion target set by the 2026 policy?"},
+     "text_id": "Kota mana yang NPL-nya melebihi ambang batas 5% OJK? Berapa potensi kerugian yang harus dicadangkan?",
+     "text_en": "Which cities breach the OJK 5% NPL threshold? What is the estimated provision requirement?"},
     {"domain": "banking", "mode": "combined",
-     "text_id": "Bagaimana kualitas kredit di Bandung dibandingkan kondisi yang memenuhi syarat restrukturisasi menurut kebijakan bank?",
-     "text_en": "How does Bandung's credit quality compare to the restructuring eligibility conditions per bank policy?"},
+     "text_id": "Apakah outstanding kredit UMKM di Jakarta sudah sesuai target ekspansi 15% kebijakan 2026?",
+     "text_en": "Does Jakarta MSME credit outstanding meet the 15% expansion target set by the 2026 policy?"},
+    {"domain": "banking", "mode": "combined",
+     "text_id": "Bagaimana kualitas kredit di Bandung dibandingkan syarat restrukturisasi menurut kebijakan bank?",
+     "text_en": "How does Bandung credit quality compare to the restructuring eligibility conditions per bank policy?"},
     # ── Telco ─────────────────────────────────────────────────────────────
     {"domain": "telco", "mode": "document",
-     "text_id": "Apa saja standar waktu penanganan keluhan pelanggan yang ditetapkan dalam SLA?",
-     "text_en": "What are the customer complaint resolution time standards defined in the SLA?"},
-    {"domain": "telco", "mode": "document",
-     "text_id": "Bagaimana kebijakan retensi pelanggan dan syarat mendapatkan diskon perpanjangan kontrak?",
-     "text_en": "What is the customer retention policy and the conditions for contract renewal discounts?"},
+     "text_id": "Apa saja standar SLA penanganan keluhan P1 dan P2, dan apa sanksi pelanggarannya?",
+     "text_en": "What are the P1 and P2 complaint SLA standards and what are the penalty provisions?"},
     {"domain": "telco", "mode": "data",
-     "text_id": "Tampilkan utilisasi jaringan per wilayah dan identifikasi wilayah yang mendekati kapasitas kritis.",
-     "text_en": "Show network utilization by region and identify areas approaching critical capacity."},
+     "text_id": "Tampilkan composite risk score jaringan: utilisasi × packet loss per kota — identifikasi hotspot kritis.",
+     "text_en": "Show network composite risk score: utilization × packet loss by city — identify critical hotspots."},
     {"domain": "telco", "mode": "data",
-     "text_id": "Berapa pelanggan dengan churn risk score di atas 70 dan di wilayah mana saja?",
-     "text_en": "How many subscribers have a churn risk score above 70 and in which regions?"},
+     "text_id": "Hitung revenue at risk: total ARPU pelanggan churn score >70 per kota, beserta rata-rata tenure mereka.",
+     "text_en": "Calculate revenue at risk: total ARPU of high-churn subscribers (score >70) per city with average tenure."},
+    {"domain": "telco", "mode": "data",
+     "text_id": "Tampilkan insiden jaringan dan pelanggaran SLA per kota — kota mana yang MTTR-nya paling buruk?",
+     "text_en": "Show network incidents and SLA breaches by city — which cities have the worst mean time to resolve?"},
     {"domain": "telco", "mode": "combined",
-     "text_id": "Apakah utilisasi jaringan di Bali sudah melampaui batas SLA ketersediaan yang ditetapkan dalam kebijakan?",
-     "text_en": "Has network utilization in Bali exceeded the availability SLA threshold defined in the policy?"},
+     "text_id": "Kota mana yang utilisasi jaringan kritis DAN banyak pelanggan Corporate/Postpaid yang berisiko churn?",
+     "text_en": "Which cities have critical network utilization AND significant Corporate/Postpaid churn risk — compounding threat?"},
     {"domain": "telco", "mode": "combined",
-     "text_id": "Pelanggan mana yang berisiko churn tinggi dan apakah mereka memenuhi syarat program retensi berdasarkan kebijakan?",
-     "text_en": "Which high-churn-risk subscribers qualify for the retention program based on the policy criteria?"},
+     "text_id": "Pelanggan baru (<12 bulan) dengan churn risk >70 — berapa total revenue yang terancam dan apakah memenuhi syarat retensi?",
+     "text_en": "New subscribers (<12 months tenure) with churn risk >70 — total revenue threatened and do they qualify for retention?"},
     # ── Government ────────────────────────────────────────────────────────
     {"domain": "government", "mode": "document",
-     "text_id": "Berapa standar waktu penyelesaian layanan KTP elektronik dan apa kompensasi jika terlambat?",
-     "text_en": "What is the processing time standard for electronic ID cards and what compensation is given for delays?"},
-    {"domain": "government", "mode": "document",
-     "text_id": "Apa saja kanal pengaduan yang tersedia dan bagaimana prosedur penanganannya?",
-     "text_en": "What complaint channels are available and what is the handling procedure?"},
+     "text_id": "Berapa standar waktu layanan IMB dan KTP, dan apa kompensasi jika melewati batas?",
+     "text_en": "What are the IMB and KTP service time standards, and what compensation applies for delays?"},
     {"domain": "government", "mode": "data",
-     "text_id": "Tampilkan realisasi anggaran per satuan kerja dan identifikasi yang realisasinya di bawah target.",
-     "text_en": "Show budget realization per work unit and identify those below target."},
+     "text_id": "Tampilkan layanan publik dengan backlog tertinggi dan kepuasan terendah — identifikasi bottleneck operasional.",
+     "text_en": "Show public services with highest backlog and lowest satisfaction — identify operational bottlenecks."},
     {"domain": "government", "mode": "data",
-     "text_id": "Layanan publik mana yang memiliki tingkat kepuasan masyarakat terendah per Maret 2026?",
-     "text_en": "Which public services have the lowest citizen satisfaction rate as of March 2026?"},
+     "text_id": "Realisasi anggaran per satuan kerja: identifikasi yang di bawah target Q3 70% dan berisiko penalti.",
+     "text_en": "Budget realization per work unit: identify those below the Q3 70% target and at penalty risk."},
     {"domain": "government", "mode": "combined",
-     "text_id": "Apakah layanan IMB sudah memenuhi standar waktu dan IKM yang ditetapkan dalam kebijakan pelayanan publik?",
-     "text_en": "Does the building permit (IMB) service meet the processing time and satisfaction standards set by the public service policy?"},
+     "text_id": "Layanan IMB: apakah waktu proses dan skor IKM sudah memenuhi standar kebijakan pelayanan publik 2026?",
+     "text_en": "IMB service: do processing time and IKM satisfaction score meet the 2026 public service policy standards?"},
     {"domain": "government", "mode": "combined",
-     "text_id": "Satuan kerja mana yang realisasi anggarannya rendah dan apakah ada risiko penalti sesuai regulasi APBD?",
-     "text_en": "Which work units have low budget realization and face penalty risk under the APBD regulation?"},
+     "text_id": "Satuan kerja mana yang realisasinya rendah DAN memiliki pengaduan layanan tertinggi — risiko ganda?",
+     "text_en": "Which work units have low budget realization AND highest service complaints — compounding governance risk?"},
+    # ── All domains — cross-domain intelligence ───────────────────────────
+    {"domain": "all", "mode": "data",
+     "text_id": "Tampilkan economic stress index per kota: gabungkan NPL kredit, churn risk telco, dan keluhan layanan publik.",
+     "text_en": "Show economic stress index by city: combine MSME NPL, telco churn risk, and public service complaints."},
+    {"domain": "all", "mode": "data",
+     "text_id": "Kota mana yang infrastruktur digitalnya (jaringan) paling tertinggal dibanding aktivitas ekonomi (kredit UMKM)?",
+     "text_en": "Which cities have the biggest gap between digital infrastructure (network) and economic activity (MSME credit)?"},
 ]
 
 
@@ -364,6 +377,7 @@ class ChatRequest(BaseModel):
     domain: str = _DEFAULT_DOMAIN
     language: str = "id"
     style: str = "analyst"   # analyst | executive | compliance
+    thinking: bool = False   # stream chain-of-thought via thinking_token SSE events
 
 
 # ── API routes ─────────────────────────────────────────────────────────────
@@ -928,6 +942,177 @@ class FollowupRequest(BaseModel):
     language: str = "id"
 
 
+# ── Debate: Researcher + Critic + Synthesis ──────────────────────────────
+
+_DEBATE_RESEARCHER_SYSTEM = """\
+You are a thorough Research Agent. Summarise the retrieved evidence below into a \
+clear, structured briefing of 3-5 bullet points. Be factual and cite specific numbers.
+Reply in {lang_rule}."""
+
+_DEBATE_CRITIC_SYSTEM = """\
+You are a rigorous Critic Agent. You have received a researcher's briefing. \
+Your role is to challenge assumptions, highlight data gaps, flag alternative \
+interpretations, and ask probing follow-up questions. Be concise: 3-4 crisp points.
+Reply in {lang_rule}."""
+
+_DEBATE_SYNTHESIS_SYSTEM = """\
+You are a wise Synthesis Agent. You have both a researcher's briefing and a \
+critic's challenges. Produce a final, balanced answer that:
+- Acknowledges the strongest points from both perspectives
+- Resolves genuine conflicts with clear reasoning
+- Ends with a concrete recommendation or conclusion
+Reply in {lang_rule}."""
+
+_AGENT_SYNTH_SYSTEM = """\
+You are a senior enterprise analyst. Using the multi-step research below, \
+synthesise a comprehensive, well-structured answer. Cite specific steps with [Step N].
+Reply in {lang_rule}."""
+
+
+async def _debate_sse(
+    question: str,
+    history: list[dict],
+    domain: str,
+    retrieval_domain: str | None,
+    domain_tables: list[str] | None,
+    language: str,
+    style: str,
+) -> AsyncGenerator[str, None]:
+    """Three-phase debate: Researcher → Critic → Synthesis."""
+    from src.retrieval.retriever import retrieve
+    from src.orchestration.answer_builder import _generate_sql_with_retry, _format_doc_context, _format_sql_summary
+    from src.llm.inference_client import get_llm_client
+    from src.llm.prompts import _lang_rule, _style_rule
+    from src.orchestration.citations import build_document_citations, build_sql_citation
+    import dataclasses
+
+    loop = asyncio.get_event_loop()
+    _t_start = time.monotonic()
+
+    try:
+        # ── Phase 1: Gather evidence (same as agent research) ─────────────
+        yield _sse("debate_researcher_thinking", {"label": "Gathering and analysing evidence…"})
+
+        doc_chunks = await loop.run_in_executor(None, retrieve, question, 5, retrieval_domain, language)
+        qr = await loop.run_in_executor(None, _generate_sql_with_retry, question, domain_tables)
+
+        doc_context = _format_doc_context(doc_chunks) if doc_chunks else "_No documents found._"
+        sql_summary = _format_sql_summary(qr) if qr and qr.succeeded else "_No data found._"
+
+        evidence = f"DOCUMENTS:\n{doc_context}\n\nDATA:\n{sql_summary}"
+        lang_rule = _lang_rule(language)
+
+        # Researcher LLM call (non-streaming for conciseness)
+        llm = get_llm_client()
+        researcher_resp = await loop.run_in_executor(
+            None, lambda: llm.chat(
+                [{"role": "system", "content": _DEBATE_RESEARCHER_SYSTEM.format(lang_rule=lang_rule)},
+                 {"role": "user", "content": f"Evidence:\n{evidence}\n\nQuestion: {question}"}],
+                temperature=0.2, max_tokens=600,
+            )
+        )
+        researcher_text = researcher_resp.content.strip()
+        yield _sse("debate_researcher_done", {"text": researcher_text})
+
+        # ── Phase 2: Critic challenges the researcher ──────────────────────
+        yield _sse("debate_critic_start", {})
+        critic_text = ""
+        critic_q: queue.Queue = queue.Queue()
+
+        def _critic_produce():
+            try:
+                for tok in llm.stream_chat(
+                    [{"role": "system", "content": _DEBATE_CRITIC_SYSTEM.format(lang_rule=lang_rule)},
+                     {"role": "user", "content": f"Researcher's briefing:\n{researcher_text}\n\nOriginal question: {question}"}],
+                    temperature=0.3, max_tokens=400,
+                ):
+                    critic_q.put(tok)
+            except Exception as exc:
+                critic_q.put(("__error__", str(exc)))
+            finally:
+                critic_q.put(None)
+
+        critic_thread = threading.Thread(target=_critic_produce, daemon=True)
+        critic_thread.start()
+        while True:
+            item = await loop.run_in_executor(None, critic_q.get)
+            if item is None:
+                break
+            if isinstance(item, tuple) and item[0] == "__error__":
+                break
+            critic_text += item
+            yield _sse("debate_critic_token", {"text": item})
+        critic_thread.join(timeout=30)
+
+        # ── Phase 3: Synthesis ─────────────────────────────────────────────
+        yield _sse("debate_synthesis_start", {})
+        sr = _style_rule(style)
+        synth_system = _DEBATE_SYNTHESIS_SYSTEM.format(lang_rule=lang_rule)
+        if sr:
+            synth_system += f"\n{sr}"
+
+        synth_messages = [
+            {"role": "system", "content": synth_system},
+            {"role": "user", "content": (
+                f"Researcher's briefing:\n{researcher_text}\n\n"
+                f"Critic's challenges:\n{critic_text}\n\n"
+                f"Question: {question}"
+            )},
+        ]
+
+        full_text = ""
+        synth_q: queue.Queue = queue.Queue()
+
+        def _synth_produce():
+            try:
+                for tok in llm.stream_chat(synth_messages, temperature=0.2, max_tokens=900):
+                    synth_q.put(tok)
+            except Exception as exc:
+                synth_q.put(("__error__", str(exc)))
+            finally:
+                synth_q.put(None)
+
+        synth_thread = threading.Thread(target=_synth_produce, daemon=True)
+        synth_thread.start()
+        while True:
+            item = await loop.run_in_executor(None, synth_q.get)
+            if item is None:
+                break
+            if isinstance(item, tuple) and item[0] == "__error__":
+                yield _sse("error", {"message": item[1]})
+                break
+            full_text += item
+            yield _sse("token", {"text": item})
+        synth_thread.join(timeout=60)
+
+        # Build citations
+        doc_cits = build_document_citations(doc_chunks) if doc_chunks else []
+        sql_cit  = build_sql_citation(qr) if qr and qr.succeeded else None
+
+        input_est  = (len(evidence) + len(researcher_text) + len(critic_text)) // 4
+        output_est = len(full_text) // 4
+        usage = {"input_tokens": input_est, "output_tokens": output_est,
+                 "total_tokens": input_est + output_est}
+
+        with _stats_lock:
+            _session_stats["total_requests"] += 1
+            _session_stats["input_tokens"]   += usage["input_tokens"]
+            _session_stats["output_tokens"]  += usage["output_tokens"]
+            _session_stats["total_tokens"]   += usage["total_tokens"]
+
+        total_ms = int((time.monotonic() - _t_start) * 1000)
+        yield _sse("done", {
+            "doc_citations": [dataclasses.asdict(c) for c in doc_cits] if doc_cits else [],
+            "sql_citation":  dataclasses.asdict(sql_cit) if sql_cit else None,
+            "latency_ms": total_ms,
+            "usage": usage,
+        })
+
+    except Exception as exc:
+        logger.exception("Debate pipeline error")
+        yield _sse("error", {"message": str(exc)})
+
+
 # ── Agent: Planner + Executor + Synthesizer ───────────────────────────────
 
 _AGENT_PLAN_SYSTEM = """\
@@ -939,15 +1124,18 @@ Available tools:
 - "data": Query structured database tables (banking, telco, government)
 
 Output ONLY a valid JSON array — no other text, no markdown fences:
-[{"type":"docs"|"data","query":"specific search string","label":"Short description"},...]
+[{"type":"docs"|"data","query":"natural language question in same language as user","label":"Short label"},...]
 
-Rules:
+CRITICAL RULES:
+- "query" field must be a NATURAL LANGUAGE QUESTION — NEVER write SQL in the query field
+- Good data query example: "What is total outstanding credit by city in March 2026?"
+- Good data query example: "Show network utilization per city"
+- Bad data query example: "SELECT city, SUM(outstanding) FROM msme_credit GROUP BY city" — NEVER do this
 - Maximum 4 steps, minimum 2
-- Each query must be specific and self-contained
-- Use "docs" for policy/procedure/regulation/eligibility questions
+- Use "docs" for policy/procedure/regulation questions
 - Use "data" for numbers, counts, rankings, current metrics
-- If the question needs policy AND data: include both types
-- Keep labels concise (< 8 words)"""
+- Keep labels concise (< 8 words)
+- Write queries in the same language as the user's question"""
 
 
 def _plan_research(question: str, domain: str, language: str) -> list[dict]:
@@ -986,12 +1174,6 @@ def _plan_research(question: str, domain: str, language: str) -> list[dict]:
         return [{"type": "docs", "query": question, "label": "Search documents"}]
 
 
-_AGENT_SYNTH_SYSTEM = """\
-You are an enterprise AI assistant that synthesizes research results into a clear answer.
-You have been given a question and the results of several research steps.
-Write a comprehensive, well-structured answer using ALL the provided research.
-Cite which step each fact comes from using [Step N] markers.
-{lang_rule}"""
 
 
 async def _agent_sse(
@@ -1102,11 +1284,27 @@ async def _agent_sse(
         doc_cits = build_document_citations(all_doc_chunks) if all_doc_chunks else []
         sql_cit  = build_sql_citation(all_sql_results[0]) if all_sql_results else None
 
+        # Token-usage estimate for agent mode (1 token ≈ 4 chars)
+        input_est  = (len(research_context) + len(messages[-1]["content"])) // 4
+        output_est = len(full_text) // 4
+        usage = {
+            "input_tokens":  input_est,
+            "output_tokens": output_est,
+            "total_tokens":  input_est + output_est,
+        }
+
+        with _stats_lock:
+            _session_stats["total_requests"] += 1
+            _session_stats["input_tokens"]   += usage["input_tokens"]
+            _session_stats["output_tokens"]  += usage["output_tokens"]
+            _session_stats["total_tokens"]   += usage["total_tokens"]
+
         total_ms = int((time.monotonic() - _t_start) * 1000)
         yield _sse("done", {
             "doc_citations": [dataclasses.asdict(c) for c in doc_cits] if doc_cits else [],
             "sql_citation":  dataclasses.asdict(sql_cit) if sql_cit else None,
             "latency_ms": total_ms,
+            "usage": usage,
         })
 
     except Exception as exc:
@@ -1130,6 +1328,27 @@ async def api_agent_chat(body: ChatRequest, request: Request):
                    retrieval_domain=retrieval_domain,
                    domain_tables=domain_tables, language=body.language,
                    style=body.style),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
+    )
+
+
+@app.post("/api/debate/chat", tags=["chat"])
+async def api_debate_chat(body: ChatRequest, request: Request):
+    """Debate chat: Researcher gathers evidence → Critic challenges → Synthesis."""
+    client_ip = request.client.host if request.client else "unknown"
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+    domain = body.domain if body.domain in DOMAIN_CONFIG else _DEFAULT_DOMAIN
+    domain_tables = DOMAIN_CONFIG[domain]["tables"]
+    retrieval_domain: str | None = None if domain == "all" else domain
+
+    return StreamingResponse(
+        _debate_sse(body.question, body.history, domain=domain,
+                    retrieval_domain=retrieval_domain,
+                    domain_tables=domain_tables, language=body.language,
+                    style=body.style),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
     )
@@ -1426,6 +1645,19 @@ async def api_docs_upload(
     dest.write_bytes(data)
     logger.info("Document uploaded: %s (%d bytes)", dest, len(data))
 
+    # PDF table extraction — run synchronously (fast for typical report PDFs)
+    extracted_tables: list[str] = []
+    if ext == ".pdf":
+        try:
+            from src.retrieval.table_extractor import extract_tables_from_pdf, register_tables_as_views
+            tables = extract_tables_from_pdf(dest)
+            if tables:
+                parquet_dir = Path(settings.parquet_dir) if hasattr(settings, "parquet_dir") else Path("data/parquet")
+                extracted_tables = register_tables_as_views(tables, stem, parquet_dir)
+                logger.info("Extracted %d table(s) from PDF: %s", len(extracted_tables), filename)
+        except Exception as exc:
+            logger.warning("PDF table extraction skipped: %s", exc)
+
     ingest_triggered = False
     if auto_ingest:
         with _ingest_lock:
@@ -1468,6 +1700,7 @@ async def api_docs_upload(
         "language": language,
         "size_bytes": len(data),
         "ingest_triggered": ingest_triggered,
+        "extracted_tables": extracted_tables,
     }
 
 
@@ -1941,7 +2174,7 @@ async def api_chat(body: ChatRequest, request: Request):
         _chat_sse(body.question, body.history, domain=domain,
                   retrieval_domain=retrieval_domain,
                   domain_tables=domain_tables, language=body.language,
-                  style=body.style),
+                  style=body.style, thinking=body.thinking),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -1959,6 +2192,7 @@ async def _chat_sse(
     domain_tables: list[str] | None = None,
     language: str = "id",
     style: str = "analyst",
+    thinking: bool = False,
 ) -> AsyncGenerator[str, None]:
     """Run the three-phase RAG pipeline and yield SSE events.
 
@@ -2008,7 +2242,7 @@ async def _chat_sse(
                 break
             tok = item
             full_text += tok
-            visible = think_filter.feed(tok)
+            visible, think_chunk = think_filter.feed(tok)
             # Notify frontend when model enters or exits a thinking block
             if think_filter.thinking and not was_thinking:
                 yield _sse("thinking", {"active": True})
@@ -2017,11 +2251,16 @@ async def _chat_sse(
             was_thinking = think_filter.thinking
             if visible:
                 yield _sse("token", {"text": visible})
+            # Stream thinking content when reasoning mode is on
+            if think_chunk and thinking:
+                yield _sse("thinking_token", {"text": think_chunk})
 
         # Flush any text held in the lookahead buffer
-        tail = think_filter.flush()
-        if tail:
-            yield _sse("token", {"text": tail})
+        tail_vis, tail_thk = think_filter.flush()
+        if tail_vis:
+            yield _sse("token", {"text": tail_vis})
+        if tail_thk and thinking:
+            yield _sse("thinking_token", {"text": tail_thk})
 
         thread.join(timeout=60)
         if thread.is_alive():
@@ -2237,28 +2476,39 @@ class _ThinkingFilter:
                 return n
         return 0
 
-    def feed(self, tok: str) -> str:
+    def feed(self, tok: str) -> tuple[str, str]:
+        """Return (visible_text, thinking_text).
+
+        visible_text  — answer content (non-empty when NOT inside <think> block).
+        thinking_text — chain-of-thought content (non-empty when INSIDE <think> block).
+        """
         self._buf += tok
-        out = ""
+        out_vis = ""
+        out_thk = ""
         while self._buf:
             if self._depth > 0:
                 close_idx = self._buf.find(self._CLOSE)
                 open_idx  = self._buf.find(self._OPEN)
-                # Handle whichever tag comes first
                 if close_idx >= 0 and (open_idx < 0 or close_idx <= open_idx):
+                    out_thk += self._buf[:close_idx]
                     self._depth -= 1
                     after = self._buf[close_idx + len(self._CLOSE):]
                     self._buf = after.lstrip("\n") if self._depth == 0 else after
                 elif open_idx >= 0:
+                    out_thk += self._buf[:open_idx]
                     self._depth += 1
                     self._buf = self._buf[open_idx + len(self._OPEN):]
                 else:
-                    # Hold back any potential partial tag at the tail
                     hold = max(
                         self._tail_overlap(self._buf, self._CLOSE),
                         self._tail_overlap(self._buf, self._OPEN),
                     )
-                    self._buf = self._buf[-hold:] if hold else ""
+                    if hold:
+                        out_thk += self._buf[:-hold]
+                        self._buf = self._buf[-hold:]
+                    else:
+                        out_thk += self._buf
+                        self._buf = ""
                     break
             else:
                 idx = self._buf.find(self._OPEN)
@@ -2269,17 +2519,18 @@ class _ThinkingFilter:
                 else:
                     hold = self._tail_overlap(self._buf, self._OPEN)
                     if hold:
-                        out += self._buf[:-hold]
+                        out_vis += self._buf[:-hold]
                         self._buf = self._buf[-hold:]
                     else:
-                        out += self._buf
+                        out_vis += self._buf
                         self._buf = ""
                     break
-        return out
+        return out_vis, out_thk
 
-    def flush(self) -> str:
-        """Release any buffered text that isn't inside a thinking block."""
+    def flush(self) -> tuple[str, str]:
+        """Release buffered text. Returns (visible_text, thinking_text)."""
         if self._depth == 0:
             result, self._buf = self._buf, ""
-            return result
-        return ""
+            return result, ""
+        self._buf = ""
+        return "", ""

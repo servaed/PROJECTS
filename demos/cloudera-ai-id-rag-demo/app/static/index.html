@@ -471,8 +471,47 @@
       cursor:pointer; display:flex; align-items:center; gap:6px;
       transition:all 0.15s; flex-shrink:0; font-family:var(--font);
     }
-    .agent-toggle.agent-on { border-color:rgba(129,140,248,0.6); background:var(--i-dim); color:var(--indigo); }
+    .agent-toggle.agent-on  { border-color:rgba(129,140,248,0.6); background:var(--i-dim); color:var(--indigo); }
+    .agent-toggle.think-on  { border-color:rgba(52,211,153,0.6);  background:var(--t-dim); color:var(--teal); }
+    .agent-toggle.debate-on { border-color:rgba(249,103,2,0.6);   background:var(--o-dim); color:var(--orange); }
     .agent-toggle svg { width:13px; height:13px; }
+    /* ── Thinking / Reasoning panel ─────────────────────────────────────── */
+    .think-panel { background:var(--s2); border:1px solid var(--border); border-radius:10px; margin-bottom:8px; overflow:hidden; }
+    .think-panel-header {
+      display:flex; align-items:center; gap:8px; padding:8px 13px;
+      cursor:pointer; font-size:0.72rem; font-weight:600; color:var(--teal);
+    }
+    .think-panel-header svg { width:13px; height:13px; flex-shrink:0; }
+    .think-panel-words { font-size:0.62rem; font-weight:400; color:var(--t3); margin-left:4px; }
+    .think-content {
+      padding:10px 14px; font-size:0.71rem; color:var(--t3);
+      font-family:var(--mono); white-space:pre-wrap; line-height:1.65;
+      max-height:260px; overflow-y:auto; border-top:1px solid var(--border);
+    }
+    /* ── Debate panel ───────────────────────────────────────────────────── */
+    .debate-panel { margin-bottom:10px; display:flex; flex-direction:column; gap:8px; }
+    .debate-card {
+      border-radius:10px; overflow:hidden;
+      border:1px solid var(--border);
+    }
+    .debate-card-header {
+      display:flex; align-items:center; gap:8px; padding:8px 13px;
+      font-size:0.72rem; font-weight:600;
+      cursor:pointer;
+    }
+    .debate-card-header svg { width:13px; height:13px; flex-shrink:0; }
+    .debate-card-body {
+      padding:10px 14px; font-size:0.78rem; color:var(--t1);
+      line-height:1.7; border-top:1px solid var(--border); background:var(--s2);
+      max-height:220px; overflow-y:auto; white-space:pre-wrap;
+    }
+    .debate-card.researcher .debate-card-header { color:var(--teal); background:var(--t-dim); }
+    .debate-card.critic     .debate-card-header { color:var(--orange); background:var(--o-dim); }
+    .debate-synth-row {
+      display:flex; align-items:center; gap:8px;
+      padding:7px 13px; font-size:0.72rem; font-weight:600; color:var(--indigo);
+      background:var(--i-dim); border:1px solid rgba(129,140,248,0.2); border-radius:10px;
+    }
     .agent-panel {
       background:var(--s2); border:1px solid var(--border);
       border-radius:10px; overflow:hidden; margin-bottom:10px;
@@ -554,7 +593,19 @@
       color: var(--o-text); font-size: 0.7rem; font-weight: 700;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
+    /* ── Leaflet map container ──────────────────────────────────────────── */
+    .map-chart-wrap { border-radius:10px; overflow:hidden; position:relative; }
+    .map-chart-wrap .leaflet-container { background:var(--bg); }
+    .leaflet-tooltip { font-family:var(--body); font-size:12px; border-radius:8px; border:1px solid var(--border); box-shadow:0 4px 16px rgba(0,0,0,0.18); }
+    [data-theme='dark'] .leaflet-tooltip { background:#1a2234; color:#e0e6f0; border-color:rgba(255,255,255,0.08); }
+    [data-theme='dark'] .leaflet-control-zoom a { background:var(--surface); color:var(--t1); border-color:var(--border); }
+    [data-theme='dark'] .leaflet-control-attribution { background:rgba(0,0,0,0.5); color:var(--t3); }
+    .map-legend { position:absolute; bottom:12px; right:12px; z-index:999; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:0.66rem; color:var(--t2); pointer-events:none; }
+    .map-legend-bar { width:100px; height:6px; border-radius:3px; margin:4px 0; background:linear-gradient(to right, #00A591, #F96702, #EF4444); }
+    .map-legend-labels { display:flex; justify-content:space-between; color:var(--t3); }
   </style>
+  <link rel="stylesheet" href="/static/vendor/leaflet.css"/>
+  <script src="/static/vendor/leaflet.js"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -606,15 +657,17 @@
     document: { label: 'Document RAG',    color: 'var(--teal)',   dim: 'var(--t-dim)', icon: '◈' },
     data:     { label: 'Structured Data', color: 'var(--indigo)', dim: 'var(--i-dim)', icon: '⬡' },
     combined: { label: 'Combined',        color: 'var(--orange)', dim: 'var(--o-dim)', icon: '⬡' },
+    agent:    { label: 'Agent',  color: 'var(--indigo)', dim: 'var(--i-dim)', icon: '◈' },
+    debate:   { label: 'Debate', color: 'var(--orange)', dim: 'var(--o-dim)', icon: '⬡' },
   };
   const getMode = (m) => MODES[m] || { label: m || '', color: 'var(--t2)', dim: 'var(--border-soft)', icon: '·' };
 
   // ── Persona definitions ────────────────────────────────────────────
   const PERSONAS = [
     {
-      id:'rina', name:'Rina', role:'Credit Officer · BNI', domain:'banking', lang:'id',
+      id:'rina', name:'Rina', role:'Credit Officer · Bank Indonesia', domain:'banking', lang:'id',
       color:'#F96702',
-      greeting:'Selamat datang, saya Rina dari divisi kredit BNI. Saya perlu informasi tentang portofolio kredit UMKM dan kebijakan restrukturisasi.',
+      greeting:'Selamat datang, saya Rina dari divisi kredit Bank Indonesia. Saya perlu informasi tentang portofolio kredit UMKM dan kebijakan restrukturisasi.',
       questions:[
         'Apa syarat restrukturisasi kredit UMKM berdasarkan kebijakan 2026?',
         'Nasabah mana yang memiliki kualitas kredit DPK atau lebih rendah di Jakarta?',
@@ -623,9 +676,9 @@
       ],
     },
     {
-      id:'david', name:'David', role:'Network Ops · Telkomsel', domain:'telco', lang:'en',
+      id:'david', name:'David', role:'Network Ops · Indosat', domain:'telco', lang:'en',
       color:'#00A591',
-      greeting:"Hi, I'm David from Telkomsel network operations. I need to review our subscriber churn risk and SLA compliance status.",
+      greeting:"Hi, I'm David from Indosat network operations. I need to review our subscriber churn risk and SLA compliance status.",
       questions:[
         'Which subscribers have the highest churn risk score this month?',
         'What are the SLA tiers and response time requirements per our customer service policy?',
@@ -694,15 +747,23 @@
       case 'ASSISTANT':   return [...msgs, { id:a.id, role:'assistant', content:'', mode:null, isStreaming:true, docCitations:[], sqlCitation:null, usage:null, error:null, question:a.question||'', suggestions:[] }];
       case 'PERSONA_MSG': return [...msgs, { id:a.id, role:'assistant', content:a.content, mode:null, isStreaming:false, docCitations:[], sqlCitation:null, usage:null, error:null, question:'', suggestions:[], isPersonaGreeting:true }];
       // Agent cases
-      case 'AGENT_ASSISTANT': return [...msgs, { id:a.id, role:'assistant', content:'', mode:'agent', isStreaming:true, docCitations:[], sqlCitation:null, usage:null, error:null, question:a.question||'', suggestions:[], isAgent:true, agentPhase:'planning', agentSteps:[] }];
+      case 'AGENT_ASSISTANT':  return [...msgs, { id:a.id, role:'assistant', content:'', mode:'agent',  isStreaming:true, docCitations:[], sqlCitation:null, usage:null, error:null, question:a.question||'', suggestions:[], isAgent:true,  agentPhase:'planning', agentSteps:[] }];
+      case 'DEBATE_ASSISTANT': return [...msgs, { id:a.id, role:'assistant', content:'', mode:'debate', isStreaming:true, docCitations:[], sqlCitation:null, usage:null, error:null, question:a.question||'', suggestions:[], isDebate:true, debatePhase:'researching', researcherText:'', criticText:'' }];
       case 'AGENT_PLAN':      return msgs.map(m => m.id===a.id ? Object.assign({},m,{agentSteps:a.steps.map(function(s){return Object.assign({},s,{status:'pending'});}), agentPhase:'executing'}) : m);
       case 'AGENT_STEP_START':return msgs.map(m => m.id===a.id ? Object.assign({},m,{agentSteps:m.agentSteps.map(function(s,i){return i===a.index?Object.assign({},s,{status:'running'}):s;})}) : m);
       case 'AGENT_STEP_DONE': return msgs.map(m => m.id===a.id ? Object.assign({},m,{agentSteps:m.agentSteps.map(function(s,i){return i===a.index?Object.assign({},s,{status:'done',summary:a.summary,latency_ms:a.latency_ms}):s;})}) : m);
       case 'AGENT_SYNTH':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{agentPhase:'synthesizing'}) : m);
+      // Reasoning mode — append chain-of-thought tokens
+      case 'THINKING_TOKEN': return msgs.map(m => m.id===a.id ? Object.assign({},m,{thinkContent:(m.thinkContent||'')+a.text}) : m);
+      // Debate mode — researcher/critic/synthesis phases
+      case 'DEBATE_RESEARCHER_DONE': return msgs.map(m => m.id===a.id ? Object.assign({},m,{debatePhase:'critic', researcherText:a.text}) : m);
+      case 'DEBATE_CRITIC_START':    return msgs.map(m => m.id===a.id ? Object.assign({},m,{debatePhase:'critic', criticText:''}) : m);
+      case 'DEBATE_CRITIC_TOKEN':    return msgs.map(m => m.id===a.id ? Object.assign({},m,{criticText:(m.criticText||'')+a.text}) : m);
+      case 'DEBATE_SYNTH_START':     return msgs.map(m => m.id===a.id ? Object.assign({},m,{debatePhase:'synthesis'}) : m);
       case 'MODE':        return msgs.map(m => m.id===a.id ? Object.assign({},m,{mode:a.mode, _routerMs:a._routerMs||null}) : m);
       case 'TOKEN':       return msgs.map(m => m.id===a.id ? Object.assign({},m,{content:m.content+a.text, isThinking:false, _retrieveMs:a._retrieveMs!=null?(a._retrieveMs):m._retrieveMs}) : m);
       case 'THINKING':    return msgs.map(m => m.id===a.id ? Object.assign({},m,{isThinking:a.active}) : m);
-      case 'DONE':        return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,isThinking:false,docCitations:a.docCitations,sqlCitation:a.sqlCitation,usage:a.usage,latency_ms:a.latency_ms||null}) : m);
+      case 'DONE':        return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,isThinking:false,docCitations:a.docCitations,sqlCitation:a.sqlCitation,usage:a.usage,latency_ms:a.latency_ms||null,agentPhase:m.isAgent?'done':m.agentPhase}) : m);
       case 'SUGGESTIONS': return msgs.map(m => m.id===a.id ? Object.assign({},m,{suggestions:a.suggestions}) : m);
       case 'ERROR':       return msgs.map(m => m.id===a.id ? Object.assign({},m,{isStreaming:false,error:a.message}) : m);
       case 'RESET':       return [];
@@ -1361,6 +1422,97 @@
       </div>`;
   }
 
+  // ── Thinking / Reasoning panel ────────────────────────────────────
+  function ThinkingPanel({ msg }) {
+    const [open, setOpen] = useState(false);
+    useEffect(function() { if (msg.isThinking) setOpen(true); }, [msg.isThinking]);
+    if (!msg.thinkContent && !msg.isThinking) return null;
+    var words = msg.thinkContent ? msg.thinkContent.trim().split(/\s+/).length : 0;
+    return html`
+      <div className="think-panel">
+        <div className="think-panel-header" onClick=${function(){ setOpen(!open); }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span style=${{ flex:1 }}>
+            ${msg.isThinking ? 'Reasoning…' : 'Reasoning complete'}
+          </span>
+          ${!msg.isThinking && words > 0 && html`<span className="think-panel-words">${words} words</span>`}
+          ${msg.isThinking && html`<div className="spin" style=${{ width:'9px', height:'9px', borderWidth:'1.5px', flexShrink:0 }}/>`}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style=${{ transform:open?'rotate(90deg)':'rotate(0)', transition:'transform 0.15s', width:'11px', height:'11px', flexShrink:0 }}>
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+        ${open && html`
+          <div className="think-content">
+            ${msg.thinkContent || ''}
+            ${msg.isThinking && html`<span className="cursor"/>`}
+          </div>`}
+      </div>`;
+  }
+
+  // ── Debate panel ───────────────────────────────────────────────────
+  function DebatePanel({ msg }) {
+    const [resOpen, setResOpen] = useState(true);
+    const [criOpen, setCriOpen] = useState(true);
+    if (!msg || !msg.isDebate) return null;
+    var phase = msg.debatePhase;
+    return html`
+      <div className="debate-panel">
+        <!-- Researcher card -->
+        ${(msg.researcherText || phase === 'researching') && html`
+          <div className="debate-card researcher">
+            <div className="debate-card-header" onClick=${function(){ setResOpen(!resOpen); }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <span style=${{ flex:1 }}>Researcher</span>
+              ${phase === 'researching' && html`<div className="spin" style=${{ width:'9px', height:'9px', borderWidth:'1.5px', flexShrink:0 }}/>`}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style=${{ transform:resOpen?'rotate(90deg)':'rotate(0)', transition:'transform 0.15s', width:'11px', height:'11px', flexShrink:0 }}>
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+            ${resOpen && msg.researcherText && html`
+              <div className="debate-card-body">${msg.researcherText}</div>`}
+          </div>`}
+
+        <!-- Critic card -->
+        ${(msg.criticText || phase === 'critic') && html`
+          <div className="debate-card critic">
+            <div className="debate-card-header" onClick=${function(){ setCriOpen(!criOpen); }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span style=${{ flex:1 }}>Critic</span>
+              ${phase === 'critic' && !msg.criticText && html`<div className="spin" style=${{ width:'9px', height:'9px', borderWidth:'1.5px', flexShrink:0 }}/>`}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style=${{ transform:criOpen?'rotate(90deg)':'rotate(0)', transition:'transform 0.15s', width:'11px', height:'11px', flexShrink:0 }}>
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+            ${criOpen && html`
+              <div className="debate-card-body">
+                ${msg.criticText || ''}
+                ${phase === 'critic' && html`<span className="cursor"/>`}
+              </div>`}
+          </div>`}
+
+        <!-- Synthesis indicator -->
+        ${(phase === 'synthesis' || (!msg.isStreaming && msg.content)) && html`
+          <div className="debate-synth-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style=${{ width:'13px', height:'13px', flexShrink:0 }}>
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            ${phase === 'synthesis' && msg.isStreaming ? 'Synthesizing final answer…' : 'Synthesis complete'}
+            ${phase === 'synthesis' && msg.isStreaming && html`<div className="spin" style=${{ width:'9px', height:'9px', borderWidth:'1.5px', marginLeft:'4px', flexShrink:0 }}/>`}
+          </div>`}
+      </div>`;
+  }
+
   // ── Agent Research Panel ─────────────────────────────────────────
   function AgentResearch({ msg }) {
     const [open, setOpen] = useState(true);
@@ -1378,7 +1530,8 @@
     return html`
       <div className="agent-panel">
         <div className="agent-panel-header" onClick=${function(){ setOpen(!open); }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+            style=${{ width:'14px', height:'14px', flexShrink:0 }}>
             <circle cx="12" cy="12" r="10"/>
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
             <line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -1495,9 +1648,9 @@
     return html`
       <div style=${{
         display:'inline-flex', alignItems:'center', gap:'5px',
-        padding:'2px 10px', borderRadius:'20px',
+        height:'20px', padding:'0 8px', borderRadius:'10px',
         background:m.dim, border:'1px solid '+m.color+'30',
-        color:m.color, fontSize:'0.67rem', fontWeight:700,
+        color:m.color, fontSize:'0.62rem', fontWeight:700,
         letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:'8px',
         animation:'modePop 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards',
       }}>${m.icon} ${m.label}</div>`;
@@ -1521,9 +1674,10 @@
     }
     return html`
       <span style=${{
+        display:'inline-flex', alignItems:'center',
+        height:'20px', padding:'0 7px', borderRadius:'10px',
+        background:bg, color:color, marginLeft:'6px', border:'1px solid transparent',
         fontSize:'0.62rem', fontWeight:700, letterSpacing:'0.04em', textTransform:'uppercase',
-        padding:'1px 7px', borderRadius:'10px', background:bg, color:color, marginLeft:'6px',
-        verticalAlign:'middle',
       }}>${level === 'grounded' ? '✓' : '·'} ${label}</span>`;
   }
 
@@ -1591,13 +1745,197 @@
   }
 
   // ── DataChart: animated gradient canvas bar chart for SQL results ───
+  // ── Indonesia city coordinate lookup ───────────────────────────────────
+  var _CITY_COORDS = {
+    // Cities
+    'Jakarta':    [-6.2088,  106.8456], 'Surabaya':    [-7.2575,  112.7521],
+    'Bandung':    [-6.9175,  107.6191], 'Semarang':    [-6.9932,  110.4203],
+    'Yogyakarta': [-7.7956,  110.3695], 'Malang':      [-7.9797,  112.6304],
+    'Bekasi':     [-6.2349,  106.9896], 'Tangerang':   [-6.1783,  106.6319],
+    'Depok':      [-6.3744,  106.8227], 'Medan':       [3.5952,    98.6722],
+    'Palembang':  [-2.9761,  104.7754], 'Pekanbaru':   [0.5335,   101.4474],
+    'Padang':     [-0.9471,  100.4172], 'Batam':       [1.0457,   104.0305],
+    'Banda Aceh': [5.5483,    95.3238], 'Balikpapan':  [-1.2675,  116.8289],
+    'Pontianak':  [-0.0263,  109.3425], 'Banjarmasin': [-3.3186,  114.5944],
+    'Samarinda':  [-0.5022,  117.1536], 'Makassar':    [-5.1477,  119.4327],
+    'Manado':     [1.4748,   124.8421], 'Kendari':     [-3.9985,  122.5127],
+    'Denpasar':   [-8.6705,  115.2126], 'Mataram':     [-8.5833,  116.1167],
+    'Kupang':     [-10.1771, 123.6070], 'Ambon':       [-3.6954,  128.1814],
+    'Jayapura':   [-2.5337,  140.7180],
+    // Province centers (for province-level queries)
+    'DKI Jakarta':          [-6.2088,  106.8456], 'Jawa Timur':          [-7.5360,  112.2384],
+    'Jawa Barat':           [-6.9175,  107.6191], 'Jawa Tengah':         [-7.1500,  110.1403],
+    'DI Yogyakarta':        [-7.8754,  110.4262], 'Banten':              [-6.4058,  106.0640],
+    'Bali':                 [-8.4095,  115.1889], 'Sumatera Utara':      [2.1154,    99.5451],
+    'Sumatera Selatan':     [-3.3194,  103.9144], 'Riau':                [0.2933,   101.7068],
+    'Sumatera Barat':       [-0.7399,  100.8000], 'Kepulauan Riau':      [3.9457,   108.1429],
+    'Aceh':                 [4.6951,    96.7494], 'Kalimantan Timur':    [0.5387,   116.4194],
+    'Kalimantan Barat':     [-0.2787,  111.4752], 'Kalimantan Selatan':  [-3.0926,  115.2838],
+    'Sulawesi Selatan':     [-3.6688,  119.9741], 'Sulawesi Utara':      [0.6247,   123.9750],
+    'Sulawesi Tenggara':    [-4.1449,  122.1746], 'Nusa Tenggara Barat': [-8.6529,  117.3616],
+    'Nusa Tenggara Timur':  [-8.6574,  121.0794], 'Maluku':              [-3.2385,  130.1453],
+    'Papua':                [-4.2699,  138.0804],
+  };
+
+  // ── Map chart — Leaflet bubble map for geo-tagged SQL results ─────────
+  function MapChart({ sc, valueLabel }) {
+    var mapDivRef  = useRef(null);
+    var instanceRef = useRef(null);
+
+    useEffect(function() {
+      if (!mapDivRef.current || !sc || !sc.table_markdown || typeof window.L === 'undefined') return;
+
+      // Parse markdown table
+      var lines = sc.table_markdown.trim().split('\n').filter(function(l){ return l.trim().startsWith('|'); });
+      if (lines.length < 3) return;
+      function parseCells(line) { return line.split('|').slice(1,-1).map(function(c){ return c.trim(); }); }
+      var headers = parseCells(lines[0]);
+      var rows    = lines.slice(2).map(parseCells);
+      if (!rows.length) return;
+
+      // Find geo column (city / region / province)
+      var geoIdx = -1;
+      for (var i = 0; i < headers.length; i++) {
+        if (/^(city|region|province|kota|provinsi|wilayah)$/i.test(headers[i])) { geoIdx = i; break; }
+      }
+      if (geoIdx === -1) return;
+
+      // Find primary numeric value column (skip geo, lat, lon)
+      var valIdx = -1;
+      var skipCols = new Set(['lat','lon','id']);
+      for (var ci = 0; ci < headers.length; ci++) {
+        if (ci === geoIdx || skipCols.has(headers[ci].toLowerCase())) continue;
+        if (rows.some(function(r){ return r[ci] && !isNaN(parseFloat((r[ci]||'').replace(/,/g,''))); })) {
+          valIdx = ci; break;
+        }
+      }
+      if (valIdx === -1) return;
+
+      var latIdx = headers.map(function(h){ return h.toLowerCase(); }).indexOf('lat');
+      var lonIdx = headers.map(function(h){ return h.toLowerCase(); }).indexOf('lon');
+
+      // Teardown previous instance
+      if (instanceRef.current) { try { instanceRef.current.remove(); } catch(e){} instanceRef.current = null; }
+
+      var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+      var map = window.L.map(mapDivRef.current, {
+        center: [-2.0, 118.0], zoom: 4,
+        zoomControl: true, scrollWheelZoom: false,
+      });
+      window.L.tileLayer(
+        isDark
+          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+          : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        { attribution: '© <a href="https://osm.org/copyright" target="_blank">OSM</a> © <a href="https://carto.com/attributions" target="_blank">CARTO</a>', subdomains:'abcd', maxZoom:19 }
+      ).addTo(map);
+
+      var values = rows.map(function(r){ return parseFloat((r[valIdx]||'0').replace(/,/g,''))||0; });
+      var maxVal = Math.max.apply(null, values) || 1;
+      var minVal = Math.min.apply(null, values);
+      var range  = maxVal - minVal || 1;
+      var markerLatLngs = [];
+
+      rows.forEach(function(row, i) {
+        var cityName = row[geoIdx];
+        var coords;
+        if (latIdx >= 0 && lonIdx >= 0 && row[latIdx] && row[lonIdx]) {
+          var lt = parseFloat(row[latIdx]), ln = parseFloat(row[lonIdx]);
+          if (!isNaN(lt) && !isNaN(ln)) coords = [lt, ln];
+        }
+        if (!coords) coords = _CITY_COORDS[cityName];
+        if (!coords) return;
+
+        var val  = values[i];
+        var norm = (val - minVal) / range;
+
+        // Gradient: teal -> orange -> red
+        var r, g, b;
+        if (norm < 0.5) {
+          var t = norm * 2;
+          r = Math.round(0   + t * 249); g = Math.round(165 + t * (103-165)); b = Math.round(145 + t * (2-145));
+        } else {
+          var t2 = (norm - 0.5) * 2;
+          r = Math.round(249 + t2 * (239-249)); g = Math.round(103 + t2 * (68-103)); b = Math.round(2 + t2 * (68-2));
+        }
+        var color  = 'rgb('+r+','+g+','+b+')';
+        var radius = Math.max(9, Math.min(38, 10 + norm * 28));
+
+        var marker = window.L.circleMarker(coords, {
+          radius: radius, fillColor: color,
+          color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.18)',
+          weight: 1.5, opacity: 1, fillOpacity: 0.78,
+        });
+
+        var fmtVal = val >= 1e9 ? (val/1e9).toFixed(2)+'B'
+                   : val >= 1e6 ? (val/1e6).toFixed(2)+'M'
+                   : val >= 1e3 ? (val/1e3).toFixed(1)+'K'
+                   : val.toLocaleString(undefined, {maximumFractionDigits:2});
+
+        // Build extra row labels for secondary columns
+        var extras = '';
+        for (var ci2 = 0; ci2 < headers.length; ci2++) {
+          if (ci2 === geoIdx || ci2 === valIdx || skipCols.has(headers[ci2].toLowerCase())) continue;
+          var v2 = row[ci2]; if (!v2 || v2 === '') continue;
+          var v2num = parseFloat((v2||'').replace(/,/g,''));
+          var v2fmt = isNaN(v2num) ? v2
+            : v2num >= 1e9 ? (v2num/1e9).toFixed(2)+'B'
+            : v2num >= 1e6 ? (v2num/1e6).toFixed(2)+'M'
+            : v2num >= 1e3 ? (v2num/1e3).toFixed(1)+'K'
+            : v2num.toLocaleString(undefined,{maximumFractionDigits:2});
+          extras += '<br><span style="color:#888">'+headers[ci2]+':</span> '+v2fmt;
+        }
+
+        marker.bindTooltip(
+          '<div style="font-family:system-ui;font-size:12px;line-height:1.6;min-width:120px">'
+          + '<strong style="display:block;font-size:13px;margin-bottom:1px">'+cityName+'</strong>'
+          + '<span style="color:#888">'+headers[valIdx]+':</span> <strong style="color:'+color+'">'+fmtVal+'</strong>'
+          + extras + '</div>',
+          { permanent: false, direction: 'top', offset: [0, -(radius+4)] }
+        );
+        marker.addTo(map);
+        markerLatLngs.push(coords);
+      });
+
+      if (markerLatLngs.length > 1) {
+        try { map.fitBounds(window.L.latLngBounds(markerLatLngs), { padding:[32,32], maxZoom:7 }); } catch(e) {}
+      }
+
+      instanceRef.current = map;
+      return function() { try { if (instanceRef.current) { instanceRef.current.remove(); instanceRef.current = null; } } catch(e){} };
+    }, [sc]);
+
+    return html`
+      <div style=${{ position:'relative', marginBottom:'4px' }} className="map-chart-wrap">
+        <div ref=${mapDivRef} style=${{ width:'100%', height:'370px' }}/>
+        <div className="map-legend">
+          <div style=${{ fontWeight:600, marginBottom:'3px', fontSize:'0.65rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>${valueLabel || 'Value'}</div>
+          <div className="map-legend-bar"/>
+          <div className="map-legend-labels"><span>Low</span><span>High</span></div>
+        </div>
+      </div>`;
+  }
+
   function DataChart(props) {
     var wrapRef   = useRef(null);
     var canvasRef = useRef(null);
     var tipRef    = useRef(null);
     var rafRef    = useRef(null);
-    var [chartType, setChartType] = useState('bar');  // 'bar' | 'horizontal' | 'table'
     var sc = props.sc;
+
+    // Detect if result has a geo column (city/region) usable for map view
+    var hasGeo = (function() {
+      if (!sc || !sc.table_markdown || typeof window.L === 'undefined') return false;
+      var firstLine = (sc.table_markdown.trim().split('\n')[0] || '');
+      return /\|\s*(city|region|province|kota|provinsi|wilayah)\s*\|/i.test(firstLine);
+    })();
+
+    var [chartType, setChartType] = useState(function(){ return hasGeo ? 'map' : 'bar'; });
+
+    // Switch to map automatically when new geo data arrives, back to bar otherwise
+    useEffect(function() {
+      setChartType(hasGeo ? 'map' : 'bar');
+    }, [sc && sc.sql]);
 
     useEffect(function() {
       if (!sc || !sc.table_markdown || !canvasRef.current) return;
@@ -1780,27 +2118,36 @@
     return html`
       <div ref=${wrapRef} style=${{ marginBottom:'8px' }}>
         <div className="chart-type-bar">
-          ${['bar','horizontal','table'].map(function(t) {
+          ${hasGeo && html`<button className=${'chart-type-btn'+(chartType==='map'?' active':'')} onClick=${function(){setChartType('map');}}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style=${{marginRight:'3px',verticalAlign:'middle'}}>
+              <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+              <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
+            </svg>Map
+          </button>`}
+          ${['bar','table'].map(function(t) {
             return html`<button key=${t} className=${'chart-type-btn'+(chartType===t?' active':'')} onClick=${function(){setChartType(t);}}>${t.charAt(0).toUpperCase()+t.slice(1)}</button>`;
           })}
         </div>
-        ${chartType !== 'table'
-          ? html`
-            <div style=${{ position:'relative' }}>
-              <canvas ref=${canvasRef} style=${{ width:'100%', display:chartType==='bar'?'block':'none', borderRadius:'10px', cursor:'crosshair' }}/>
-              ${chartType==='horizontal' && html`<div ref=${canvasRef} style=${{ padding:'8px 0' }}>
-                ${/* horizontal bars rendered as CSS divs */ null}
-              </div>`}
-              <div ref=${tipRef} style=${{
-                position:'absolute', pointerEvents:'none', opacity:'0',
-                background:'var(--surface)', border:'1px solid var(--border)',
-                borderRadius:'6px', padding:'4px 9px',
-                fontSize:'0.7rem', fontFamily:'var(--mono)', color:'var(--t1)',
-                boxShadow:'0 4px 12px rgba(0,0,0,0.15)', whiteSpace:'nowrap',
-                transition:'opacity 0.1s',
-              }}/>
-            </div>`
-          : html`<div className="prose" dangerouslySetInnerHTML=${md(props.sc.table_markdown || '')}/>`}
+        ${chartType === 'map' && html`<${MapChart} sc=${sc} valueLabel=${(function(){
+          var firstLine = (sc && sc.table_markdown || '').trim().split('\n')[0] || '';
+          var headers = firstLine.split('|').slice(1,-1).map(function(c){return c.trim();});
+          var skipCols = new Set(['lat','lon','id','city','region','kota']);
+          for (var i=0; i<headers.length; i++) { if (!skipCols.has(headers[i].toLowerCase())) return headers[i]; }
+          return 'Value';
+        })()}/>`}
+        ${chartType !== 'map' && chartType !== 'table' && html`
+          <div style=${{ position:'relative' }}>
+            <canvas ref=${canvasRef} style=${{ width:'100%', borderRadius:'10px', cursor:'crosshair' }}/>
+            <div ref=${tipRef} style=${{
+              position:'absolute', pointerEvents:'none', opacity:'0',
+              background:'var(--surface)', border:'1px solid var(--border)',
+              borderRadius:'6px', padding:'4px 9px',
+              fontSize:'0.7rem', fontFamily:'var(--mono)', color:'var(--t1)',
+              boxShadow:'0 4px 12px rgba(0,0,0,0.15)', whiteSpace:'nowrap',
+              transition:'opacity 0.1s',
+            }}/>
+          </div>`}
+        ${chartType === 'table' && html`<div className="prose" dangerouslySetInnerHTML=${md(props.sc.table_markdown || '')}/>`}
       </div>`;
   }
 
@@ -1853,7 +2200,10 @@
             <pre style=${{ background:'var(--bg)', border:'1px solid var(--border)', borderRadius:'6px', padding:'9px 12px', overflowX:'auto', margin:'0 0 10px' }}>
               <code style=${{ fontFamily:'var(--mono)', fontSize:'0.76rem', color:'var(--indigo)', whiteSpace:'pre' }}>${sc.sql}</code>
             </pre>
-            ${sc.table_markdown && sc.row_count >= 2 && sc.row_count <= 12 && html`
+            ${sc.table_markdown && sc.row_count >= 2 && (sc.row_count <= 12 || (function(){
+              var h = (sc.table_markdown.trim().split('\n')[0]||'');
+              return /\|\s*(city|region|province|kota|provinsi|wilayah)\s*\|/i.test(h) && sc.row_count <= 50;
+            })()) && html`
               <${DataChart} sc=${sc}/>
             `}
             ${sc.table_markdown && html`
@@ -1982,7 +2332,10 @@
         </div>
         ${msg.isAgent
           ? html`<${AgentResearch} msg=${msg}/>`
+          : msg.isDebate
+          ? html`<${DebatePanel} msg=${msg}/>`
           : html`<${PipelineTrace} msg=${msg}/>`}
+        <${ThinkingPanel} msg=${msg}/>
         <div className=${accentClass} style=${{
           background:'var(--msg-a-bg)',
           border:'1px solid '+(msg.isStreaming ? 'var(--orange)' : 'var(--msg-a-bd)'),
@@ -2115,12 +2468,9 @@
     return html`
       <div style=${{
         flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-        gap:'24px', padding:'40px', overflowY:'auto', position:'relative',
-        backgroundImage: [
-          'radial-gradient(ellipse 55% 45% at 20% 25%, rgba(249,103,2,0.06), transparent)',
-          'radial-gradient(ellipse 50% 40% at 80% 75%, rgba(0,165,145,0.05), transparent)',
-          'radial-gradient(ellipse 40% 35% at 65% 30%, rgba(129,140,248,0.04), transparent)',
-        ].join(','),
+        gap:'24px', padding:'40px', overflowY:'auto',
+        backgroundImage:'radial-gradient(circle, var(--border) 1px, transparent 1px)',
+        backgroundSize:'28px 28px',
       }}>
 
         <!-- Content -->
@@ -2347,18 +2697,42 @@
           <div style=${{ fontSize:'0.62rem', color:'var(--t3)' }}>
             Enter to send · Shift+Enter new line · Ctrl+K clear
           </div>
-          <button
-            className=${'agent-toggle' + (props.agentMode ? ' agent-on' : '')}
-            onClick=${props.onToggleAgent}
-            title=${props.agentMode ? 'Agent mode ON — multi-step research. Click to disable.' : 'Enable Agent mode — breaks complex questions into research steps'}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            ${props.agentMode ? 'Agent ON' : 'Agent'}
-          </button>
+          <div style=${{ display:'flex', gap:'6px' }}>
+            <button
+              className=${'agent-toggle' + (props.thinkMode ? ' think-on' : '')}
+              onClick=${props.onToggleThink}
+              title=${props.thinkMode ? 'Reasoning ON — model shows chain of thought. Click to disable.' : 'Enable Reasoning — see model\'s thinking process'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              ${props.thinkMode ? 'Think ON' : 'Think'}
+            </button>
+            <button
+              className=${'agent-toggle' + (props.debateMode ? ' debate-on' : '')}
+              onClick=${props.onToggleDebate}
+              title=${props.debateMode ? 'Debate mode ON — Researcher + Critic. Click to disable.' : 'Enable Debate mode — AI Researcher challenges AI Critic for balanced answers'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              ${props.debateMode ? 'Debate ON' : 'Debate'}
+            </button>
+            <button
+              className=${'agent-toggle' + (props.agentMode ? ' agent-on' : '')}
+              onClick=${props.onToggleAgent}
+              title=${props.agentMode ? 'Agent mode ON — multi-step research. Click to disable.' : 'Enable Agent mode — breaks complex questions into research steps'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              ${props.agentMode ? 'Agent ON' : 'Agent'}
+            </button>
+          </div>
         </div>
       </div>`;
   }
@@ -2448,8 +2822,12 @@
     const [persona, setPersona]         = useState(null);
     const [answerStyle, setAnswerStyle] = useState('analyst');
     const answerStyleRef = useRef('analyst');
-    const [agentMode, setAgentMode]     = useState(false);
-    const agentModeRef = useRef(false);
+    const [agentMode, setAgentMode]       = useState(false);
+    const agentModeRef  = useRef(false);
+    const [thinkMode, setThinkMode]       = useState(false);
+    const thinkModeRef  = useRef(false);
+    const [debateMode, setDebateMode]     = useState(false);
+    const debateModeRef = useRef(false);
     const [isAutoPlaying, setIsAutoPlaying]   = useState(false);
     const [isAutoPaused,  setIsAutoPaused]    = useState(false);
     const [autoPlayIdx,   setAutoPlayIdx]     = useState(0);
@@ -2476,7 +2854,9 @@
     useEffect(function() { domainRef.current = domain; }, [domain]);
     useEffect(function() { languageRef.current = language; }, [language]);
     useEffect(function() { answerStyleRef.current = answerStyle; }, [answerStyle]);
-    useEffect(function() { agentModeRef.current = agentMode; }, [agentMode]);
+    useEffect(function() { agentModeRef.current  = agentMode;  }, [agentMode]);
+    useEffect(function() { thinkModeRef.current  = thinkMode;  }, [thinkMode]);
+    useEffect(function() { debateModeRef.current = debateMode; }, [debateMode]);
 
     // Persona selection: set domain + language + greeting message
     function selectPersona(p) {
@@ -2549,8 +2929,12 @@
         .map(function(m) { return { role:m.role, content:m.content }; });
 
       dispatch({ type:'USER', id:uid, content:question });
-      var isAgent = agentModeRef.current;
-      if (isAgent) {
+      var isAgent  = agentModeRef.current;
+      var isDebate = debateModeRef.current;
+      var isThink  = thinkModeRef.current;
+      if (isDebate) {
+        dispatch({ type:'DEBATE_ASSISTANT', id:aid, question:question });
+      } else if (isAgent) {
         dispatch({ type:'AGENT_ASSISTANT', id:aid, question:question });
       } else {
         dispatch({ type:'ASSISTANT', id:aid, question:question });
@@ -2563,12 +2947,21 @@
       var _tFirstToken = null;
       async function run() {
         try {
-          var endpoint = isAgent ? '/api/agent/chat' : '/api/chat';
+          var endpoint = isDebate ? '/api/debate/chat' : isAgent ? '/api/agent/chat' : '/api/chat';
           for await (var ev of ssePost(endpoint, {
             question:question, history:history,
             domain:domainRef.current, language:languageRef.current,
             style:answerStyleRef.current,
+            thinking: isThink,
           })) {
+            // Debate-specific events
+            if (ev.event==='debate_researcher_thinking') { setLoading(false); }
+            if (ev.event==='debate_researcher_done') { dispatch({ type:'DEBATE_RESEARCHER_DONE', id:aid, text:ev.data.text }); }
+            if (ev.event==='debate_critic_start')    { dispatch({ type:'DEBATE_CRITIC_START',    id:aid }); }
+            if (ev.event==='debate_critic_token')    { dispatch({ type:'DEBATE_CRITIC_TOKEN',    id:aid, text:ev.data.text }); }
+            if (ev.event==='debate_synthesis_start') { dispatch({ type:'DEBATE_SYNTH_START',     id:aid }); }
+            // Thinking / Reasoning events
+            if (ev.event==='thinking_token') { dispatch({ type:'THINKING_TOKEN', id:aid, text:ev.data.text }); }
             // Agent-specific events
             if (ev.event==='agent_thinking') { /* shows in AgentResearch via agentPhase */ }
             if (ev.event==='agent_plan')      { dispatch({ type:'AGENT_PLAN',       id:aid, steps:ev.data.steps }); setLoading(false); }
@@ -2810,7 +3203,9 @@
               prefill=${prefill}
               onPrefillDone=${function() { setPrefill(null); }}
               agentMode=${agentMode}
-              onToggleAgent=${function() { setAgentMode(function(v){ agentModeRef.current = !v; return !v; }); }}
+              thinkMode=${thinkMode}   onToggleThink=${function(){ setThinkMode(function(v){ thinkModeRef.current=!v; return !v; }); }}
+              debateMode=${debateMode} onToggleDebate=${function(){ setDebateMode(function(v){ debateModeRef.current=!v; return !v; }); }}
+              agentMode=${agentMode}   onToggleAgent=${function() { setAgentMode(function(v){ agentModeRef.current = !v; return !v; }); }}
             />
           </div>
 

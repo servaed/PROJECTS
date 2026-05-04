@@ -104,6 +104,81 @@ A: SELECT work_unit, SUM(realization) AS total_realization, SUM(budget_ceiling) 
 
 Q: Show network utilization in Bali.
 A: SELECT region, city, utilization_pct, status FROM network WHERE region = 'Bali' OR city LIKE '%Bali%' LIMIT {max_rows};
+
+Q: Tampilkan peta risiko NPL kredit UMKM per kota seluruh Indonesia bulan Maret 2026.
+A: SELECT region AS city, SUM(CASE WHEN credit_quality IN ('Kurang Lancar','Macet') THEN outstanding ELSE 0 END) * 100.0 / NULLIF(SUM(outstanding),0) AS npl_pct, SUM(outstanding) AS total_outstanding FROM msme_credit WHERE month = '2026-03' GROUP BY region ORDER BY npl_pct DESC LIMIT {max_rows};
+
+Q: Show NPL risk heatmap by city across Indonesia for March 2026.
+A: SELECT region AS city, SUM(CASE WHEN credit_quality IN ('Kurang Lancar','Macet') THEN outstanding ELSE 0 END) * 100.0 / NULLIF(SUM(outstanding),0) AS npl_pct, SUM(outstanding) AS total_outstanding FROM msme_credit WHERE month = '2026-03' GROUP BY region ORDER BY npl_pct DESC LIMIT {max_rows};
+
+Q: Tampilkan konsentrasi kredit UMKM per provinsi.
+A: SELECT province, SUM(outstanding) AS total_outstanding, COUNT(DISTINCT region) AS city_count FROM msme_credit WHERE month = '2026-03' GROUP BY province ORDER BY total_outstanding DESC LIMIT {max_rows};
+
+Q: Tampilkan peta utilisasi jaringan per kota dan identifikasi hotspot kritis.
+A: SELECT city, utilization_pct, status, bts_count, lat, lon FROM network ORDER BY utilization_pct DESC LIMIT {max_rows};
+
+Q: Show network coverage quality map across all cities.
+A: SELECT city, utilization_pct, status, bts_count, lat, lon FROM network ORDER BY utilization_pct DESC LIMIT {max_rows};
+
+Q: Tampilkan sebaran risiko churn pelanggan per kota.
+A: SELECT region AS city, AVG(churn_risk_score) AS avg_churn_risk, COUNT(CASE WHEN churn_risk_score >= 70 THEN 1 END) AS high_risk_count, COUNT(*) AS total_subscribers FROM subscriber WHERE status = 'Active' GROUP BY region ORDER BY avg_churn_risk DESC LIMIT {max_rows};
+
+Q: Show churn risk hotspots by city.
+A: SELECT region AS city, AVG(churn_risk_score) AS avg_churn_risk, COUNT(CASE WHEN churn_risk_score >= 70 THEN 1 END) AS high_risk_count FROM subscriber WHERE status = 'Active' GROUP BY region ORDER BY avg_churn_risk DESC LIMIT {max_rows};
+
+Q: Tampilkan pencapaian target kredit per cabang di seluruh Indonesia.
+A: SELECT city, SUM(credit_realization) AS total_realization, SUM(credit_target) AS total_target, ROUND(SUM(credit_realization) * 100.0 / NULLIF(SUM(credit_target),0), 1) AS achievement_pct FROM branch GROUP BY city ORDER BY achievement_pct DESC LIMIT {max_rows};
+
+Q: Show branch credit target achievement by city.
+A: SELECT city, SUM(credit_realization) AS total_realization, SUM(credit_target) AS total_target, ROUND(SUM(credit_realization) * 100.0 / NULLIF(SUM(credit_target),0), 1) AS achievement_pct FROM branch GROUP BY city ORDER BY achievement_pct DESC LIMIT {max_rows};
+
+Q: Kota mana yang memiliki NPL tinggi dan volume kredit besar? Tampilkan kota dengan NPL di atas 8% dan total outstanding di atas 5 triliun.
+A: SELECT region AS city, SUM(CASE WHEN credit_quality IN ('Kurang Lancar','Macet') THEN outstanding ELSE 0 END) * 100.0 / NULLIF(SUM(outstanding),0) AS npl_pct, SUM(outstanding) AS total_outstanding FROM msme_credit WHERE month = '2026-03' GROUP BY region HAVING npl_pct > 8 AND total_outstanding > 5000000000000 ORDER BY npl_pct DESC LIMIT {max_rows};
+
+Q: Which cities have both high NPL (above 8%) and large credit volume (above 5 trillion)?
+A: SELECT region AS city, SUM(CASE WHEN credit_quality IN ('Kurang Lancar','Macet') THEN outstanding ELSE 0 END) * 100.0 / NULLIF(SUM(outstanding),0) AS npl_pct, SUM(outstanding) AS total_outstanding FROM msme_credit WHERE month = '2026-03' GROUP BY region HAVING npl_pct > 8 AND total_outstanding > 5000000000000 ORDER BY npl_pct DESC LIMIT {max_rows};
+
+Q: Hitung revenue at risk dari pelanggan berisiko churn tinggi per kota.
+A: SELECT region AS city, COUNT(CASE WHEN churn_risk_score >= 70 THEN 1 END) AS high_risk_count, SUM(CASE WHEN churn_risk_score >= 70 THEN arpu_monthly ELSE 0 END) AS revenue_at_risk, AVG(CASE WHEN churn_risk_score >= 70 THEN tenure_months END) AS avg_tenure_at_risk FROM subscriber WHERE status = 'Active' GROUP BY region ORDER BY revenue_at_risk DESC LIMIT {max_rows};
+
+Q: Calculate revenue at risk from high-churn subscribers by city.
+A: SELECT region AS city, COUNT(CASE WHEN churn_risk_score >= 70 THEN 1 END) AS high_risk_count, SUM(CASE WHEN churn_risk_score >= 70 THEN arpu_monthly ELSE 0 END) AS revenue_at_risk, AVG(CASE WHEN churn_risk_score >= 70 THEN tenure_months END) AS avg_tenure_months FROM subscriber WHERE status = 'Active' GROUP BY region ORDER BY revenue_at_risk DESC LIMIT {max_rows};
+
+Q: Tampilkan performa jaringan: latency, packet loss, dan utilisasi per kota.
+A: SELECT city, utilization_pct, avg_latency_ms, packet_loss_pct, status, ROUND(utilization_pct * packet_loss_pct, 2) AS composite_risk_score FROM network ORDER BY composite_risk_score DESC LIMIT {max_rows};
+
+Q: Show network quality: latency, packet loss, and utilization per city — rank by composite risk.
+A: SELECT city, utilization_pct, avg_latency_ms, packet_loss_pct, status, ROUND(utilization_pct * packet_loss_pct, 2) AS composite_risk_score FROM network ORDER BY composite_risk_score DESC LIMIT {max_rows};
+
+Q: Tampilkan tingkat persetujuan KUR per kota dan jenis pinjaman untuk 8 bulan terakhir.
+A: SELECT city, loan_type, ROUND(AVG(approval_rate_pct), 1) AS avg_approval_pct, SUM(application_count) AS total_applications, ROUND(AVG(avg_processing_days), 1) AS avg_days FROM loan_application GROUP BY city, loan_type ORDER BY avg_approval_pct DESC LIMIT {max_rows};
+
+Q: Show KUR loan approval rate by city and loan type.
+A: SELECT city, loan_type, ROUND(AVG(approval_rate_pct), 1) AS avg_approval_pct, SUM(application_count) AS total_applications, ROUND(AVG(avg_processing_days), 1) AS avg_days FROM loan_application GROUP BY city, loan_type ORDER BY avg_approval_pct DESC LIMIT {max_rows};
+
+Q: Tampilkan insiden jaringan dan pelanggaran SLA per kota dalam 6 bulan terakhir.
+A: SELECT city, SUM(incident_count) AS total_incidents, SUM(sla_breach_count) AS total_sla_breaches, ROUND(AVG(mttr_hrs), 1) AS avg_mttr_hours, ROUND(SUM(sla_breach_count) * 100.0 / NULLIF(SUM(incident_count), 0), 1) AS breach_rate_pct FROM network_incident GROUP BY city ORDER BY total_sla_breaches DESC LIMIT {max_rows};
+
+Q: Show network incidents and SLA breaches by city over the last 6 months.
+A: SELECT city, SUM(incident_count) AS total_incidents, SUM(sla_breach_count) AS total_sla_breaches, ROUND(AVG(mttr_hrs), 1) AS avg_mttr_hours, ROUND(SUM(sla_breach_count) * 100.0 / NULLIF(SUM(incident_count), 0), 1) AS breach_rate_pct FROM network_incident GROUP BY city ORDER BY total_sla_breaches DESC LIMIT {max_rows};
+
+Q: Tampilkan layanan publik dengan backlog tinggi dan kepuasan rendah — identifikasi bottleneck.
+A: SELECT service_type, agency, SUM(pending_count) AS total_pending, SUM(complaint_count) AS total_complaints, ROUND(AVG(satisfaction_pct), 1) AS avg_satisfaction, ROUND(AVG(avg_processing_days), 1) AS avg_days FROM public_service WHERE month >= '2025-10' GROUP BY service_type, agency ORDER BY total_pending DESC LIMIT {max_rows};
+
+Q: Which public services have the highest backlog and lowest satisfaction? Identify operational bottlenecks.
+A: SELECT service_type, agency, SUM(pending_count) AS total_pending, SUM(complaint_count) AS total_complaints, ROUND(AVG(satisfaction_pct), 1) AS avg_satisfaction, ROUND(AVG(avg_processing_days), 1) AS avg_days FROM public_service WHERE month >= '2025-10' GROUP BY service_type, agency ORDER BY total_pending DESC LIMIT {max_rows};
+
+Q: Tampilkan nasabah dengan debt service ratio tinggi dan rating kredit rendah — identifikasi risiko sistemik.
+A: SELECT name, region, industry, ROUND(debt_service_ratio * 100, 1) AS dsr_pct, internal_rating, ROUND(total_exposure / 1000000000.0, 2) AS exposure_billion FROM customer WHERE debt_service_ratio > 0.45 AND internal_rating IN ('B', 'B-') ORDER BY debt_service_ratio DESC LIMIT {max_rows};
+
+Q: Show customers with high debt service ratio and low credit rating — identify systemic risk.
+A: SELECT name, region, industry, ROUND(debt_service_ratio * 100, 1) AS dsr_pct, internal_rating, ROUND(total_exposure / 1000000000.0, 2) AS exposure_billion FROM customer WHERE debt_service_ratio > 0.45 AND internal_rating IN ('B', 'B-') ORDER BY debt_service_ratio DESC LIMIT {max_rows};
+
+Q: Bandingkan ROI cabang vs NPL rate — cabang mana yang paling efisien?
+A: SELECT city, name, ROUND(npl_amount * 100.0 / NULLIF(credit_realization, 0), 1) AS npl_rate_pct, roi_pct, ROUND(credit_realization / 1000000000.0, 1) AS credit_billion FROM branch ORDER BY roi_pct DESC LIMIT {max_rows};
+
+Q: Compare branch ROI versus NPL rate — which branches are most efficient?
+A: SELECT city, name, ROUND(npl_amount * 100.0 / NULLIF(credit_realization, 0), 1) AS npl_rate_pct, roi_pct, ROUND(credit_realization / 1000000000.0, 1) AS credit_billion FROM branch ORDER BY roi_pct DESC LIMIT {max_rows};
 """
 
 SYSTEM_PROMPT_COMBINED = """\
