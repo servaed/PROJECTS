@@ -378,6 +378,7 @@ class ChatRequest(BaseModel):
     language: str = "id"
     style: str = "analyst"   # analyst | executive | compliance
     thinking: bool = False   # stream chain-of-thought via thinking_token SSE events
+    image_b64: str | None = None  # base64-encoded image for vision queries
 
 
 # ── API routes ─────────────────────────────────────────────────────────────
@@ -1379,6 +1380,384 @@ async def api_followup(body: FollowupRequest):
         return {"suggestions": []}
 
 
+# ── Anomaly Detection ─────────────────────────────────────────────────────
+
+_ANOMALY_SYSTEM = """\
+You are an anomaly detection agent for enterprise data. Given a SQL query result table \
+and the question that generated it, identify statistically notable anomalies, \
+outliers, or concerning values.
+
+Output ONLY a valid JSON array — no other text, no markdown fences:
+[{"field":"<column>","value":"<value>","city":"<city or entity>","severity":"critical"|"warning"|"info","message":"<one sentence>"},...]
+
+Severity guide:
+- critical: breaches a known industry threshold or is >3x the average
+- warning: unusually high/low compared to peers (1.5–3x)
+- info: interesting but not alarming
+
+Industry benchmarks to use when no explicit threshold is given:
+- NPL rate: warning >5%, critical >10%
+- Network utilization: warning >75%, critical >90%
+- Budget absorption (Q4): warning <70%, critical <50%
+- Churn risk score: warning >60, critical >80
+- Packet loss: warning >1%, critical >2%
+- Loan approval rate: warning <60%, critical <40%
+
+Return [] if no genuine anomalies exist. Maximum 5 anomalies.
+"""
+
+
+class AnomalyRequest(BaseModel):
+    table_markdown: str
+    sql: str
+    question: str
+    domain: str = "banking"
+
+
+@app.post("/api/anomaly", tags=["chat"])
+async def api_anomaly(body: AnomalyRequest):
+    """Scan a SQL result table for anomalies using a fast LLM call."""
+    try:
+        from src.llm.inference_client import get_llm_client
+        llm = get_llm_client()
+        user_msg = (
+            f"Question: {body.question}\n\n"
+            f"SQL: {body.sql}\n\n"
+            f"Result table:\n{body.table_markdown}"
+        )
+        resp = llm.chat(
+            [{"role": "system", "content": _ANOMALY_SYSTEM},
+             {"role": "user",   "content": user_msg}],
+            temperature=0.1, max_tokens=600,
+        )
+        raw = resp.content.strip()
+        if raw.startswith("```"):
+            raw = "\n".join(raw.splitlines()[1:])
+            raw = raw.rsplit("```", 1)[0]
+        import json as _json
+        anomalies = _json.loads(raw.strip())
+        if not isinstance(anomalies, list):
+            anomalies = []
+        return {"anomalies": anomalies[:5]}
+    except Exception as exc:
+        logger.warning("Anomaly detection failed: %s", exc)
+        return {"anomalies": []}
+
+
+# ── Executive Dashboard KPIs ───────────────────────────────────────────────
+
+_DASHBOARD_EXEC_SYSTEM = """\
+You are a CFO-level AI analyst. Given real-time KPI data from three enterprise domains \
+(banking, telco, government), write a concise executive briefing of 3–4 paragraphs. \
+Focus on the most critical signals, compare against benchmarks, and end with 2–3 \
+prioritized recommendations. Be direct, data-driven, and avoid filler phrases.
+Reply in English."""
+
+
+def _run_kpi_query(sql: str, label: str) -> dict:
+    """Run a single KPI query and return {label, value, ok, table}."""
+    try:
+        from src.sql.executor import run_query
+        result = run_query(sql)
+        if result.succeeded and result.rows:
+            first = result.rows[0]
+            # rows may be dicts (DuckDB default) or tuples — handle both
+            if isinstance(first, dict):
+                value = next(iter(first.values()), None)
+            else:
+                value = first[0] if first else None
+            return {"label": label, "value": value, "ok": True,
+                    "table": result.to_markdown_table(max_rows=5)}
+        return {"label": label, "value": None, "ok": False, "table": ""}
+    except Exception as exc:
+        logger.warning("KPI query failed for '%s': %s", label, exc)
+        return {"label": label, "value": None, "ok": False, "table": ""}
+
+
+@app.get("/api/dashboard/kpis", tags=["dashboard"])
+def api_dashboard_kpis():
+    """Compute real-time KPIs across all three domains for the executive dashboard.
+
+    Synchronous so FastAPI runs it in a thread pool, keeping the async event loop free.
+    DuckDB uses a shared connection so queries run sequentially.
+    """
+
+    kpi_queries = [
+        # Banking
+        ("banking_npl_pct",
+         "SELECT ROUND(SUM(CASE WHEN credit_quality IN ('Kurang Lancar','Macet') THEN outstanding ELSE 0 END)*100.0/NULLIF(SUM(outstanding),0),2) FROM msme_credit WHERE month='2026-03'",
+         "Overall NPL Rate (%)"),
+        ("banking_outstanding_t",
+         "SELECT ROUND(SUM(outstanding)/1e12,2) FROM msme_credit WHERE month='2026-03'",
+         "Total Outstanding (Trillion IDR)"),
+        ("banking_branch_achievement",
+         "SELECT ROUND(SUM(credit_realization)*100.0/NULLIF(SUM(credit_target),0),1) FROM branch",
+         "Branch Credit Achievement (%)"),
+        ("banking_high_npl_cities",
+         "SELECT COUNT(*) FROM (SELECT region FROM msme_credit WHERE month='2026-03' GROUP BY region HAVING SUM(CASE WHEN credit_quality IN ('Kurang Lancar','Macet') THEN outstanding ELSE 0 END)*100.0/NULLIF(SUM(outstanding),0)>8) t",
+         "Cities with NPL > 8%"),
+        ("banking_kur_avg_approval",
+         "SELECT ROUND(AVG(approval_rate_pct),1) FROM loan_application WHERE month>='2026-01'",
+         "Avg KUR Approval Rate (%)"),
+        # Telco
+        ("telco_revenue_at_risk",
+         "SELECT ROUND(SUM(CASE WHEN churn_risk_score>=70 THEN arpu_monthly ELSE 0 END)/1e6,1) FROM subscriber WHERE status='Active'",
+         "Revenue at Risk (Million IDR/mo)"),
+        ("telco_critical_networks",
+         "SELECT COUNT(*) FROM network WHERE status='Critical'",
+         "Critical Network Stations"),
+        ("telco_avg_latency",
+         "SELECT ROUND(AVG(avg_latency_ms),1) FROM network",
+         "Avg Network Latency (ms)"),
+        ("telco_sla_breach_total",
+         "SELECT SUM(sla_breach_count) FROM network_incident WHERE month>='2026-01'",
+         "SLA Breaches (Last 3 Months)"),
+        ("telco_high_churn_count",
+         "SELECT COUNT(*) FROM subscriber WHERE churn_risk_score>=70 AND status='Active'",
+         "Active High-Risk Churn Subscribers"),
+        # Government
+        ("gov_budget_absorption",
+         "SELECT ROUND(SUM(realization)*100.0/NULLIF(SUM(budget_ceiling),0),1) FROM regional_budget WHERE year=2025 AND quarter='Q4'",
+         "Budget Absorption Q4 2025 (%)"),
+        ("gov_min_satisfaction",
+         "SELECT ROUND(AVG(satisfaction_pct),1) FROM public_service WHERE month='2026-03' GROUP BY service_type ORDER BY AVG(satisfaction_pct) LIMIT 1",
+         "Lowest Service Satisfaction (%)"),
+        ("gov_total_pending",
+         "SELECT SUM(pending_count) FROM public_service WHERE month='2026-03'",
+         "Total Pending Applications"),
+    ]
+
+    # DuckDB uses a single shared connection — run queries sequentially
+    results = {}
+    for key, sql, label in kpi_queries:
+        results[key] = _run_kpi_query(sql, label)
+
+    return {"kpis": results, "timestamp": time.time()}
+
+
+@app.post("/api/dashboard/summary", tags=["dashboard"])
+async def api_dashboard_summary(body: dict):
+    """Generate a streaming LLM executive summary from the KPI payload."""
+    kpis = body.get("kpis", {})
+
+    kpi_text = "\n".join(
+        f"- {v['label']}: {v['value'] if v['value'] is not None else 'N/A'}"
+        for v in kpis.values() if v.get("ok")
+    )
+    user_msg = f"Enterprise KPI snapshot:\n{kpi_text}\n\nWrite the executive briefing."
+
+    async def _generate() -> AsyncGenerator[str, None]:
+        try:
+            from src.llm.inference_client import get_llm_client
+            llm = get_llm_client()
+            token_q: queue.Queue = queue.Queue()
+
+            def _produce():
+                try:
+                    for tok in llm.stream_chat(
+                        [{"role": "system", "content": _DASHBOARD_EXEC_SYSTEM},
+                         {"role": "user",   "content": user_msg}],
+                        temperature=0.3, max_tokens=600,
+                    ):
+                        token_q.put(tok)
+                finally:
+                    token_q.put(None)
+
+            threading.Thread(target=_produce, daemon=True).start()
+            loop = asyncio.get_event_loop()
+            while True:
+                item = await loop.run_in_executor(None, token_q.get)
+                if item is None:
+                    break
+                yield _sse("token", {"text": item})
+            yield _sse("done", {})
+        except Exception as exc:
+            yield _sse("error", {"message": str(exc)})
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ── Monitoring Agent ───────────────────────────────────────────────────────
+
+# Default thresholds — overridable via POST /api/monitor/thresholds
+_MONITOR_THRESHOLDS: dict = {
+    "banking_npl_warning":      5.0,   # NPL % warning threshold
+    "banking_npl_critical":    10.0,   # NPL % critical threshold
+    "telco_util_warning":      75.0,   # network utilization warning
+    "telco_util_critical":     90.0,   # network utilization critical
+    "telco_churn_warning":     60,     # churn risk score warning
+    "telco_churn_critical":    80,     # churn risk score critical
+    "gov_absorption_warning":  70.0,   # Q4 budget absorption warning (<)
+    "gov_absorption_critical": 50.0,   # Q4 budget absorption critical (<)
+    "gov_satisfaction_warning": 84.0,  # IKM satisfaction warning (<)
+}
+
+_MONITOR_QUERIES = [
+    {
+        "id":     "npl_hotspots",
+        "domain": "banking",
+        "label":  "NPL Hotspots",
+        "sql":    "SELECT region AS city, ROUND(SUM(CASE WHEN credit_quality IN ('Kurang Lancar','Macet') THEN outstanding ELSE 0 END)*100.0/NULLIF(SUM(outstanding),0),2) AS npl_pct FROM msme_credit WHERE month='2026-03' GROUP BY region HAVING npl_pct>{thr} ORDER BY npl_pct DESC LIMIT 10",
+        "thr_key": "banking_npl_warning",
+        "metric":  "npl_pct",
+        "unit":    "% NPL",
+        "critical_key": "banking_npl_critical",
+    },
+    {
+        "id":     "critical_networks",
+        "domain": "telco",
+        "label":  "Critical Network Stations",
+        "sql":    "SELECT city, utilization_pct, avg_latency_ms, packet_loss_pct, status FROM network WHERE utilization_pct>{thr} ORDER BY utilization_pct DESC LIMIT 10",
+        "thr_key": "telco_util_warning",
+        "metric":  "utilization_pct",
+        "unit":    "% util",
+        "critical_key": "telco_util_critical",
+    },
+    {
+        "id":     "high_churn_cities",
+        "domain": "telco",
+        "label":  "High Churn Risk Concentrations",
+        "sql":    "SELECT region AS city, COUNT(*) AS high_risk_count, ROUND(SUM(arpu_monthly)/1e6,2) AS revenue_at_risk_M FROM subscriber WHERE churn_risk_score>={thr} AND status='Active' GROUP BY region ORDER BY revenue_at_risk_M DESC LIMIT 10",
+        "thr_key": "telco_churn_warning",
+        "metric":  "high_risk_count",
+        "unit":    "subscribers",
+        "critical_key": "telco_churn_critical",
+    },
+    {
+        "id":     "budget_underperformers",
+        "domain": "government",
+        "label":  "Budget Absorption Underperformers",
+        "sql":    "SELECT work_unit, ROUND(SUM(realization)*100.0/NULLIF(SUM(budget_ceiling),0),1) AS absorption_pct FROM regional_budget WHERE year=2025 AND quarter='Q4' GROUP BY work_unit HAVING absorption_pct<{thr} ORDER BY absorption_pct LIMIT 10",
+        "thr_key": "gov_absorption_warning",
+        "metric":  "absorption_pct",
+        "unit":    "% absorbed",
+        "critical_key": "gov_absorption_critical",
+    },
+    {
+        "id":     "low_satisfaction",
+        "domain": "government",
+        "label":  "Low Citizen Satisfaction",
+        "sql":    "SELECT service_type, agency, ROUND(AVG(satisfaction_pct),1) AS avg_satisfaction, SUM(complaint_count) AS total_complaints FROM public_service WHERE month='2026-03' GROUP BY service_type, agency HAVING avg_satisfaction<{thr} ORDER BY avg_satisfaction LIMIT 10",
+        "thr_key": "gov_satisfaction_warning",
+        "metric":  "avg_satisfaction",
+        "unit":    "% satisfaction",
+        "critical_key": None,
+    },
+]
+
+
+@app.get("/api/monitor/thresholds", tags=["monitor"])
+async def api_monitor_get_thresholds():
+    return {"thresholds": _MONITOR_THRESHOLDS}
+
+
+@app.post("/api/monitor/thresholds", tags=["monitor"])
+async def api_monitor_set_thresholds(body: dict):
+    for k, v in body.items():
+        if k in _MONITOR_THRESHOLDS:
+            _MONITOR_THRESHOLDS[k] = float(v)
+    return {"thresholds": _MONITOR_THRESHOLDS}
+
+
+@app.post("/api/monitor/run", tags=["monitor"])
+async def api_monitor_run():
+    """Stream monitoring checks across all domains as SSE alert events."""
+    from src.sql.executor import run_query
+
+    _loop = asyncio.get_event_loop()
+
+    async def _generate() -> AsyncGenerator[str, None]:
+        yield _sse("monitor_start", {"checks": len(_MONITOR_QUERIES)})
+        all_alerts = []
+
+        for check in _MONITOR_QUERIES:
+            thr = _MONITOR_THRESHOLDS.get(check["thr_key"], 0)
+            critical_thr = _MONITOR_THRESHOLDS.get(check.get("critical_key") or "", None)
+            sql = check["sql"].format(thr=thr)
+            yield _sse("monitor_check_start", {"id": check["id"], "label": check["label"]})
+            try:
+                # run_query is synchronous — offload to thread pool
+                result = await _loop.run_in_executor(None, run_query, sql)
+                alerts = []
+                if result.succeeded and not result.is_empty:
+                    for row in result.rows[:10]:
+                        # rows may be dicts or tuples
+                        if isinstance(row, dict):
+                            vals = list(row.values())
+                            entity = str(vals[0]) if vals else ''
+                            val = vals[1] if len(vals) > 1 else vals[0] if vals else None
+                        else:
+                            entity = str(row[0])
+                            val = row[1] if len(row) > 1 else row[0]
+                        try:
+                            num_val = float(str(val).replace(",", ""))
+                        except (ValueError, TypeError):
+                            num_val = None
+
+                        severity = "warning"
+                        if critical_thr is not None and num_val is not None:
+                            # For absorption/satisfaction, critical is BELOW the threshold
+                            if check["id"] in ("budget_underperformers", "low_satisfaction"):
+                                if num_val < critical_thr:
+                                    severity = "critical"
+                            else:
+                                if num_val > critical_thr:
+                                    severity = "critical"
+
+                        if not isinstance(row, dict):
+                            entity = str(row[0])
+                        alerts.append({
+                            "entity":   entity,
+                            "value":    val,
+                            "unit":     check["unit"],
+                            "severity": severity,
+                            "domain":   check["domain"],
+                            "check":    check["label"],
+                        })
+                    all_alerts.extend(alerts)
+                yield _sse("monitor_check_done", {
+                    "id":     check["id"],
+                    "label":  check["label"],
+                    "domain": check["domain"],
+                    "alert_count": len(alerts),
+                    "alerts": alerts,
+                    "table_markdown": result.to_markdown_table(max_rows=10) if result.succeeded else "",
+                })
+            except Exception as exc:
+                logger.error("Monitor check '%s' failed: %s", check["id"], exc)
+                yield _sse("monitor_check_done", {
+                    "id": check["id"], "label": check["label"],
+                    "domain": check["domain"], "alert_count": 0, "alerts": [], "table_markdown": "",
+                })
+
+        yield _sse("monitor_done", {
+            "total_alerts":    len(all_alerts),
+            "critical_count":  sum(1 for a in all_alerts if a["severity"] == "critical"),
+            "warning_count":   sum(1 for a in all_alerts if a["severity"] == "warning"),
+        })
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ── Dashboard page route ───────────────────────────────────────────────────
+
+@app.get("/dashboard", response_class=HTMLResponse, tags=["pages"])
+async def dashboard_page():
+    """Executive AI Dashboard — real-time KPIs + LLM briefing."""
+    p = _STATIC / "dashboard.html"
+    if p.exists():
+        return HTMLResponse(p.read_text(encoding="utf-8"))
+    raise HTTPException(404, "dashboard.html not found")
+
+
 # ── Demo self-test ─────────────────────────────────────────────────────────
 
 _SELFTEST_QUESTIONS = [
@@ -2174,7 +2553,8 @@ async def api_chat(body: ChatRequest, request: Request):
         _chat_sse(body.question, body.history, domain=domain,
                   retrieval_domain=retrieval_domain,
                   domain_tables=domain_tables, language=body.language,
-                  style=body.style, thinking=body.thinking),
+                  style=body.style, thinking=body.thinking,
+                  image_b64=body.image_b64),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -2193,6 +2573,7 @@ async def _chat_sse(
     language: str = "id",
     style: str = "analyst",
     thinking: bool = False,
+    image_b64: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """Run the three-phase RAG pipeline and yield SSE events.
 
@@ -2210,6 +2591,24 @@ async def _chat_sse(
             None, prepare_answer, question, history, 5, retrieval_domain, domain_tables, language, style
         )
         yield _sse("mode", {"mode": prep.mode})
+
+        # Vision: if an image was attached, rewrite prep.history so the last
+        # user turn becomes a multimodal content list (OpenAI vision format).
+        if image_b64:
+            try:
+                mime = "image/jpeg"
+                if image_b64.startswith("data:"):
+                    mime, _, image_b64 = image_b64.partition(";base64,")
+                    mime = mime.removeprefix("data:")
+                vision_content = [
+                    {"type": "image_url",
+                     "image_url": {"url": f"data:{mime};base64,{image_b64}", "detail": "high"}},
+                    {"type": "text", "text": question},
+                ]
+                # Patch the last user message in the synthesis prompt at stream time
+                prep._vision_content = vision_content   # type: ignore[attr-defined]
+            except Exception:
+                pass  # fall back to text-only if image handling fails
 
         # Phase 2 — stream LLM tokens from a producer thread via a queue
         token_q: queue.Queue[str | None] = queue.Queue()

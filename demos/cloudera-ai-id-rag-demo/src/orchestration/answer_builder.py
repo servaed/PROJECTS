@@ -227,10 +227,21 @@ def stream_synthesis(prep: AnswerPrep) -> Generator[str, None, None]:
         return
 
     messages = _build_messages(prep)
-    # Record total character length of messages for input-token estimation.
-    # This is set before streaming so the done-event builder can read it even
-    # if the stream is cancelled mid-way.
-    prep.synthesis_input_chars = sum(len(m.get("content", "")) for m in messages)
+
+    # Vision: if an image was attached, replace the last user message content
+    # with a multimodal content list (OpenAI vision format).
+    vision_content = getattr(prep, "_vision_content", None)
+    if vision_content:
+        for i in range(len(messages) - 1, -1, -1):
+            if messages[i].get("role") == "user":
+                messages[i] = {"role": "user", "content": vision_content}
+                break
+
+    prep.synthesis_input_chars = sum(
+        len(m["content"]) if isinstance(m.get("content"), str)
+        else sum(len(str(c)) for c in m.get("content", []))
+        for m in messages
+    )
 
     llm = get_llm_client()
     yield from llm.stream_chat(messages)

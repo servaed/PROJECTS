@@ -512,6 +512,13 @@
       padding:7px 13px; font-size:0.72rem; font-weight:600; color:var(--indigo);
       background:var(--i-dim); border:1px solid rgba(129,140,248,0.2); border-radius:10px;
     }
+    /* ── Vision image preview ────────────────────────────────────────── */
+    .vision-preview { display:flex; align-items:center; gap:8px; padding:6px 12px 0; }
+    .vision-thumb { width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid var(--border); }
+    .vision-thumb-name { font-size:0.7rem; color:var(--t3); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .vision-remove { background:transparent; border:none; color:var(--t3); cursor:pointer; font-size:0.9rem; padding:0 2px; }
+    .vision-remove:hover { color:var(--err); }
+    .msg-image { max-width:220px; border-radius:10px; margin-bottom:6px; border:1px solid var(--border); display:block; }
     .agent-panel {
       background:var(--s2); border:1px solid var(--border);
       border-radius:10px; overflow:hidden; margin-bottom:10px;
@@ -743,7 +750,7 @@
   // ── Message reducer ────────────────────────────────────────────────
   function reduce(msgs, a) {
     switch (a.type) {
-      case 'USER':        return [...msgs, { id:a.id, role:'user', content:a.content }];
+      case 'USER':        return [...msgs, { id:a.id, role:'user', content:a.content, imageUrl:a.imageUrl||null }];
       case 'ASSISTANT':   return [...msgs, { id:a.id, role:'assistant', content:'', mode:null, isStreaming:true, docCitations:[], sqlCitation:null, usage:null, error:null, question:a.question||'', suggestions:[] }];
       case 'PERSONA_MSG': return [...msgs, { id:a.id, role:'assistant', content:a.content, mode:null, isStreaming:false, docCitations:[], sqlCitation:null, usage:null, error:null, question:'', suggestions:[], isPersonaGreeting:true }];
       // Agent cases
@@ -956,6 +963,7 @@
             { href:'/explorer', label:'Data Explorer' },
             { href:'/upload',   label:'Upload' },
             { href:'/metrics',       label:'Metrics' },
+            { href:'/dashboard',     label:'Dashboard' },
             { href:'/presentation',  label:'Slides' },
             { href:'/setup',         label:'Status' },
             { href:'/configure',label:'Settings' },
@@ -1423,6 +1431,74 @@
   }
 
   // ── Thinking / Reasoning panel ────────────────────────────────────
+  // ── Anomaly detection panel ────────────────────────────────────────
+  function AnomalyPanel({ sc, anomalies, msgId, onDismiss }) {
+    const [loading, setLoading] = useState(false);
+    const [dismissed, setDismissed] = useState(false);
+    const [localAnomalies, setLocalAnomalies] = useState(null);
+
+    // Auto-fetch when sqlCitation arrives and anomalies not yet fetched
+    useEffect(function() {
+      if (!sc || !sc.table_markdown || anomalies !== undefined || loading || localAnomalies !== null) return;
+      if (!sc.row_count || sc.row_count < 2) return;
+      setLoading(true);
+      fetch('/api/anomaly', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          table_markdown: sc.table_markdown,
+          sql: sc.sql || '',
+          question: sc.sql || '',
+          domain: 'all',
+        }),
+      })
+        .then(function(r){ return r.json(); })
+        .then(function(d){ setLocalAnomalies(d.anomalies || []); })
+        .catch(function(){ setLocalAnomalies([]); })
+        .finally(function(){ setLoading(false); });
+    }, [sc]);
+
+    var list = anomalies !== undefined ? anomalies : localAnomalies;
+    if (dismissed || loading || !list || !list.length) return null;
+
+    var sevColor = function(s) {
+      return s === 'critical' ? 'var(--err)' : s === 'warning' ? 'var(--warn)' : 'var(--teal)';
+    };
+    var sevBg = function(s) {
+      return s === 'critical' ? 'rgba(248,113,113,0.08)' : s === 'warning' ? 'rgba(251,191,36,0.08)' : 'rgba(0,165,145,0.08)';
+    };
+
+    return html`
+      <div style=${{ marginTop:'8px', border:'1px solid var(--border)', borderRadius:'10px', overflow:'hidden', background:'var(--s2)' }}>
+        <div style=${{ display:'flex', alignItems:'center', gap:'7px', padding:'8px 13px', background:'rgba(251,191,36,0.06)', borderBottom:'1px solid var(--border)' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span style=${{ fontSize:'0.72rem', fontWeight:700, color:'var(--warn)', flex:1 }}>
+            ${list.length} anomal${list.length === 1 ? 'y' : 'ies'} detected
+          </span>
+          <button onClick=${function(){ setDismissed(true); }} style=${{ background:'transparent', border:'none', color:'var(--t3)', cursor:'pointer', fontSize:'0.7rem', padding:'0 4px' }}>✕</button>
+        </div>
+        ${list.map(function(a, i) {
+          return html`
+            <div key=${i} style=${{
+              display:'flex', alignItems:'flex-start', gap:'10px',
+              padding:'9px 13px', borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+            }}>
+              <span style=${{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', padding:'2px 6px', borderRadius:'5px', background:sevBg(a.severity), color:sevColor(a.severity), flexShrink:0, marginTop:'1px' }}>${a.severity}</span>
+              <div style=${{ flex:1, minWidth:0 }}>
+                <span style=${{ fontSize:'0.78rem', fontWeight:600, color:'var(--t1)' }}>${a.city || a.entity || ''}</span>
+                ${' '}
+                <span style=${{ fontSize:'0.75rem', color:'var(--t2)' }}>${a.field}: </span>
+                <span style=${{ fontSize:'0.75rem', fontFamily:'var(--mono)', color:sevColor(a.severity), fontWeight:600 }}>${a.value}</span>
+                <div style=${{ fontSize:'0.71rem', color:'var(--t3)', marginTop:'2px', lineHeight:1.5 }}>${a.message}</div>
+              </div>
+            </div>`;
+        })}
+      </div>`;
+  }
+
   function ThinkingPanel({ msg }) {
     const [open, setOpen] = useState(false);
     useEffect(function() { if (msg.isThinking) setOpen(true); }, [msg.isThinking]);
@@ -2261,6 +2337,7 @@
 
   // ── Chat messages ──────────────────────────────────────────────────
   function UserMsg(props) {
+    var msg = props.msg;
     return html`
       <div className="slide-up" style=${{ display:'flex', justifyContent:'flex-end', marginBottom:'16px' }}>
         <div style=${{
@@ -2270,7 +2347,10 @@
           borderRadius:'14px 14px 3px 14px',
           padding:'10px 15px',
           fontSize:'0.875rem', lineHeight:1.65, color:'var(--t1)',
-        }}>${props.msg.content}</div>
+        }}>
+          ${msg.imageUrl && html`<img className="msg-image" src=${msg.imageUrl} alt="attached"/>`}
+          ${msg.content}
+        </div>
       </div>`;
   }
 
@@ -2405,6 +2485,7 @@
             ${msg.sqlCitation && html`
               <div style=${{ marginTop:(msg.docCitations && msg.docCitations.length ? 8 : 0)+'px' }}>
                 <${SqlPanel} sc=${msg.sqlCitation}/>
+                <${AnomalyPanel} sc=${msg.sqlCitation} anomalies=${msg.anomalies} msgId=${msg.id} onDismiss=${props.onDismissAnomalies}/>
               </div>
             `}
           </div>
@@ -2606,8 +2687,10 @@
 
   // ── Input bar ──────────────────────────────────────────────────────
   function InputBar(props) {
-    const [val, setVal] = useState('');
-    const taRef         = useRef(null);
+    const [val, setVal]           = useState('');
+    const [image, setImage]       = useState(null);  // {b64, name, dataUrl}
+    const taRef    = useRef(null);
+    const fileRef  = useRef(null);
 
     useEffect(function() {
       if (props.prefill) {
@@ -2623,19 +2706,35 @@
       ta.style.height = Math.min(Math.max(ta.scrollHeight, 38), 160) + 'px';
     }, [val]);
 
+    function onImagePick(e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var dataUrl = ev.target.result;
+        // strip the data:image/...;base64, prefix for the API
+        var b64 = dataUrl.split(',')[1];
+        setImage({ b64: b64, name: file.name, dataUrl: dataUrl, mime: file.type });
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+
     function submit() {
       var q = val.trim();
-      if (!q || props.disabled) return;
+      if ((!q && !image) || props.disabled) return;
+      var imgB64 = image ? image.dataUrl : null;  // full data URL, backend strips prefix
       setVal('');
+      setImage(null);
       if (taRef.current) taRef.current.style.height = 'auto';
-      props.onSubmit(q);
+      props.onSubmit(q || '(Analyze this image)', imgB64);
     }
 
     function onKey(e) {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
     }
 
-    var active = val.trim() !== '' && !props.disabled;
+    var active = (val.trim() !== '' || !!image) && !props.disabled;
 
     return html`
       <div style=${{
@@ -2663,12 +2762,30 @@
             e.currentTarget.style.boxShadow   = 'var(--msg-a-shadow)';
           }}
         >
+          <input type="file" ref=${fileRef} accept="image/*" style=${{display:'none'}} onChange=${onImagePick}/>
+          <button
+            onClick=${function(){ if(fileRef.current) fileRef.current.click(); }}
+            title="Attach image — ask the AI to analyze a chart or screenshot"
+            style=${{
+              flexShrink:0, width:'30px', height:'30px', borderRadius:'7px',
+              border:'1px solid '+(image?'var(--teal)':'var(--border)'),
+              background: image ? 'var(--t-dim)' : 'transparent',
+              color: image ? 'var(--teal)' : 'var(--t3)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              cursor:'pointer', transition:'all 0.15s', marginRight:'4px',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </button>
           <textarea
             ref=${taRef}
             value=${val}
             onInput=${function(e) { setVal(e.target.value); }}
             onKeyDown=${onKey}
-            placeholder="Ask about your enterprise documents and data…"
+            placeholder=${image ? 'Ask about the attached image…' : 'Ask about your enterprise documents and data…'}
             disabled=${props.disabled}
             rows="1"
             style=${{
@@ -2693,6 +2810,12 @@
             }}
           >${props.disabled ? html`<div className="spin"/>` : html`<${IcoSend}/>`}</button>
         </div>
+        ${image && html`
+          <div className="vision-preview">
+            <img className="vision-thumb" src=${image.dataUrl} alt="attached"/>
+            <span className="vision-thumb-name">${image.name}</span>
+            <button className="vision-remove" onClick=${function(){ setImage(null); }} title="Remove image">✕</button>
+          </div>`}
         <div style=${{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'6px' }}>
           <div style=${{ fontSize:'0.62rem', color:'var(--t3)' }}>
             Enter to send · Shift+Enter new line · Ctrl+K clear
@@ -2920,7 +3043,9 @@
         .catch(console.error);
     }, [domain, language]);
 
-    const handleSubmit = useCallback(function(question, _onDone) {
+    const handleSubmit = useCallback(function(question, imageb64, _onDone) {
+      // Support old callers passing (question, _onDone) without image
+      if (typeof imageb64 === 'function') { _onDone = imageb64; imageb64 = null; }
       var uid = Date.now();
       var aid = uid + 1;
       var t0  = Date.now();
@@ -2928,7 +3053,7 @@
         .filter(function(m) { return m.content; })
         .map(function(m) { return { role:m.role, content:m.content }; });
 
-      dispatch({ type:'USER', id:uid, content:question });
+      dispatch({ type:'USER', id:uid, content:question, imageUrl: imageb64 ? imageb64 : null });
       var isAgent  = agentModeRef.current;
       var isDebate = debateModeRef.current;
       var isThink  = thinkModeRef.current;
@@ -2953,6 +3078,7 @@
             domain:domainRef.current, language:languageRef.current,
             style:answerStyleRef.current,
             thinking: isThink,
+            image_b64: imageb64 || null,
           })) {
             // Debate-specific events
             if (ev.event==='debate_researcher_thinking') { setLoading(false); }
