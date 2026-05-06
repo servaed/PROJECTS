@@ -1414,6 +1414,145 @@ class AnomalyRequest(BaseModel):
     domain: str = "banking"
 
 
+# ── Forecast helpers ──────────────────────────────────────────────────────
+
+
+def _linear_regression(x: list[float], y: list[float]) -> tuple[float, float, float]:
+    """Return (slope, intercept, r_squared) via ordinary least squares."""
+    n = len(x)
+    if n < 2:
+        return 0.0, y[0] if y else 0.0, 0.0
+    sum_x  = sum(x); sum_y  = sum(y)
+    sum_xy = sum(xi * yi for xi, yi in zip(x, y))
+    sum_x2 = sum(xi ** 2 for xi in x)
+    denom  = n * sum_x2 - sum_x ** 2
+    if denom == 0:
+        return 0.0, sum_y / n, 0.0
+    slope     = (n * sum_xy - sum_x * sum_y) / denom
+    intercept = (sum_y - slope * sum_x) / n
+    y_mean    = sum_y / n
+    ss_tot    = sum((yi - y_mean) ** 2 for yi in y)
+    ss_res    = sum((yi - (slope * xi + intercept)) ** 2 for xi, yi in zip(x, y))
+    r_sq      = max(0.0, 1.0 - ss_res / ss_tot) if ss_tot > 0 else 0.0
+    return slope, intercept, round(r_sq, 3)
+
+
+def _generate_future_labels(last_label: str, n: int) -> list[str]:
+    """Extrapolate n period labels from the last one (YYYY-MM, YYYY-QN, or numeric)."""
+    m = re.match(r"(\d{4})-(\d{2})$", last_label)
+    if m:
+        year, month = int(m.group(1)), int(m.group(2))
+        out = []
+        for _ in range(n):
+            month += 1
+            if month > 12:
+                month = 1; year += 1
+            out.append(f"{year:04d}-{month:02d}")
+        return out
+    m = re.match(r"(\d{4})-Q(\d)$", last_label)
+    if m:
+        year, q = int(m.group(1)), int(m.group(2))
+        out = []
+        for _ in range(n):
+            q += 1
+            if q > 4:
+                q = 1; year += 1
+            out.append(f"{year:04d}-Q{q}")
+        return out
+    return [f"{last_label}+{i + 1}" for i in range(n)]
+
+
+@app.post("/api/forecast", tags=["analytics"])
+async def api_forecast(body: dict):
+    """Run linear regression on a time-series SQL result and project N periods ahead.
+
+    Accepts:
+      table_markdown — markdown table string from a sql_citation
+      periods        — number of periods to project (default 3, max 6)
+    """
+    table_markdown = body.get("table_markdown", "")
+    periods = min(int(body.get("periods", 3)), 6)
+
+    lines = [l for l in table_markdown.strip().splitlines() if l.strip().startswith("|")]
+    if len(lines) < 4:
+        return {"ok": False, "error": "Need at least 2 data rows for forecasting"}
+
+    def parse_cells(line: str) -> list[str]:
+        return [c.strip() for c in line.split("|")[1:-1]]
+
+    headers = parse_cells(lines[0])
+    rows    = [parse_cells(l) for l in lines[2:]]
+
+    # Locate time column
+    time_col = next(
+        (i for i, h in enumerate(headers) if re.search(r"month|year|date|period|quarter|bulan|tahun", h, re.I)),
+        -1,
+    )
+    if time_col == -1:
+        return {"ok": False, "error": "No time column detected"}
+
+    # Locate first numeric column
+    val_col = -1
+    skip = {"lat", "lon", "id", "year"}
+    for i, h in enumerate(headers):
+        if i == time_col or h.lower() in skip:
+            continue
+        try:
+            float(rows[0][i].replace(",", ""))
+            val_col = i; break
+        except Exception:
+            pass
+    if val_col == -1:
+        return {"ok": False, "error": "No numeric column detected"}
+
+    time_labels = [r[time_col] for r in rows if time_col < len(r)]
+    values: list[float | None] = []
+    for r in rows:
+        try:
+            values.append(float(r[val_col].replace(",", ""))) if val_col < len(r) else values.append(None)
+        except Exception:
+            values.append(None)
+
+    clean = [(i, v) for i, v in enumerate(values) if v is not None]
+    if len(clean) < 2:
+        return {"ok": False, "error": "Not enough numeric data points"}
+
+    xs, ys = [p[0] for p in clean], [p[1] for p in clean]
+    slope, intercept, r_squared = _linear_regression(xs, ys)
+
+    avg = sum(ys) / len(ys)
+    threshold = max(abs(avg) * 0.005, 1e-6)
+    trend = "up" if slope > threshold else ("down" if slope < -threshold else "flat")
+
+    future_labels = _generate_future_labels(time_labels[-1] if time_labels else "", periods)
+    n = len(values)
+
+    historical = [
+        {"label": time_labels[i] if i < len(time_labels) else str(i),
+         "value": values[i], "is_forecast": False}
+        for i in range(n)
+    ]
+    forecast = [
+        {"label": future_labels[j],
+         "value": round(slope * (n + j) + intercept, 4),
+         "is_forecast": True}
+        for j in range(periods)
+    ]
+
+    return {
+        "ok":           True,
+        "historical":   historical,
+        "forecast":     forecast,
+        "combined":     historical + forecast,
+        "trend":        trend,
+        "slope":        round(slope, 6),
+        "r_squared":    r_squared,
+        "value_column": headers[val_col] if val_col < len(headers) else "value",
+        "time_column":  headers[time_col] if time_col < len(headers) else "period",
+        "periods":      periods,
+    }
+
+
 @app.post("/api/anomaly", tags=["chat"])
 async def api_anomaly(body: AnomalyRequest):
     """Scan a SQL result table for anomalies using a fast LLM call."""

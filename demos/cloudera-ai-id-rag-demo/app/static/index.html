@@ -602,6 +602,18 @@
     }
     /* ── Leaflet map container ──────────────────────────────────────────── */
     .map-chart-wrap { border-radius:10px; overflow:hidden; position:relative; }
+    /* ── Forecast / trend badges ─────────────────────────────────────── */
+    .trend-badge { display:inline-flex; align-items:center; gap:4px; padding:'1px 7px'; font-size:0.62rem; font-weight:700; border-radius:5px; }
+    .trend-up   { background:rgba(52,211,153,0.1); color:var(--ok); }
+    .trend-down { background:rgba(248,113,113,0.1); color:var(--err); }
+    .trend-flat { background:var(--s2); color:var(--t3); }
+    /* ── Without AI banner ───────────────────────────────────────────── */
+    .noai-banner {
+      display:flex; align-items:center; gap:8px; padding:8px 13px;
+      background:var(--s2); border:1px solid var(--border); border-radius:10px;
+      font-size:0.73rem; color:var(--t3); margin-bottom:8px;
+    }
+    .noai-banner svg { flex-shrink:0; }
     .map-chart-wrap .leaflet-container { background:var(--bg); }
     .leaflet-tooltip { font-family:var(--body); font-size:12px; border-radius:8px; border:1px solid var(--border); box-shadow:0 4px 16px rgba(0,0,0,0.18); }
     [data-theme='dark'] .leaflet-tooltip { background:#1a2234; color:#e0e6f0; border-color:rgba(255,255,255,0.08); }
@@ -1999,22 +2011,37 @@
     var rafRef    = useRef(null);
     var sc = props.sc;
 
-    // Detect if result has a geo column (city/region) usable for map view
+    // Detect geo column → map view
     var hasGeo = (function() {
       if (!sc || !sc.table_markdown || typeof window.L === 'undefined') return false;
-      var firstLine = (sc.table_markdown.trim().split('\n')[0] || '');
-      return /\|\s*(city|region|province|kota|provinsi|wilayah)\s*\|/i.test(firstLine);
+      var h = sc.table_markdown.trim().split('\n')[0] || '';
+      return /\|\s*(city|region|province|kota|provinsi|wilayah)\s*\|/i.test(h);
     })();
 
-    var [chartType, setChartType] = useState(function(){ return hasGeo ? 'map' : 'bar'; });
+    // Detect time-series column → line view
+    var hasTimeSeries = (function() {
+      if (!sc || !sc.table_markdown) return false;
+      var h = sc.table_markdown.trim().split('\n')[0] || '';
+      return /\|\s*(month|year|date|period|quarter|bulan|tahun)\s*\|/i.test(h);
+    })();
 
-    // Switch to map automatically when new geo data arrives, back to bar otherwise
+    var [chartType, setChartType] = useState(function(){
+      return hasGeo ? 'map' : hasTimeSeries ? 'line' : 'bar';
+    });
+    var [forecastData, setForecastData] = useState(null);
+    var [loadingForecast, setLoadingForecast] = useState(false);
+
+    // Auto-select best chart type when data changes
     useEffect(function() {
-      setChartType(hasGeo ? 'map' : 'bar');
+      setForecastData(null);
+      if (hasGeo) setChartType('map');
+      else if (hasTimeSeries) setChartType('line');
+      else setChartType('bar');
     }, [sc && sc.sql]);
 
     useEffect(function() {
       if (!sc || !sc.table_markdown || !canvasRef.current) return;
+      if (chartType === 'map' || chartType === 'table') return;
       var lines = sc.table_markdown.trim().split('\n').filter(function(l) { return l.trim().startsWith('|'); });
       if (lines.length < 3) return;
 
@@ -2035,11 +2062,132 @@
 
       var labels = rows.map(function(r) { return r[0] || ''; });
       var values = rows.map(function(r) { return parseFloat((r[valCol] || '0').replace(/,/g,'')) || 0; });
-      var maxVal = Math.max.apply(null, values.map(Math.abs)) || 1;
 
       var canvas = canvasRef.current;
       var tip    = tipRef.current;
       var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+      // ── Line chart ──────────────────────────────────────────────────
+      if (chartType === 'line') {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        var fcPoints = forecastData ? forecastData.forecast : [];
+        var allVals  = values.concat(fcPoints.map(function(f){ return f.value; }));
+        var minVal2  = Math.min.apply(null, allVals);
+        var maxVal2  = Math.max.apply(null, allVals) || 1;
+        var range2   = (maxVal2 - minVal2) || 1;
+        var H2 = 220, dpr2 = window.devicePixelRatio || 1;
+        var W2 = canvas.parentElement ? canvas.parentElement.offsetWidth : 320;
+        canvas.width = W2 * dpr2; canvas.height = H2 * dpr2;
+        canvas.style.width = W2 + 'px'; canvas.style.height = H2 + 'px';
+        var ctx2 = canvas.getContext('2d');
+        ctx2.setTransform(dpr2, 0, 0, dpr2, 0, 0);
+        var pL = 52, pR = 16, pT = 28, pB = 40;
+        var cW = W2 - pL - pR, cH = H2 - pT - pB;
+        var totalN = labels.length + fcPoints.length;
+        var toX = function(i){ return pL + (i / Math.max(totalN - 1, 1)) * cW; };
+        var toY = function(v){ return pT + cH - ((v - minVal2) / range2) * cH; };
+        var colLine = isDark ? '#F96702' : '#C94F00';
+        var colFc   = isDark ? 'rgba(249,103,2,0.5)' : 'rgba(201,79,0,0.45)';
+        var colGrid = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+        var colText = isDark ? '#4A5470' : '#9AA0A6';
+        var colBg   = isDark ? '#1C2538' : '#F8F9FA';
+        // Background
+        ctx2.fillStyle = colBg;
+        ctx2.beginPath(); if (ctx2.roundRect) ctx2.roundRect(0, 0, W2, H2, 10); else ctx2.rect(0, 0, W2, H2, 10); ctx2.fill();
+        // Grid + Y labels
+        [0.25, 0.5, 0.75, 1.0].forEach(function(f) {
+          var gy = pT + cH - f * cH;
+          ctx2.strokeStyle = colGrid; ctx2.lineWidth = 1;
+          ctx2.beginPath(); ctx2.moveTo(pL, gy); ctx2.lineTo(W2 - pR, gy); ctx2.stroke();
+          var v = minVal2 + f * range2;
+          var lbl = v >= 1e9 ? (v/1e9).toFixed(1)+'B' : v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v.toFixed(1);
+          ctx2.fillStyle = colText; ctx2.font = '500 9px system-ui'; ctx2.textAlign = 'right';
+          ctx2.fillText(lbl, pL - 4, gy + 3);
+        });
+        // Column header
+        ctx2.fillStyle = colText; ctx2.font = '600 10px system-ui'; ctx2.textAlign = 'center';
+        ctx2.fillText((headers[valCol] || '').slice(0, 36), W2 / 2, 16);
+        // Build point arrays
+        var histPts = values.map(function(v, i){ return { x: toX(i), y: toY(v), v: v, lbl: labels[i] }; });
+        var fcPts   = fcPoints.map(function(fp, j){ return { x: toX(labels.length + j), y: toY(fp.value), v: fp.value, lbl: fp.label }; });
+        // Bezier draw helper
+        function drawBez(pts) {
+          pts.forEach(function(p, i) {
+            if (i === 0) { ctx2.moveTo(p.x, p.y); return; }
+            var prev = pts[i-1], cp1x = prev.x + (p.x - prev.x) / 3, cp2x = p.x - (p.x - prev.x) / 3;
+            ctx2.bezierCurveTo(cp1x, prev.y, cp2x, p.y, p.x, p.y);
+          });
+        }
+        // Gradient fill
+        var grad2 = ctx2.createLinearGradient(0, pT, 0, pT + cH);
+        grad2.addColorStop(0, isDark ? 'rgba(249,103,2,0.22)' : 'rgba(249,103,2,0.13)');
+        grad2.addColorStop(1, 'rgba(249,103,2,0)');
+        if (histPts.length > 1) {
+          ctx2.beginPath(); ctx2.moveTo(histPts[0].x, pT + cH); drawBez(histPts);
+          ctx2.lineTo(histPts[histPts.length-1].x, pT + cH); ctx2.closePath();
+          ctx2.fillStyle = grad2; ctx2.fill();
+        }
+        // Historical line
+        ctx2.beginPath(); drawBez(histPts);
+        ctx2.strokeStyle = colLine; ctx2.lineWidth = 2.5; ctx2.setLineDash([]); ctx2.stroke();
+        // Historical dots
+        histPts.forEach(function(p) {
+          ctx2.beginPath(); ctx2.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+          ctx2.fillStyle = colLine; ctx2.fill();
+          ctx2.strokeStyle = colBg; ctx2.lineWidth = 1.5; ctx2.stroke();
+        });
+        // Forecast line (dashed)
+        if (fcPts.length > 0) {
+          var bridgePts = histPts.length > 0 ? [histPts[histPts.length-1]].concat(fcPts) : fcPts;
+          ctx2.beginPath(); ctx2.moveTo(bridgePts[0].x, bridgePts[0].y);
+          bridgePts.slice(1).forEach(function(p){ ctx2.lineTo(p.x, p.y); });
+          ctx2.strokeStyle = colFc; ctx2.lineWidth = 2; ctx2.setLineDash([5, 4]); ctx2.stroke();
+          ctx2.setLineDash([]);
+          fcPts.forEach(function(p) {
+            ctx2.beginPath(); ctx2.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            ctx2.strokeStyle = colFc; ctx2.lineWidth = 2; ctx2.fillStyle = colBg; ctx2.fill(); ctx2.stroke();
+          });
+          ctx2.fillStyle = colFc; ctx2.font = '500 8px system-ui'; ctx2.textAlign = 'left';
+          ctx2.fillText('▷ Forecast', fcPts[0].x + 5, fcPts[0].y - 8);
+        }
+        // X labels
+        var allPts = histPts.concat(fcPts);
+        var step2 = Math.ceil(allPts.length / 8);
+        allPts.forEach(function(p, i) {
+          if (i % step2 !== 0 && i !== allPts.length - 1) return;
+          var isFc = i >= histPts.length;
+          ctx2.fillStyle = isFc ? colFc : colText; ctx2.font = '500 8px system-ui'; ctx2.textAlign = 'center';
+          ctx2.fillText(p.lbl.slice(0, 7), p.x, H2 - pB + 14);
+        });
+        // Hover
+        var hIdx = -1;
+        function onMove2(e) {
+          var rect = canvas.getBoundingClientRect(), mx = e.clientX - rect.left, my = e.clientY - rect.top;
+          var best = -1, bestD = 20;
+          allPts.forEach(function(p, i) {
+            var d = Math.sqrt((mx-p.x)*(mx-p.x) + (my-p.y)*(my-p.y));
+            if (d < bestD) { bestD = d; best = i; }
+          });
+          if (best !== hIdx) {
+            hIdx = best;
+            if (tip) {
+              if (best >= 0) {
+                var pt = allPts[best];
+                var fv = pt.v >= 1e9 ? (pt.v/1e9).toFixed(2)+'B' : pt.v >= 1e6 ? (pt.v/1e6).toFixed(2)+'M' : pt.v >= 1e3 ? (pt.v/1e3).toFixed(1)+'K' : pt.v.toLocaleString(undefined,{maximumFractionDigits:2});
+                tip.textContent = pt.lbl + ': ' + fv + (best >= histPts.length ? ' (forecast)' : '');
+                tip.style.opacity = '1';
+                tip.style.left = Math.max(0, pt.x - tip.offsetWidth/2) + 'px';
+                tip.style.top  = Math.max(4, pt.y - 30) + 'px';
+              } else { tip.style.opacity = '0'; }
+            }
+          }
+        }
+        function onLeave2() { hIdx = -1; if (tip) tip.style.opacity = '0'; }
+        canvas.addEventListener('mousemove', onMove2); canvas.addEventListener('mouseleave', onLeave2);
+        return function() { canvas.removeEventListener('mousemove', onMove2); canvas.removeEventListener('mouseleave', onLeave2); };
+      }
+
+      var maxVal = Math.max.apply(null, values.map(Math.abs)) || 1;
 
       // Color palette — matches mode color from SQL (indigo accent)
       var colText   = isDark ? '#8E9BB5' : '#5F6368';
@@ -2189,7 +2337,7 @@
         canvas.removeEventListener('mouseleave', onLeave);
         if (rafRef.current) cancelAnimationFrame(rafRef.current);
       };
-    }, [sc]);
+    }, [sc, chartType, forecastData]);
 
     return html`
       <div ref=${wrapRef} style=${{ marginBottom:'8px' }}>
@@ -2200,9 +2348,33 @@
               <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
             </svg>Map
           </button>`}
+          ${hasTimeSeries && html`<button className=${'chart-type-btn'+(chartType==='line'?' active':'')} onClick=${function(){setChartType('line');}}>Line</button>`}
           ${['bar','table'].map(function(t) {
             return html`<button key=${t} className=${'chart-type-btn'+(chartType===t?' active':'')} onClick=${function(){setChartType(t);}}>${t.charAt(0).toUpperCase()+t.slice(1)}</button>`;
           })}
+          ${chartType === 'line' && !forecastData && html`
+            <button className="chart-type-btn" style=${{ marginLeft:'auto', color:'var(--orange)', borderColor:'rgba(249,103,2,0.3)' }}
+              disabled=${loadingForecast}
+              onClick=${function(){
+                if (loadingForecast || !sc || !sc.table_markdown) return;
+                setLoadingForecast(true);
+                fetch('/api/forecast', {
+                  method:'POST', headers:{'Content-Type':'application/json'},
+                  body: JSON.stringify({table_markdown: sc.table_markdown, periods: 3}),
+                }).then(function(r){ return r.json(); })
+                  .then(function(d){ if (d.ok) setForecastData(d); })
+                  .catch(function(){})
+                  .finally(function(){ setLoadingForecast(false); });
+              }}
+            >${loadingForecast ? '…' : '▷ Forecast'}</button>`}
+          ${forecastData && html`
+            <span style=${{ marginLeft:'auto', fontSize:'0.62rem', display:'flex', alignItems:'center', gap:'6px' }}>
+              <span style=${{ color: forecastData.trend==='up'?'var(--ok)':forecastData.trend==='down'?'var(--err)':'var(--t3)', fontWeight:700 }}>
+                ${forecastData.trend==='up'?'↑':forecastData.trend==='down'?'↓':'→'} ${forecastData.trend}
+              </span>
+              <span style=${{ color:'var(--t3)' }}>R²=${forecastData.r_squared}</span>
+              <button className="chart-type-btn" style=${{ padding:'0 6px', height:'20px', fontSize:'0.58rem' }} onClick=${function(){ setForecastData(null); }}>✕</button>
+            </span>`}
         </div>
         ${chartType === 'map' && html`<${MapChart} sc=${sc} valueLabel=${(function(){
           var firstLine = (sc && sc.table_markdown || '').trim().split('\n')[0] || '';
@@ -2358,9 +2530,10 @@
     const msg = props.msg;
     const hasCits = (msg.docCitations && msg.docCitations.length > 0) || msg.sqlCitation;
     const hasDocCits = msg.docCitations && msg.docCitations.length > 0;
-    const [copied, setCopied]     = useState(false);
+    const [copied, setCopied]       = useState(false);
     const [copiedFull, setCopiedFull] = useState(false);
-    const [viewMode, setViewMode] = useState('ai');   // 'ai' | 'raw'
+    const [viewMode, setViewMode]   = useState('ai');   // 'ai' | 'raw'
+    const [noAI, setNoAI]           = useState(false);  // hide prose, show raw data only
 
     function copyAnswer() {
       navigator.clipboard.writeText(msg.content || '').then(function() {
@@ -2409,6 +2582,26 @@
               Panel
             </button>
           `}
+          ${!msg.isStreaming && msg.sqlCitation && html`
+            <button
+              onClick=${function(){ setNoAI(function(v){ return !v; }); }}
+              title=${noAI ? 'Show AI synthesized answer' : 'Hide AI synthesis — show raw data only'}
+              style=${{
+                marginLeft:'4px', background: noAI ? 'var(--o-dim)' : 'transparent',
+                border:'1px solid '+(noAI ? 'rgba(249,103,2,0.4)' : 'var(--border)'),
+                borderRadius:'10px', padding:'1px 8px', fontSize:'0.62rem',
+                color: noAI ? 'var(--orange)' : 'var(--t3)', cursor:'pointer',
+                display:'flex', alignItems:'center', gap:'4px', transition:'all 0.15s',
+              }}
+              onMouseEnter=${function(e){ if(!noAI){ e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.color='var(--orange)'; }}}
+              onMouseLeave=${function(e){ if(!noAI){ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--t3)'; }}}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                ${noAI ? html`<path d="M1 1l22 22M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10 10 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>` : html`<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`}
+              </svg>
+              ${noAI ? 'AI On' : 'Without AI'}
+            </button>
+          `}
         </div>
         ${msg.isAgent
           ? html`<${AgentResearch} msg=${msg}/>`
@@ -2426,6 +2619,14 @@
         }}>
           ${msg.error
             ? html`<div style=${{ color:'var(--err)', fontSize:'0.84rem' }}>⚠ ${msg.error}</div>`
+            : noAI
+            ? html`
+              <div className="noai-banner">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span>Showing raw data only — <span style=${{ color:'var(--orange)' }}>click "AI On" above to restore the AI-synthesized answer</span></span>
+              </div>`
             : html`
               ${msg.isThinking && html`
                 <div style=${{ fontSize:'0.75rem', color:'var(--t3)', fontStyle:'italic',
