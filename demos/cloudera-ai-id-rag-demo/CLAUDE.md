@@ -28,6 +28,11 @@ User (Bahasa Indonesia or English)
        ├─ POST /api/ingest       → rebuild FAISS vector store in background
        ├─ GET  /api/ingest/status → poll ingest job
        ├─ POST /api/docs/upload  → upload document; PDFs get table extraction via pdfplumber
+       ├─ GET  /api/dashboard/kpis    → 13 KPIs across all domains (sync, sequential DuckDB queries)
+       ├─ POST /api/dashboard/summary → streaming LLM executive briefing SSE
+       ├─ POST /api/monitor/run       → SSE stream of 5 threshold checks (NPL, network, churn, budget, IKM)
+       ├─ POST /api/forecast          → OLS linear regression on time-series data; 3-period projection
+       ├─ POST /api/anomaly           → LLM scans SQL result for industry-benchmark outliers
        └─ GET  /health           → {status, checks:{vector_store,database,llm_configured}, uptime_s}
   → Orchestration Router (classify → dokumen / data / gabungan)
        ├─ Keyword heuristics (4-tier: show-verb → gabungan → data → dokumen)
@@ -232,6 +237,9 @@ Key components:
 - `AgentResearch` — collapsible step trace with type badge, query, result summary, latency
 - `MapChart` — Leaflet bubble map; auto-detected from geo column; city+province coordinate lookup
 - `DataChart` — Canvas bar chart (≤12 rows) or Leaflet map (≤50 rows with geo column); Map/Bar/Table switcher
+- `AnomalyPanel` — auto-fetches `POST /api/anomaly` after SQL result; severity badges (critical/warning/ok)
+- `LineChart` — bezier canvas line chart with gradient fill; auto-detected from time-series columns (month/year/date/period/quarter)
+- `ForecastOverlay` — dashed projection lines on line chart; appears after `▷ Forecast` button; shows trend arrow + R²
 - `PipelineTrace` — Router→Retrieval→Synthesis stage timing for regular chat
 - `DocCitationList` — source cards with relevance bar and full-chunk preview
 - `SqlPanel` — generated SQL + results table + DataChart (collapsed by default)
@@ -275,13 +283,14 @@ All HTML pages use stroke-SVG icons (Feather style, 1.5px stroke, 24×24 viewBox
 Cloudera logo: orange in light mode (`--logo-filter` CSS filter); white in dark mode.
 
 ## Pages (FastAPI routes)
-- `GET /` → `index.html` — React SPA chat
+- `GET /` → `index.html` — React SPA chat (Think / Agent / Debate / Vision / Forecast / Without AI)
 - `GET /setup` → `setup.html` — health dashboard
 - `GET /configure` → `configure.html` — env-var wizard
 - `GET /explorer` → `explorer.html` — SQL editor + Docs browser + LLM Compare + Iceberg Time Travel
 - `GET /upload` → `upload.html` — bulk upload, URL scrape, CSV table import, doc management
 - `GET /metrics` → `metrics.html` — inference dashboard
-- `GET /presentation` → `presentation.html` — presales slide deck (14 slides, audience toggle)
+- `GET /dashboard` → `dashboard.html` — Executive Dashboard (13 KPIs, AI briefing, Monitoring Agent)
+- `GET /presentation` → `presentation.html` — presales slide deck (16 slides: 9 business + 7 technical; light/dark toggle; PDF download)
 
 ## /health vs /api/status
 - `/health` → `{status, checks:{vector_store, database, llm_configured}, uptime_s}` — used by setup overlay

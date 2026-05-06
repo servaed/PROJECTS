@@ -1,7 +1,7 @@
 # Presales Demo Checklist
 
 Quick reference for running cloudera-ai-id-rag-demo in front of a customer.
-Complete all pre-demo steps before the call. Estimated run time: **25–35 minutes** for a full demo.
+Complete all pre-demo steps before the call. Estimated run time: **30–40 minutes** for a full demo.
 Add **10 minutes** for the Technical deep-dive if the audience includes architects or IT decision-makers.
 
 ---
@@ -15,6 +15,8 @@ Add **10 minutes** for the Technical deep-dive if the audience includes architec
 - [ ] All status indicators green at `/setup`
 - [ ] Auto-play tested end-to-end in the correct domain (Banking / Telco / Government)
 - [ ] Map visualization tested — ask a geo query like "Tampilkan utilisasi jaringan per kota" and confirm the Map tab appears
+- [ ] Executive Dashboard verified at `/dashboard` — all 13 KPI cards loaded, AI briefing streams
+- [ ] Monitoring Agent tested — click Run Monitoring on `/dashboard`, all 5 checks complete
 - [ ] Browser opened in **Incognito/Private mode** to clear any prior session history
 - [ ] Display resolution: **1920×1080** or wider; font size normal (100%)
 - [ ] Disable notifications and Do Not Disturb enabled
@@ -41,7 +43,8 @@ Add **10 minutes** for the Technical deep-dive if the audience includes architec
 ### 0. Slide Deck — Context Setting (3 min, optional)
 - Open `/presentation` in a second tab or full-screen
 - **Business audience**: walk slides 1–3 (problem → solution → scenarios) then jump to live demo
-- **Technical audience**: after live demo, switch to Technical mode and walk slides 10–14 (pipeline, retrieval, deployment, LLM APIs, security)
+- **Technical audience**: after live demo, switch to Technical mode and walk slides 10–16 (pipeline, retrieval, deployment, LLM APIs, security, AI modes, live demo guide)
+- Use **P** key or the download button (top-right) to export the deck as PDF for leave-behind
 
 ### 1. Opening Hook (2 min)
 - Show the clean interface — no infrastructure visible
@@ -70,7 +73,19 @@ Add **10 minutes** for the Technical deep-dive if the audience includes architec
 - OR toggle **Debate** ON → show Researcher + Critic two-card debate before the answer
 - Say: "The model shows its work — you can see how it arrived at the answer"
 
-### 6. Q&A / Custom Question (5 min)
+### 6. Advanced Analytics (5 min, data-savvy audiences)
+- Ask a monthly time-series question (e.g. *"Trend NPL per bulan 2025"*) → line chart auto-appears
+- Click **▷ Forecast** → OLS projection adds 3 future periods with dashed overlay, trend arrow, R² score
+- Point out the **Anomaly Detection** panel below the SQL results — model flags outliers vs industry benchmarks
+- Toggle **Without AI** to show the raw SQL table, then toggle back to compare
+- Navigate to `/dashboard` → show 13 live KPIs, then click **Run Monitoring** for the automated threshold scan
+
+### 7. Vision Demo (2 min, wow factor)
+- Click the image icon in the input bar, attach a chart screenshot or document photo
+- Ask: *"What does this chart show and what are the risks?"*
+- Say: "Same assistant — now it can read images, reports, scanned documents"
+
+### 8. Q&A / Custom Question (5 min)
 - Invite the customer to type their own question
 - If it fails gracefully: explain guardrails
 - Use the **language toggle** if a multilingual demo is needed
@@ -86,6 +101,12 @@ Add **10 minutes** for the Technical deep-dive if the audience includes architec
 | Map heatmap | "NPL risk across 27 Indonesian cities instantly visualized — not possible with legacy BI tools" |
 | Think mode | "The model shows its reasoning chain before answering — no black box" |
 | Debate mode | "We have one AI challenge another's assumptions — built-in adversarial review" |
+| Executive Dashboard | "C-suite ready — 13 KPIs across all domains, AI narrative briefing, live threshold alerts" |
+| Anomaly Detection | "The assistant doesn't just answer — it flags outliers automatically against industry benchmarks" |
+| Forecasting | "OLS projection from your live data — trend direction and confidence score in one click" |
+| Without AI toggle | "Show the raw SQL data, then turn AI back on — total transparency, customer controls the dial" |
+| Vision input | "Same assistant, now it reads images — scanned reports, charts, photos from the field" |
+| Monitoring Agent | "Autonomous threshold scan across all domains — NPL hotspots, network failures, budget gaps, all in one run" |
 | Guardrails | "Only SELECT queries against an approved table list — no write access, ever" |
 | Mode badge | "The badge shows whether the answer came from documents, data, or both — total transparency" |
 | Language toggle | "Same model, same data — switch the language and responses follow" |
@@ -123,6 +144,11 @@ Add **10 minutes** for the Technical deep-dive if the audience includes architec
 | Sidebar shows red indicator | Open `/configure`, set LLM_BASE_URL + LLM_API_KEY |
 | Pod OOM killed | Ensure ≥8 GiB; set `EMBEDDINGS_PROVIDER=openai` to reduce to 2 GiB |
 | Think/Debate mode no output | Model may not support `<think>` tags; switch to DeepSeek-R1 or Claude 4 |
+| Forecast button not appearing | Only shown when a line chart is visible — ask a monthly/yearly time-series question first |
+| Anomaly panel not appearing | Only shown when SQL result has numeric columns — data questions only |
+| Vision image not sent | Check model supports multimodal input (GPT-4o, Claude 4, Gemini); resize image if >4 MB |
+| Dashboard KPIs all zero | DuckDB threading issue — restart app; KPIs use sequential queries not parallel |
+| PDF download shows blank | Enable "Background graphics" in print dialog; allow pop-ups for the page |
 
 ---
 

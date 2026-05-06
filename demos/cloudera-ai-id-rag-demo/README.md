@@ -23,6 +23,13 @@ presales demos in banking, telco, and government sectors.
 | **AI Agent Mode** | Multi-step Planner → Executor → Synthesizer with visible research trace |
 | **Debate Mode** | Researcher + Critic AI agents debate the answer before synthesis |
 | **Document Intelligence** | PDF upload auto-extracts tables → queryable DuckDB views |
+| **Executive Dashboard** | `/dashboard` — 13 cross-domain KPIs, streaming AI executive briefing, threshold alert feed |
+| **Anomaly Detection** | Auto-scans SQL results for industry-benchmark outliers; severity badges (critical/warning/ok) |
+| **Vision Input** | Attach images to questions — base64 forwarded to multimodal LLMs (GPT-4o, Claude 4, Gemini) |
+| **Monitoring Agent** | `POST /api/monitor/run` — SSE stream of 5 threshold checks across all domains |
+| **Line Charts** | Time-series SQL results render as bezier canvas line chart with gradient fill |
+| **Without AI Raw Mode** | Toggle shows plain SQL data table without LLM synthesis — instant comparison |
+| **Predictive Forecasting** | OLS linear regression on time-series results; 3-period projection with trend (↑↓→) and R² |
 | Persona mode | Pre-built personas (Rina / Bank Indonesia, David / Indosat, Budi / DKI Jakarta) |
 | Story arcs | Guided multi-turn scenario sequences for demo auto-play |
 | Answer styles | Analyst / Executive / Audit response depth modes |
@@ -38,7 +45,7 @@ presales demos in banking, telco, and government sectors.
 | Chat persistence | Survives page refresh via `localStorage` |
 | Configure wizard | Set LLM credentials at `/configure`; inline Test LLM |
 | Health dashboard | `/setup` — live status, log viewer, startup banner, QR code, Re-ingest |
-| Presales slide deck | `/presentation` — 9-slide business + 5-slide technical; audience toggle |
+| Presales slide deck | `/presentation` — 9-slide business + 7-slide technical; light/dark toggle; PDF download (P key) |
 | Uniform icon design | Stroke SVG icons (Feather style) across all pages — no emoji in navigation |
 | MLflow observability | Inference latency, token usage, provider logged per run |
 | LLM A/B compare | `/explorer` LLM Compare tab — side-by-side provider comparison |
@@ -155,7 +162,8 @@ cloudera-ai-id-rag-demo/
 │     ├─ explorer.html           # SQL editor, docs browser, LLM Compare, Time Travel
 │     ├─ upload.html             # Bulk upload, URL scrape, CSV import, PDF table extraction
 │     ├─ metrics.html            # Inference dashboard
-│     ├─ presentation.html       # Presales deck — Business (9 slides) + Technical (5 slides)
+│     ├─ dashboard.html           # Executive Dashboard — 13 KPIs, AI briefing, Monitoring Agent
+│     ├─ presentation.html       # Presales deck — Business (9 slides) + Technical (7 slides); PDF download
 │     └─ vendor/                 # Self-hosted: React, htm, DOMPurify, Leaflet 1.9.4
 ├─ src/
 │  ├─ config/                    # Settings (pydantic-settings), logging
@@ -231,10 +239,13 @@ Generated deterministically (seed 42). NPL tiers baked in: Java 3–6% · Sumatr
 
 | Mode | Toggle | Description |
 |------|--------|-------------|
-| Standard | (default) | RAG + SQL + combined — single-pass answer |
+| Standard | (default) | RAG + SQL + combined — single-pass answer with Anomaly Detection panel |
 | **Think** | Think button | Streams chain-of-thought before answer; works with DeepSeek-R1, Claude 4, QwQ |
 | **Agent** | Agent button | Planner breaks question into research steps, executes each, synthesizes |
 | **Debate** | Debate button | Researcher LLM gathers evidence; Critic LLM challenges; Synthesis resolves |
+| **Vision** | Image button | Attach image alongside question — forwarded as multimodal content to LLM |
+| **Without AI** | Raw toggle | Shows SQL result table directly, no LLM synthesis — instant data comparison |
+| **Forecast** | ▷ Forecast button | OLS projection on time-series SQL results; appears when line chart is visible |
 
 ---
 

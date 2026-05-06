@@ -482,44 +482,25 @@
     #pdfBtn svg { width: 15px; height: 15px; }
     #pdfBtn.loading { opacity: 0.5; pointer-events: none; }
 
-    /* ── Print / PDF export ────────────────────────────────────────────────── */
+    /* ── Print / PDF export (manual Ctrl+P fallback — shows current slide) ── */
     @media print {
       @page { size: A4 landscape; margin: 0; }
-
-      /* Force every element to print backgrounds and exact colors */
       *, *::before, *::after {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-
-      html, body { margin: 0; padding: 0; }
-
-      /* Hide everything except the print frame we inject via JS */
-      body > *:not(#print-frame) { display: none !important; }
-
-      #print-frame {
-        display: block !important;
-        width: 297mm;
-        margin: 0;
-        padding: 0;
-      }
-
-      /* Each cloned slide is a full landscape A4 page */
-      #print-frame .slide {
+      .nav-btn, .aud-switch, .aud-label, .kbd-hint,
+      #themeBtn, #pdfBtn { display: none !important; }
+      #deck { position: static !important; width: 297mm !important; height: auto !important; }
+      .slide { display: none !important; }
+      .slide.active {
         display: flex !important;
         position: relative !important;
         inset: auto !important;
         width: 297mm !important;
         height: 210mm !important;
-        page-break-after: always;
-        break-after: page;
-        page-break-inside: avoid;
-        break-inside: avoid;
         overflow: hidden !important;
-        flex-direction: column;
       }
-
-      #print-frame .slide::after { position: absolute !important; }
     }
   </style>
 </head>
@@ -1661,37 +1642,68 @@
     var btn = document.getElementById('pdfBtn');
     btn.classList.add('loading');
 
-    // Build a dedicated print frame with cloned slides so we can:
-    // 1. avoid position:absolute stacking issues in print layout
-    // 2. explicitly reset opacity:0 from .anim-* base styles
-    var frame = document.createElement('div');
-    frame.id = 'print-frame';
+    var theme = document.documentElement.getAttribute('data-theme') || 'dark';
 
-    slides.forEach(function(s) {
+    // Collect all inline <style> content from this document
+    var styleText = Array.from(document.querySelectorAll('style'))
+      .map(function(s) { return s.textContent; }).join('\n');
+
+    // Clone each slide, strip animation classes, force all content visible
+    var slidesHTML = slides.map(function(s) {
       var clone = s.cloneNode(true);
       clone.classList.remove('active', 'exiting');
-      // .anim-1 … .anim-6 all have opacity:0 as a base style;
-      // killing animation alone keeps them invisible, so force-reset here.
       clone.querySelectorAll('*').forEach(function(el) {
-        if (/\banim(-\d+)?\b/.test(el.className || '')) {
-          el.style.cssText += ';opacity:1!important;transform:none!important;animation:none!important;transition:none!important;';
-        }
+        // el.style.property = value is valid; cssText+='!important' is not
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+        el.style.animation = 'none';
+        el.style.transition = 'none';
       });
-      frame.appendChild(clone);
-    });
+      return clone.outerHTML;
+    }).join('\n');
 
-    document.body.appendChild(frame);
+    // Print-specific overrides that go on top of the copied styles
+    var printOverrides = [
+      '@page { size: A4 landscape; margin: 0; }',
+      '*, *::before, *::after {',
+      '  -webkit-print-color-adjust: exact !important;',
+      '  print-color-adjust: exact !important; }',
+      'html, body { margin: 0; padding: 0; }',
+      '.slide {',
+      '  display: flex !important; position: relative !important;',
+      '  inset: auto !important; flex-direction: column;',
+      '  width: 297mm !important; height: 210mm !important;',
+      '  page-break-after: always; break-after: page;',
+      '  overflow: hidden !important; }',
+      '.slide::after { position: absolute !important; }'
+    ].join('\n');
 
-    function cleanup() {
-      var f = document.getElementById('print-frame');
-      if (f) document.body.removeChild(f);
+    var html = '<!DOCTYPE html><html data-theme="' + theme + '">' +
+      '<head><meta charset="utf-8">' +
+      '<style>' + styleText + '\n' + printOverrides + '</style>' +
+      '</head><body>' + slidesHTML + '</body></html>';
+
+    var pw = window.open('', '_blank', 'width=1200,height=800');
+    if (!pw) {
+      alert('Allow pop-ups for this page, then try again.');
       btn.classList.remove('loading');
-      window.removeEventListener('afterprint', cleanup);
+      return;
     }
-    window.addEventListener('afterprint', cleanup);
 
-    // Let browser render the frame before opening the dialog
-    setTimeout(function() { window.print(); }, 150);
+    pw.document.write(html);
+    pw.document.close();
+
+    // Wait for fonts/images to load, then print
+    pw.onload = function() {
+      pw.focus();
+      pw.print();
+      setTimeout(function() { pw.close(); }, 1000);
+    };
+    // Fallback if onload already fired
+    setTimeout(function() {
+      if (pw && !pw.closed) { pw.focus(); pw.print(); }
+      btn.classList.remove('loading');
+    }, 800);
   }
   document.addEventListener('DOMContentLoaded', function() {
     var t = document.documentElement.getAttribute('data-theme');
