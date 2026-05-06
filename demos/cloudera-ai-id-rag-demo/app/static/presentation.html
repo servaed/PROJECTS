@@ -1,19 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cloudera AI Enterprise Assistant — Demo Presentation</title>
+  <script>
+    (function(){
+      var t = localStorage.getItem('pres-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <script>
+    (function(){
+      var t = localStorage.getItem('pres-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Google+Sans+Display:wght@700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
     /* ── Reset & base ──────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; background: #0a0e1a; font-family: 'Google Sans', system-ui, sans-serif; }
+    html, body { height: 100%; overflow: hidden; background: var(--bg); font-family: 'Google Sans', system-ui, sans-serif; }
 
     /* ── CSS variables ─────────────────────────────────────────────────────── */
-    :root {
+    :root, [data-theme="dark"] {
       --orange:  #F96702;
       --o-dim:   rgba(249,103,2,0.12);
       --o-glow:  rgba(249,103,2,0.25);
@@ -31,12 +43,34 @@
       --border:  rgba(255,255,255,0.08);
       --t1:      #F1F5F9;
       --t2:      #94A3B8;
-      --t3:      #475569;
+      --t3:      #8892A4;
       --font:    'Google Sans', system-ui, sans-serif;
       --display: 'Google Sans Display', 'Google Sans', system-ui, sans-serif;
       --mono:    'JetBrains Mono', monospace;
       /* Cloudera orange logo filter */
       --logo-filter: brightness(0) saturate(100%) invert(43%) sepia(97%) saturate(739%) hue-rotate(346deg) brightness(103%) contrast(103%);
+      --aud-bg:  rgba(10,14,26,0.75);
+    }
+
+    /* ── CSS variables — light ─────────────────────────────────────── */
+    [data-theme="light"] {
+      --o-dim:   rgba(249,103,2,0.09);
+      --teal:    #00796B;
+      --t-dim:   rgba(0,121,107,0.08);
+      --indigo:  #5C6BC0;
+      --i-dim:   rgba(92,107,192,0.09);
+      --green:   #34A853;
+      --g-dim:   rgba(52,168,83,0.09);
+      --yellow:  #F59E0B;
+      --bg:      #F8F9FA;
+      --surface: #FFFFFF;
+      --s2:      #F1F3F4;
+      --s3:      #E8EAED;
+      --border:  rgba(0,0,0,0.1);
+      --t1:      #1C2330;
+      --t2:      #374151;
+      --t3:      #6B7280;
+      --aud-bg:  rgba(248,249,250,0.88);
     }
 
     /* ── Slide container ───────────────────────────────────────────────────── */
@@ -44,13 +78,19 @@
     .slide {
       position: absolute; inset: 0;
       display: flex; flex-direction: column;
-      padding: 56px 72px;
+      padding: 56px 72px 70px;
       opacity: 0; pointer-events: none;
       transition: opacity 0.48s cubic-bezier(0.4,0,0.2,1),
                   transform 0.48s cubic-bezier(0.4,0,0.2,1),
                   filter 0.48s cubic-bezier(0.4,0,0.2,1);
       transform: translateY(20px);
       filter: blur(4px);
+    }
+
+    /* ── Cloudera brand orange bar at bottom of every slide ───────────────── */
+    .slide::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+      height: 8px; background: var(--orange);
     }
     .slide.active {
       opacity: 1; pointer-events: auto; transform: translateY(0); filter: blur(0px);
@@ -78,28 +118,52 @@
     .arch-tooltip.tip-vis { opacity: 1; }
     .arch-tooltip strong { color: var(--t1); display: block; margin-bottom: 4px; font-size: 0.78rem; }
 
-    /* ── Slide backgrounds ─────────────────────────────────────────────────── */
-    .bg-cover {
+    /* ── Slide backgrounds — dark ───────────────────────────────────────────── */
+    [data-theme="dark"] .bg-cover {
       background:
         radial-gradient(ellipse 80% 60% at 70% 40%, rgba(249,103,2,0.18) 0%, transparent 60%),
         radial-gradient(ellipse 50% 40% at 20% 80%, rgba(0,165,145,0.12) 0%, transparent 50%),
         linear-gradient(135deg, #0a0e1a 0%, #111827 100%);
     }
-    .bg-dark { background: linear-gradient(160deg, #0a0e1a 0%, #111827 100%); }
-    .bg-teal {
+    [data-theme="dark"] .bg-dark { background: linear-gradient(160deg, #0a0e1a 0%, #111827 100%); }
+    [data-theme="dark"] .bg-teal {
       background:
         radial-gradient(ellipse 60% 50% at 80% 30%, rgba(0,165,145,0.2) 0%, transparent 60%),
         linear-gradient(135deg, #0a0e1a 0%, #0d1f1e 100%);
     }
-    .bg-indigo {
+    [data-theme="dark"] .bg-indigo {
       background:
         radial-gradient(ellipse 60% 50% at 20% 60%, rgba(129,140,248,0.18) 0%, transparent 60%),
         linear-gradient(135deg, #0a0e1a 0%, #111827 100%);
     }
-    .bg-orange {
+    [data-theme="dark"] .bg-orange {
       background:
         radial-gradient(ellipse 70% 50% at 50% 30%, rgba(249,103,2,0.22) 0%, transparent 60%),
         linear-gradient(160deg, #1a0d04 0%, #0a0e1a 100%);
+    }
+
+    /* ── Slide backgrounds — light ──────────────────────────────────────────── */
+    [data-theme="light"] .bg-cover {
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 40%, rgba(249,103,2,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 20% 80%, rgba(0,165,145,0.08) 0%, transparent 50%),
+        linear-gradient(135deg, #FFFFFF 0%, #F1F3F4 100%);
+    }
+    [data-theme="light"] .bg-dark { background: linear-gradient(160deg, #F8F9FA 0%, #EAECEF 100%); }
+    [data-theme="light"] .bg-teal {
+      background:
+        radial-gradient(ellipse 60% 50% at 80% 30%, rgba(0,165,145,0.12) 0%, transparent 60%),
+        linear-gradient(135deg, #F0FDFA 0%, #E6F7F5 100%);
+    }
+    [data-theme="light"] .bg-indigo {
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 60%, rgba(92,107,192,0.12) 0%, transparent 60%),
+        linear-gradient(135deg, #F5F3FF 0%, #EEF0FB 100%);
+    }
+    [data-theme="light"] .bg-orange {
+      background:
+        radial-gradient(ellipse 70% 50% at 50% 30%, rgba(249,103,2,0.12) 0%, transparent 60%),
+        linear-gradient(160deg, #FFF7ED 0%, #F8F9FA 100%);
     }
 
     /* ── Shared elements ───────────────────────────────────────────────────── */
@@ -286,7 +350,10 @@
     /* ── Footer / progress ─────────────────────────────────────────────────── */
     .slide-footer {
       margin-top: auto; display: flex; align-items: center; gap: 14px;
-      padding-top: 28px;
+      padding-top: 20px; padding-bottom: 4px;
+    }
+    .slide-copyright {
+      font-size: 0.62rem; color: var(--t3); font-family: var(--mono); flex-shrink: 0;
     }
     .slide-num {
       font-size: 0.7rem; color: var(--t3); font-family: var(--mono); flex-shrink: 0;
@@ -320,9 +387,9 @@
 
     /* ── Audience toggle ───────────────────────────────────────────────────── */
     .aud-switch {
-      position: fixed; top: 16px; right: 72px; z-index: 200;
+      position: fixed; top: 16px; right: 112px; z-index: 200;
       display: flex; gap: 3px;
-      background: rgba(10,14,26,0.7); border: 1px solid var(--border);
+      background: var(--aud-bg); border: 1px solid var(--border);
       border-radius: 20px; padding: 3px; backdrop-filter: blur(10px);
     }
     .aud-btn {
@@ -401,6 +468,59 @@
     .anim-4 { animation-delay: 0.5s; opacity: 0; }
     .anim-5 { animation-delay: 0.65s; opacity: 0; }
     .anim-6 { animation-delay: 0.8s; opacity: 0; }
+
+    /* ── PDF button ────────────────────────────────────────────────────────── */
+    #pdfBtn {
+      position: fixed; top: 16px; right: 20px; z-index: 200;
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 1px solid var(--border); background: var(--aud-bg);
+      backdrop-filter: blur(10px); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--t2); transition: all 0.2s;
+    }
+    #pdfBtn:hover { color: var(--orange); border-color: var(--orange); }
+    #pdfBtn svg { width: 15px; height: 15px; }
+    #pdfBtn.loading { opacity: 0.5; pointer-events: none; }
+
+    /* ── Print / PDF export ────────────────────────────────────────────────── */
+    @media print {
+      @page { size: A4 landscape; margin: 0; }
+
+      /* Force every element to print backgrounds and exact colors */
+      *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      html, body { margin: 0; padding: 0; }
+
+      /* Hide everything except the print frame we inject via JS */
+      body > *:not(#print-frame) { display: none !important; }
+
+      #print-frame {
+        display: block !important;
+        width: 297mm;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Each cloned slide is a full landscape A4 page */
+      #print-frame .slide {
+        display: flex !important;
+        position: relative !important;
+        inset: auto !important;
+        width: 297mm !important;
+        height: 210mm !important;
+        page-break-after: always;
+        break-after: page;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        overflow: hidden !important;
+        flex-direction: column;
+      }
+
+      #print-frame .slide::after { position: absolute !important; }
+    }
   </style>
 </head>
 <body>
@@ -410,6 +530,10 @@
   <button class="aud-btn active" id="btnBiz" onclick="setAud('biz')">Business</button>
   <button class="aud-btn" id="btnTech" onclick="setAud('tech')">Technical</button>
 </div>
+<button id="themeBtn" onclick="toggleTheme()" title="Toggle light / dark mode" style="position:fixed;top:16px;right:64px;z-index:200;width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--aud-bg);backdrop-filter:blur(10px);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.9rem;transition:all 0.2s;">&#x2600;</button>
+<button id="pdfBtn" onclick="downloadPDF()" title="Download as PDF (uses browser print dialog — choose 'Save as PDF')">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+</button>
 
 <div id="deck">
 
@@ -439,9 +563,7 @@
       <span class="accent">All the Answers.</span>
     </h1>
     <p class="lead anim anim-4" style="max-width:640px;">
-      Cloudera AI Enterprise Assistant lets your team ask questions in plain language
-      — and get instant, trusted answers from your own documents and data.
-      In Bahasa Indonesia or English.
+      Cloudera Enterprise Assistant — One question, multiple angles. Policy documents, live data, geographic maps, and trend forecasts. Breaks complex enterprise data into clear, actionable light.
     </p>
     <div class="stat-row anim anim-5">
       <div class="stat"><div class="stat-n">3</div><div class="stat-l">Industries</div></div>
@@ -451,9 +573,10 @@
       <div class="stat"><div class="stat-n">2</div><div class="stat-l">Languages</div></div>
     </div>
     <div class="slide-footer anim anim-6">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">01 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:11%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -485,9 +608,10 @@
       </div>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">02 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:22%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -545,9 +669,10 @@
     </div>
 
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">03 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:33%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -609,9 +734,10 @@
       </div>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">04 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:44%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -675,9 +801,10 @@
       </div>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">05 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:55%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -719,9 +846,10 @@
       </div>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">06 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:66%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -787,9 +915,10 @@
       </p>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">07 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:77%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -825,9 +954,10 @@
       </div>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">08 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:88%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -861,9 +991,10 @@
       <span class="pill pill-teal">&#x2713; Think · Agent · Debate · Vision</span>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">09 / 09</span>
       <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -940,9 +1071,10 @@
     </div>
 
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">10 / 14</span>
       <div class="progress-track"><div class="progress-fill" style="width:71%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -1005,9 +1137,10 @@
       </div>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">11 / 14</span>
       <div class="progress-track"><div class="progress-fill" style="width:78%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -1031,7 +1164,7 @@
         <div class="layer-stack" style="gap:6px;">
           <div class="layer" style="padding:10px 14px;">
             <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
-            <div><div class="layer-name" style="font-size:0.78rem;">CML Application (FastAPI + uvicorn)</div><div class="layer-tech">CDSW_APP_PORT · run_app.py launcher</div></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">Cloudera AI Application (FastAPI + uvicorn)</div><div class="layer-tech">CDSW_APP_PORT · run_app.py launcher</div></div>
           </div>
           <div class="layer" style="padding:10px 14px;">
             <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
@@ -1056,7 +1189,7 @@
         <div class="layer-stack" style="gap:6px;">
           <div class="layer" style="padding:10px 14px;">
             <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
-            <div><div class="layer-name" style="font-size:0.78rem;">Same CML Application</div><div class="layer-tech">Identical code · same startup script</div></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">Same Cloudera AI Application</div><div class="layer-tech">Identical code · same startup script</div></div>
           </div>
           <div class="layer" style="padding:10px 14px;border-color:var(--orange);">
             <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
@@ -1064,19 +1197,20 @@
           </div>
           <div class="layer" style="padding:10px 14px;border-color:var(--orange);">
             <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
-            <div><div class="layer-name" style="font-size:0.78rem;">Ozone S3GW</div><div class="layer-tech">DOCS_STORAGE_TYPE=s3 · MINIO_ENDPOINT</div></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">Any S3-compatible Storage</div><div class="layer-tech">DOCS_STORAGE_TYPE=s3 · S3_ENDPOINT</div></div>
           </div>
           <div class="layer" style="padding:10px 14px;border-color:var(--orange);">
             <div class="layer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-            <div><div class="layer-name" style="font-size:0.78rem;">Cloudera AI Inference</div><div class="layer-tech">LLM_PROVIDER=openai · private endpoint</div></div>
+            <div><div class="layer-name" style="font-size:0.78rem;">Cloudera AI Inference</div><div class="layer-tech">LLM_PROVIDER=cloudera · private endpoint</div></div>
           </div>
         </div>
       </div>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">12 / 14</span>
       <div class="progress-track"><div class="progress-fill" style="width:85%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -1134,9 +1268,10 @@
       </div>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">13 / 14</span>
       <div class="progress-track"><div class="progress-fill" style="width:92%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -1171,7 +1306,7 @@
           </div>
           <div class="check-item" style="font-size:0.82rem;">
             <div class="check-icon">&#x2713;</div>
-            <div><strong>CML SSO / LDAP</strong><div class="sub">Auth handled entirely by Cloudera AI Workbench — Remote-user headers injected. App implements no custom auth.</div></div>
+            <div><strong>Cloudera AI SSO / LDAP</strong><div class="sub">Auth handled entirely by Cloudera AI Workbench — Remote-user headers injected. App implements no custom auth.</div></div>
           </div>
         </div>
       </div>
@@ -1198,9 +1333,10 @@
       </div>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">14 / 15</span>
       <div class="progress-track"><div class="progress-fill" style="width:93%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -1246,9 +1382,150 @@
       </div>
     </div>
     <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
       <span class="slide-num">15 / 15</span>
       <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
-      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/>cloudera.com</span>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
+    </div>
+  </section>
+
+  <!-- ── SLIDE T-07: Live Demo Guide ─────────────────────────────────── -->
+  <section class="slide bg-dark" id="s16" data-tech="1">
+    <div class="tech-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Live Demo Guide
+    </div>
+    <div class="slide-tag">All Pages &amp; Capabilities</div>
+    <h2>Every Capability — <span class="accent">Where to Demo It</span></h2>
+    <div class="card-grid card-grid-3" style="gap:10px;margin-top:16px;">
+
+      <!-- Chat Interface -->
+      <div class="card card-teal" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="card-icon" style="margin:0;flex-shrink:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div>
+            <div class="card-title" style="margin-bottom:1px;">Chat Interface</div>
+            <code style="font-size:0.72rem;font-family:var(--mono);color:var(--teal);opacity:0.9;">GET /</code>
+          </div>
+        </div>
+        <ul style="margin:0;padding-left:14px;font-size:0.75rem;line-height:1.65;color:var(--t2);">
+          <li>RAG + SQL across Banking / Telco / Gov</li>
+          <li><strong style="color:var(--t1);">Think</strong> — live chain-of-thought reasoning panel</li>
+          <li><strong style="color:var(--t1);">Agent</strong> — multi-step plan → execute → synthesize</li>
+          <li><strong style="color:var(--t1);">Debate</strong> — Researcher ↔ Critic adversarial review</li>
+          <li>Indonesia heatmap, line chart + OLS forecast</li>
+          <li>Anomaly detection • Vision (image) input</li>
+          <li>"Without AI" raw data toggle</li>
+        </ul>
+      </div>
+
+      <!-- Executive Dashboard -->
+      <div class="card card-orange" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="card-icon" style="margin:0;flex-shrink:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <div>
+            <div class="card-title" style="margin-bottom:1px;">Executive Dashboard</div>
+            <code style="font-size:0.72rem;font-family:var(--mono);color:var(--orange);opacity:0.9;">GET /dashboard</code>
+          </div>
+        </div>
+        <ul style="margin:0;padding-left:14px;font-size:0.75rem;line-height:1.65;color:var(--t2);">
+          <li>13 cross-domain KPIs (live DuckDB queries)</li>
+          <li>Streaming LLM executive briefing (SSE)</li>
+          <li>Threshold alert feed — critical / warning</li>
+          <li><strong style="color:var(--t1);">Monitoring Agent</strong> — 5 threshold checks: NPL hotspots, critical networks, churn cities, budget underperformers, IKM score</li>
+        </ul>
+      </div>
+
+      <!-- Data Explorer -->
+      <div class="card card-indigo" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="card-icon" style="margin:0;flex-shrink:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <div>
+            <div class="card-title" style="margin-bottom:1px;">Data Explorer</div>
+            <code style="font-size:0.72rem;font-family:var(--mono);color:var(--indigo);opacity:0.9;">GET /explorer</code>
+          </div>
+        </div>
+        <ul style="margin:0;padding-left:14px;font-size:0.75rem;line-height:1.65;color:var(--t2);">
+          <li>SQL editor with live schema browser</li>
+          <li>11-table catalog — 2,286 rows, 27 cities</li>
+          <li>Document browser — chunk previews</li>
+          <li><strong style="color:var(--t1);">LLM Compare</strong> — side-by-side provider comparison</li>
+          <li>Iceberg Time Travel (on CDW/Trino path)</li>
+        </ul>
+      </div>
+
+      <!-- Document Upload -->
+      <div class="card card-green" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="card-icon" style="margin:0;flex-shrink:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div>
+            <div class="card-title" style="margin-bottom:1px;">Document Intelligence</div>
+            <code style="font-size:0.72rem;font-family:var(--mono);color:var(--green);opacity:0.9;">GET /upload</code>
+          </div>
+        </div>
+        <ul style="margin:0;padding-left:14px;font-size:0.75rem;line-height:1.65;color:var(--t2);">
+          <li>Drag-and-drop PDF / TXT / DOCX upload</li>
+          <li><strong style="color:var(--t1);">PDF table extraction</strong> — pdfplumber → DuckDB views (<code style="font-family:var(--mono);font-size:0.85em;">doc_*</code> prefix, instantly queryable)</li>
+          <li>CSV bulk import → new SQL table on-the-fly</li>
+          <li>URL scraping → ingested as document</li>
+          <li>Triggers background re-index (FAISS rebuild)</li>
+        </ul>
+      </div>
+
+      <!-- Metrics -->
+      <div class="card card-teal" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="card-icon" style="margin:0;flex-shrink:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div>
+            <div class="card-title" style="margin-bottom:1px;">Inference Metrics</div>
+            <code style="font-size:0.72rem;font-family:var(--mono);color:var(--teal);opacity:0.9;">GET /metrics</code>
+          </div>
+        </div>
+        <ul style="margin:0;padding-left:14px;font-size:0.75rem;line-height:1.65;color:var(--t2);">
+          <li>Latency (ms), input / output token count per call</li>
+          <li>Breakdown by <strong style="color:var(--t1);">mode</strong> (think / agent / debate / chat)</li>
+          <li>Provider + model name logged per request</li>
+          <li>Ring-buffer always on — MLflow optional via env var</li>
+          <li>Iceberg table on CDW for long-term analytics</li>
+        </ul>
+      </div>
+
+      <!-- Setup & Config -->
+      <div class="card card-indigo" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="card-icon" style="margin:0;flex-shrink:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <div>
+            <div class="card-title" style="margin-bottom:1px;">Setup &amp; Configuration</div>
+            <code style="font-size:0.72rem;font-family:var(--mono);color:var(--indigo);opacity:0.9;">GET /setup · /configure</code>
+          </div>
+        </div>
+        <ul style="margin:0;padding-left:14px;font-size:0.75rem;line-height:1.65;color:var(--t2);">
+          <li>Health dashboard — vector store, DB, LLM status</li>
+          <li>Live log tail (ring-buffer, last 200 lines)</li>
+          <li>Env-var wizard — switch LLM provider on the fly</li>
+          <li><strong style="color:var(--t1);">Test LLM</strong> — 1-token ping, provider + model + latency shown</li>
+          <li>QR code popup — let audience scan to open on mobile</li>
+        </ul>
+      </div>
+
+    </div>
+    <div class="slide-footer">
+      <span class="slide-copyright">©2026 Cloudera, Inc.</span>
+      <span class="slide-num">16 / 16</span>
+      <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
+      <span class="slide-logo"><img src="/static/cloudera-logo.png" alt="Cloudera" class="cld-logo-sm"/></span>
     </div>
   </section>
 
@@ -1261,7 +1538,7 @@
 <button class="nav-btn" id="nextBtn" onclick="next()" aria-label="Next">
   <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
 </button>
-<div class="kbd-hint">← → navigate · F fullscreen · <a href="/" style="color:inherit;opacity:0.65;text-decoration:none;">← Back to app</a></div>
+<div class="kbd-hint">← → navigate · F fullscreen · P save PDF · <a href="/" style="color:inherit;opacity:0.65;text-decoration:none;">← Back to app</a></div>
 
 <script>
   var allSlides = [];
@@ -1334,6 +1611,7 @@
       if (!document.fullscreenElement) document.documentElement.requestFullscreen();
       else document.exitFullscreen();
     }
+    if (e.key === 'p' || e.key === 'P') { e.preventDefault(); downloadPDF(); }
   });
 
   // Touch swipe
@@ -1372,6 +1650,54 @@
     if (!box) return;
     if (!box.contains(e.relatedTarget)) tipEl.classList.remove('tip-vis');
   });
+  function toggleTheme() {
+    var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('pres-theme', t);
+    document.getElementById('themeBtn').textContent = t === 'dark' ? '\u2600' : '\u263e';
+  }
+
+  function downloadPDF() {
+    var btn = document.getElementById('pdfBtn');
+    btn.classList.add('loading');
+
+    // Build a dedicated print frame with cloned slides so we can:
+    // 1. avoid position:absolute stacking issues in print layout
+    // 2. explicitly reset opacity:0 from .anim-* base styles
+    var frame = document.createElement('div');
+    frame.id = 'print-frame';
+
+    slides.forEach(function(s) {
+      var clone = s.cloneNode(true);
+      clone.classList.remove('active', 'exiting');
+      // .anim-1 … .anim-6 all have opacity:0 as a base style;
+      // killing animation alone keeps them invisible, so force-reset here.
+      clone.querySelectorAll('*').forEach(function(el) {
+        if (/\banim(-\d+)?\b/.test(el.className || '')) {
+          el.style.cssText += ';opacity:1!important;transform:none!important;animation:none!important;transition:none!important;';
+        }
+      });
+      frame.appendChild(clone);
+    });
+
+    document.body.appendChild(frame);
+
+    function cleanup() {
+      var f = document.getElementById('print-frame');
+      if (f) document.body.removeChild(f);
+      btn.classList.remove('loading');
+      window.removeEventListener('afterprint', cleanup);
+    }
+    window.addEventListener('afterprint', cleanup);
+
+    // Let browser render the frame before opening the dialog
+    setTimeout(function() { window.print(); }, 150);
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var t = document.documentElement.getAttribute('data-theme');
+    document.getElementById('themeBtn').textContent = t === 'dark' ? '\u2600' : '\u263e';
+  });
+
 </script>
 </body>
 </html>
